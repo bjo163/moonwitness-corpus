@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   TEXT_EPISTEMIC_GUARDS,
   nextTextState,
+  parseTextResearchState,
   rankTextResearch,
   textRpsV1,
   textWipPressure,
@@ -64,5 +65,28 @@ test('hard TEXT WIP pressure penalizes routine discovery', () => {
   assert.ok(
     textRpsV1({ id: 'progress', state: 'source_inspected', evidenceGain: 10 }, pressure)
       > textRpsV1({ id: 'discover', state: 'discovered', noveltyValue: 20 }, pressure),
+  );
+});
+
+test('terminal TEXT lifecycle states parse without becoming actionable WIP', () => {
+  for (const state of ['canonicalized', 'merged', 'rejected'] as const) {
+    assert.equal(parseTextResearchState(`ROCKSOUL-RESEARCH-STATE:${state}`), state);
+    assert.equal(nextTextState({ id: state, state }), state);
+    assert.equal(textRpsV1({ id: state, state }), 0);
+  }
+  const items = [
+    { id: 1, state: 'source_inspected' as const, witnessInspected: true },
+    { id: 2, state: 'canonicalized' as const },
+    { id: 3, state: 'merged' as const },
+    { id: 4, state: 'rejected' as const },
+  ];
+  assert.equal(textWipPressure(items).actionable, 1);
+  assert.deepEqual(rankTextResearch(items).map((item) => item.id), [1]);
+});
+
+test('TEXT lifecycle parser rejects unrecognized states', () => {
+  assert.throws(
+    () => parseTextResearchState('ROCKSOUL-RESEARCH-STATE:identity_resolved'),
+    /Unknown TEXT research lifecycle/,
   );
 });
