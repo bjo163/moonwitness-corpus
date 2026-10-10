@@ -1,9 +1,17 @@
 import { pathToFileURL } from 'node:url';
 
-export type ResearchState = 'discovered' | 'triaged' | 'needs_sources' | 'source_inspected' | 'ready_for_observation';
+export type ActiveResearchState = 'discovered' | 'triaged' | 'needs_sources' | 'source_inspected' | 'ready_for_observation';
+export type TerminalResearchState = 'canonicalized' | 'merged' | 'rejected';
+export type ResearchState = ActiveResearchState | TerminalResearchState;
+
+const TERMINAL_RESEARCH_STATES = new Set<ResearchState>(['canonicalized', 'merged', 'rejected']);
+function isActiveResearchState(state: ResearchState): state is ActiveResearchState {
+  return !TERMINAL_RESEARCH_STATES.has(state);
+}
 
 const RESEARCH_STATES = new Set<ResearchState>([
   'discovered', 'triaged', 'needs_sources', 'source_inspected', 'ready_for_observation',
+  'canonicalized', 'merged', 'rejected',
 ]);
 
 export interface TextResearchItem {
@@ -24,7 +32,7 @@ export const TEXT_EPISTEMIC_GUARDS = Object.freeze({
   personReasoningMustRemainForeignToTextPass: true,
 });
 
-const PRIORITY: Record<ResearchState, number> = {
+const PRIORITY: Record<ActiveResearchState, number> = {
   ready_for_observation: 100,
   source_inspected: 90,
   needs_sources: 70,
@@ -33,7 +41,7 @@ const PRIORITY: Record<ResearchState, number> = {
 };
 
 export function textWipPressure(items: TextResearchItem[], softLimit = 8, hardLimit = 16) {
-  const actionable = items.length;
+  const actionable = items.filter((item) => isActiveResearchState(item.state)).length;
   return {
     actionable,
     preferProgression: actionable >= softLimit,
@@ -42,6 +50,7 @@ export function textWipPressure(items: TextResearchItem[], softLimit = 8, hardLi
 }
 
 export function textRpsV1(item: TextResearchItem, pressure = textWipPressure([item])) {
+  if (!isActiveResearchState(item.state)) return 0;
   const progressionValue = Math.round((PRIORITY[item.state] / 100) * 30);
   const evidenceGain = Math.min(25, Math.max(0, item.evidenceGain ?? (item.witnessInspected ? 10 : 0)));
   const crossDomainValue = Math.min(15, Math.max(0, item.crossDomainValue ?? 0));
@@ -55,8 +64,9 @@ export function textRpsV1(item: TextResearchItem, pressure = textWipPressure([it
 export function rankTextResearch<T extends TextResearchItem>(items: T[]): Array<T & { rps: number }> {
   const pressure = textWipPressure(items);
   return items
+    .filter((item) => isActiveResearchState(item.state))
     .map((item) => ({ ...item, rps: textRpsV1(item, pressure) }))
-    .sort((a, b) => PRIORITY[b.state] - PRIORITY[a.state] || b.rps - a.rps || String(a.id).localeCompare(String(b.id)));
+    .sort((a, b) => PRIORITY[b.state as ActiveResearchState] - PRIORITY[a.state as ActiveResearchState] || b.rps - a.rps || String(a.id).localeCompare(String(b.id)));
 }
 
 export function nextTextState(item: TextResearchItem): ResearchState {
