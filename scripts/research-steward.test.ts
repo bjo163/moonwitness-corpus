@@ -90,3 +90,33 @@ test('TEXT lifecycle parser rejects unrecognized states', () => {
     /Unknown TEXT research lifecycle/,
   );
 });
+
+test('fenced issue lifecycle metadata parses without a trailing backtick', () => {
+  const cases = [
+    { issue: 373, state: 'triaged' },
+    { issue: 375, state: 'source_inspected' },
+    { issue: 376, state: 'triaged' },
+  ] as const;
+
+  for (const { issue, state } of cases) {
+    const body = [
+      '## Machine Metadata',
+      '',
+      '```text',
+      'ROCKSOUL-RESEARCH-CONTRACT:v1',
+      `ROCKSOUL-RESEARCH-STATE:${state}`,
+      '```',
+    ].join('\n');
+    assert.equal(parseTextResearchState(body), state, `issue #${issue}`);
+  }
+});
+
+test('last fenced lifecycle metadata marker takes precedence', () => {
+  const body = [
+    'ROCKSOUL-RESEARCH-STATE:triaged',
+    '```text',
+    'ROCKSOUL-RESEARCH-STATE:ready_for_observation',
+    '```',
+  ].join('\n');
+  assert.equal(parseTextResearchState(body), 'ready_for_observation');
+});
