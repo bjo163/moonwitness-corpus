@@ -46,6 +46,37 @@ test('every contiguous maturity gate 0..15 is earned by triangular prefix, never
   // An absent level is the same gate failure as an explicitly unsatisfied one.
   assert.equal(scoreMaturity({ S1:'supported', G3:'supported', B4:'supported', L5:'supported' }).score, 1)
 })
+test('zero evidence weight is UNKNOWN, never neutral, and keeps numerator/denominator symmetric', () => {
+  const pos = scoreDirection('recipient=believers','devotional:v8',[{id:'a',direction:2,intensity:3,confidence:1,weight:1}])
+  assert.deepEqual([pos.status,pos.value,pos.count],['scored',2,1])
+  // Every weight is 0: there is no positive evidence weight, so the result is
+  // UNKNOWN - not 0 (a measured neutral) and not NaN.
+  const zeroWeight = scoreDirection('recipient=all','test:v8',[
+    {id:'a',direction:2,intensity:3,confidence:1,weight:0},
+    {id:'b',direction:-2,intensity:3,confidence:1,weight:0}])
+  assert.deepEqual([zeroWeight.status,zeroWeight.value],['unknown',null])
+  assert.equal(zeroWeight.count,2)
+  assert.ok(zeroWeight.reason)
+  assert.equal(Number.isNaN(Number(zeroWeight.value)),false)
+  // Genuine cancellation still scores a measured 0 and stays distinguishable.
+  const cancelled = scoreDirection('recipient=all','test:v8',[
+    {id:'a',direction:2,intensity:3,confidence:1,weight:1},
+    {id:'b',direction:-2,intensity:3,confidence:1,weight:1}])
+  assert.deepEqual([cancelled.status,cancelled.value],['scored',0])
+  // An empty bundle has no weight either.
+  const empty = scoreDirection('recipient=all','test:v8',[])
+  assert.deepEqual([empty.status,empty.value,empty.count],['unknown',null,0])
+  // A zero-weight annotation cannot dilute a real one: same factor above and below the line.
+  const diluted = scoreDirection('recipient=all','test:v8',[
+    {id:'a',direction:2,intensity:1,confidence:1,weight:1},
+    {id:'b',direction:-2,intensity:3,confidence:1,weight:0}])
+  assert.equal(diluted.value,2)
+  // Malformed input is a controlled TypeError, never an uncontrolled crash.
+  assert.throws(() => scoreDirection(undefined as never,'test:v8',[]),TypeError)
+  assert.throws(() => scoreDirection('recipient=all','test:v8',null as never),TypeError)
+  assert.throws(() => scoreDirection('recipient=all','test:v8',[{} as never]),TypeError)
+})
+
 test('quality rubric has exactly 10 bounded integer dimensions', () => {
   assert.equal(QUALITY_DIMENSIONS.length, 10)
   const zero = Object.fromEntries(QUALITY_DIMENSIONS.map(key=>[key,0])) as Parameters<typeof scoreQuality>[0]

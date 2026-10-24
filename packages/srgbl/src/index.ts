@@ -77,12 +77,17 @@ export interface DirectionResult {
 }
 /** Bounded direction of a declared frame-specific bundle; not scriptural worth. */
 export function scoreDirection(frame: string, profile: string, items: readonly FrameDirectionInput[]): DirectionResult {
-  if (!frame.trim() || !profile.trim()) throw new TypeError('frame and method profile are required')
+  if (typeof frame !== 'string' || !frame.trim() || typeof profile !== 'string' || !profile.trim()) {
+    throw new TypeError('frame and method profile are required')
+  }
+  if (!Array.isArray(items)) throw new TypeError('direction items must be an array')
   const ids = new Set<string>()
   let numerator = 0
   let denominator = 0
   for (const k of items) {
-    if (!k.id.trim() || ids.has(k.id)) throw new TypeError('key assessment IDs must be unique and nonblank')
+    // One factor feeds numerator and denominator, so a zero-weight or
+    // zero-confidence annotation can never tilt the average by its direction.
+    if (typeof k?.id !== 'string' || !k.id.trim() || ids.has(k.id)) throw new TypeError('key assessment IDs must be unique and nonblank')
     ids.add(k.id)
     if (!Number.isInteger(k.direction) || k.direction < -2 || k.direction > 2) throw new RangeError('direction must be -2..2')
     if (!Number.isInteger(k.intensity) || k.intensity < 1 || k.intensity > 3) throw new RangeError('intensity must be 1..3')
