@@ -183,6 +183,8 @@ export function validateAnalysisRun(run: AnalysisRun): AnalysisValidation {
   if (invalidLevels) for (const level of SRGBL_LEVELS) {
     if (states[level] === 'supported') states[level] = 'pending'
   }
-  return { states, maturity: scoreMaturity(states), errors, warnings,
-    publishable: errors.length === 0 && run.reviewStatus === 'reviewed' && run.sourceWitnesses.every(s => s.rights === 'cleared') }
+  const maturity = scoreMaturity(states)
+  return { states, maturity, errors, warnings,
+    publishable: errors.length === 0 && maturity.score > 0 && run.reviewStatus === 'reviewed' &&
+      run.sourceWitnesses.every(s => s.rights === 'cleared') }
 }
