@@ -9,6 +9,8 @@
 
 > **TEXT ≠ CLAIM ≠ INTERPRETATION ≠ FRAMEWORK ≠ JUDGMENT.**
 
+**Concrete first-read:** [MoonWitness Explained: QS 2:82 user flow, synthetic key payload and UI wireframe](./MOONWITNESS-EXPLAINED-WALKTHROUGH.md). **Small AI issue implementations:** [Per-task I/O/negative-case/test specifications](./MOONWITNESS-P19-EXECUTABLE-SPECS.md).
+
 ## 1. Product journeys and what is actually shipped
 
 **Public reader:** Discover → Source Trace → Context → Key Witness (reviewed only) → Citation. Protect source rights and original-language lanes throughout.
