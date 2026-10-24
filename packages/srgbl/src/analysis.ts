@@ -78,13 +78,30 @@ export function validateResearchFrame(frame: ResearchFrame): string[] {
 }
 
 /** OFFSIDE is a frame diagnostic, not a literal sacred-scripture word. */
+export type OffsideReason =
+  | 'no-mismatch'
+  | 'frame_incomplete'
+  | 'evidence_mismatch'
+  | 'frame_incomplete_and_evidence_mismatch'
+
 export function diagnoseOffside(frame: ResearchFrame, evidenceFrame: Partial<ResearchFrame>) {
   const missing = validateResearchFrame(frame)
   const differences = requiredFrame.filter(key =>
     nonblank(evidenceFrame[key]) && frame[key] !== evidenceFrame[key]
   )
+  const reason: OffsideReason = missing.length && differences.length
+    ? 'frame_incomplete_and_evidence_mismatch'
+    : missing.length ? 'frame_incomplete'
+    : differences.length ? 'evidence_mismatch' : 'no-mismatch'
+  /**
+   * The proposal exists only for human examination: it adopts just the nonblank
+   * evidence values that actually differ, keeps every other canonical field,
+   * ignores unknown evidence keys, and never means divine approval.
+   */
+  const proposedFrame: ResearchFrame = { ...frame }
+  for (const key of differences) proposedFrame[key] = evidenceFrame[key] as string
   return { status: missing.length || differences.length ? 'candidate-offside' as const : 'no-detected-mismatch' as const,
-    missing, differences, proposedFrame: { ...frame, ...evidenceFrame },
+    reason, missing, differences, proposedFrame,
     verified: false as const }
 }
 

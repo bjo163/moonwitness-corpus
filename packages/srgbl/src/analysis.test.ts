@@ -58,6 +58,29 @@ test('missing reviewer, uncertain/dissent or circular refs cannot be promoted',(
   assert.ok(v.errors.some(x=>x.includes('reviewer')))
   assert.equal(v.publishable,false)
 })
+test('OFFSIDE names its reason and proposes a frame without rewriting the canonical one',()=>{
+  const mismatch=diagnoseOffside(frame,{recipient:'individual'})
+  assert.equal(mismatch.status,'candidate-offside')
+  assert.equal(mismatch.reason,'evidence_mismatch')
+  assert.deepEqual(mismatch.missing,[])
+  assert.deepEqual(mismatch.differences,['recipient'])
+  assert.deepEqual(mismatch.proposedFrame,{...frame,recipient:'individual'})
+  assert.equal(mismatch.verified,false)
+  // The caller's canonical frame object is never rewritten.
+  assert.deepEqual(frame,{agent:'narrator',recipient:'community',domain:'wisdom',scope:'community',genre:'narrative'})
+  // Blank and unknown evidence values are never adopted into a proposal.
+  const noise=diagnoseOffside(frame,{recipient:'   ',domain:'wisdom',extra:'invented'} as never)
+  assert.equal(noise.status,'no-detected-mismatch')
+  assert.equal(noise.reason,'no-mismatch')
+  assert.deepEqual(noise.differences,[])
+  assert.equal((noise.proposedFrame as Record<string, unknown>).extra, undefined)
+  // An incomplete canonical frame is reported separately from a real mismatch.
+  const both=diagnoseOffside({...frame,genre:'  '},{genre:'law'})
+  assert.equal(both.reason,'frame_incomplete_and_evidence_mismatch')
+  assert.deepEqual(both.missing,['frame.genre is missing'])
+  assert.deepEqual(both.differences,['genre'])
+  assert.equal(both.verified,false)
+})
 test('supported R2 requires observed text on real source content, never a narrative claim',()=>{
   // The invariant already existed at this dev SHA; these are the missing edges.
   const clean=validateAnalysisRun(fixture())
