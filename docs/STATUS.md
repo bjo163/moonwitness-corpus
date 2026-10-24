@@ -8,7 +8,7 @@ This file is a concise implementation/release snapshot. `TODO.md` remains the ca
 
 - `main` and `dev` are converged: `git diff origin/main origin/dev` is empty and `main` is an ancestor of `dev`. Snapshot SHAs are recorded in the merge report; use `git rev-parse origin/main origin/dev` for live values.
 - Only `main` and `dev` exist locally and on `origin`; there are no open pull requests.
-- Rulesets `25772824` (canonical branches) and `25772825` (immutable `corpus-v*` / `browser-db-*` tags) are active. Both canonical branches require a pull request plus exact-head `check` and `web`; `required_approving_review_count` is 0 by explicit owner decision. This is a single-admin setup without independent approval, documented in `docs/BRANCHING.md`.
+- Rulesets `25772824` (canonical branches) and `25772825` (immutable `corpus-v*` / `browser-db-*` tags) are active. `canonical-branch-protection` blocks branch deletion and force pushes only; pull requests, approvals and status checks are **not** required, so a direct `git push origin dev` (or `main`) works. Documented in `docs/BRANCHING.md`.
 - All workflow `uses:` entries are pinned to 40-character commit SHAs; Dependabot updates them weekly.
 - TODO ↔ Issues sync is check-only: it never writes or pushes to a protected branch. Drift fails the run with an artifact report.
 - `pnpm research:audit` is a read-only contract audit of TODO markers, research issue metadata, and PR heads. It never mutates issues or data; see `docs/RESEARCH_ISSUE_LIFECYCLE.md`.
