@@ -42,7 +42,7 @@ jobs:
           HASH="$(node -e "console.log(JSON.parse(require('fs').readFileSync('apps/web/public/corpus-catalog.json','utf8')).corpusHash)")"
           SCHEMA="$(node -e "console.log(JSON.parse(require('fs').readFileSync('dist/browser/chunks/config.json','utf8')).schemaVersion)")"
           printf '{"tag":"browser-db-v%s-%s","hash":"%s","schema":"%s"}\n' "$SCHEMA" "$HASH" "$HASH" "$SCHEMA" > dist/browser/release-info.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: browser-db-candidate
           path: |
