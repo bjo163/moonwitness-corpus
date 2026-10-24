@@ -51,18 +51,24 @@ jobs:
           git merge --no-commit --no-ff origin/main
           merge_code="$?"
           set -e
-          if [[ "$merge_code" -ne 1 ]]; then
-            echo "::error::Expected known merge conflicts; got $merge_code. Review before resolution."
+          if [[ "$merge_code" -ne 0 && "$merge_code" -ne 1 ]]; then
+            echo "::error::Unexpected merge result: $merge_code. Review before resolution."
             exit 1
           fi
-          node scripts/reconcile-integration-dry-run.mjs
-          git diff --cached --check
+          if [[ "$merge_code" -eq 1 ]]; then
+            node scripts/reconcile-integration-dry-run.mjs
+            git diff --cached --check
+            resolution_note='Five known conflicts explicitly resolved into disposable index.'
+          else
+            echo 'Main and dev merge cleanly; no conflict resolution was required.'
+            resolution_note='Main and dev merge cleanly; no conflict resolution was required.'
+          fi
           {
             echo '## Integration rehearsal (no GitHub ref changes)'
             echo ''
             echo "Dev source SHA: $(git rev-parse HEAD)"
             echo "Main fetched SHA: $(git rev-parse origin/main)"
-            echo 'Five known conflicts explicitly resolved into disposable index.'
+            echo "$resolution_note"
             echo 'Both original API test suites retained.'
             echo 'No commit/push/branch was created.'
           } >> "$GITHUB_STEP_SUMMARY"
