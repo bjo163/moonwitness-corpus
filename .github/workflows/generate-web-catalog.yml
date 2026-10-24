@@ -1,8 +1,17 @@
-name: Generate Web Corpus Catalog
+name: Verify Web Corpus Catalog
 
+# Verification only: the catalog is a reviewed source artifact, so this
+# workflow never commits or pushes to a canonical branch.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
+    paths:
+      - "datasets/**"
+      - "config/upstream-registry.json"
+      - "config/textual-semantic-rules.json"
+      - "scripts/export-web-catalog.mjs"
+  pull_request:
+    branches: [main, dev]
     paths:
       - "datasets/**"
       - "config/upstream-registry.json"
@@ -11,34 +20,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: web-corpus-catalog-main
+  group: web-corpus-catalog-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  generate:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - name: Generate canonical web catalog
-        run: node scripts/export-web-catalog.mjs
-      - name: Commit catalog when changed
-        run: |
-          git config user.name "rocksoul-rgbl-data-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add apps/web/public/corpus-catalog.json
-          if git diff --cached --quiet; then
-            echo "Catalog already current."
-          else
-            git commit -m "build(web-data): refresh canonical corpus catalog"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
+          node-version: 24
+      - name: Verify canonical web catalog is current
+        run: node scripts/export-web-catalog.mjs --check

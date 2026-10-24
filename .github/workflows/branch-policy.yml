@@ -1,0 +1,36 @@
+name: Research Branch Policy (Audit Only)
+
+on:
+  create:
+  push:
+    branches: [main, dev]
+    paths:
+      - '.github/workflows/branch-policy.yml'
+      - 'docs/BRANCHING.md'
+      - 'scripts/branch-retention-policy.mjs'
+      - 'scripts/branch-retention-policy.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: research-branch-policy
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test fail-closed retention rules
+        run: node --test scripts/branch-retention-policy.test.mjs
+      - name: Audit branch and active PR retention (read-only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/branch-retention-policy.mjs

@@ -213,6 +213,9 @@ importers:
 
   packages/server:
     dependencies:
+      '@moonwitness/corpus-api':
+        specifier: workspace:*
+        version: link:../../apps/api
       '@moonwitness/corpus-core':
         specifier: workspace:*
         version: link:../core

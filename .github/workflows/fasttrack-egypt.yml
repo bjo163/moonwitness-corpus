@@ -1,0 +1,38 @@
+name: Fast-Track Ancient Egyptian Corpus (Read Only Audit)
+
+# FIX-002 / FIX-005: no periodic changes, automatic commits, or pushes.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fasttrack-egypt-readonly
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Materialize without pushing generated content
+        run: |
+          pnpm materialize:ancient-egypt-budge
+          pnpm validate:corpus
+          pnpm validate:materialization
+      - name: Detect uncommitted output differences
+        run: git diff --exit-code -- datasets/ancient-egypt-book-dead-budge
