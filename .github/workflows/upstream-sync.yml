@@ -1,8 +1,8 @@
 name: Upstream Auto-Sync & Health Audit
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
+# Scheduled workflows are read from the default branch (main), not this dev file.
+# Test dev sync explicitly; define the one production schedule on main only.
   workflow_dispatch:
 
 concurrency:
@@ -45,13 +45,16 @@ jobs:
       - name: Check for upstream updates & commit to dev
         shell: bash
         run: |
-          if git diff --quiet; then
-            echo "No upstream source updates detected. Everything is up to date."
+          set -euo pipefail
+          # dist/ is derived and gitignored. Stage only intended corpus inputs.
+          # Check the INDEX after staging, including newly created source files.
+          git add -- ingestion/recipes/ datasets/
+          if git diff --cached --quiet; then
+            echo "No tracked upstream changes to persist."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ingestion/recipes/ datasets/ dist/
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore(upstream): auto-sync latest upstream corpus sources"
           git push origin HEAD:dev
