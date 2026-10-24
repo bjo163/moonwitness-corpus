@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Test fail-closed retention rules
         run: node --test scripts/branch-retention-policy.test.mjs
       - name: Audit branch and active PR retention (read-only)
