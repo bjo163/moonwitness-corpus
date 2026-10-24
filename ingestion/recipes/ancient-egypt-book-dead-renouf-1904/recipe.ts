@@ -1,7 +1,7 @@
 import type { CorpusRecord } from '@moonwitness/corpus-core'
 import type { RecipeHooks } from '@moonwitness/corpus-ingestion'
 
-const WORK = 'mw:work:ancient-egyptian:book-dead'
+const WORK = 'mw:work:ancient-egyptian:book-dead-renouf-1904'
 const EXPRESSION = 'mw:expression:ancient-egyptian:book-dead:renouf-1904'
 const EDITION = 'mw:edition:ancient-egyptian:book-dead:renouf-1904'
 const ARTIFACT = 'mw:artifact:ancient-egyptian:book-dead:renouf-1904'
@@ -39,6 +39,11 @@ function parseChapters(text: string): ParsedRenouf {
     }
     starts.push({ index: i, number, title })
   }
+  const seenChapters = new Set<number>()
+  for (const chapter of starts) {
+    if (seenChapters.has(chapter.number)) throw new Error(`Ambiguous repeated Renouf chapter ${chapter.number}; witness review required`)
+    seenChapters.add(chapter.number)
+  }
   if (starts.length < 100) throw new Error(`Expected at least 100 printed chapters, found ${starts.length}`)
   return {
     chapters: starts.map((item, index) => {
@@ -64,16 +69,16 @@ export const hooks: RecipeHooks<ParsedRenouf, ParsedRenouf> = {
   },
   map(parsed, context) {
     const records: CorpusRecord[] = [
-      { id: WORK, record_type: 'resource', kind: 'textual.work', labels: [{ value: 'The Egyptian Book of the Dead', role: 'preferred', language: 'en', script: 'Latn' }], extensions: { textual: { work_type: 'religious_text', tradition: 'ancient-egyptian' } } },
+      { id: WORK, record_type: 'resource', kind: 'textual.work', labels: [{ value: 'The Egyptian Book of the Dead', role: 'preferred', language: 'en', script: 'Latn' }], extensions: { textual: { work_type: 'religious_text' } } },
       { id: EXPRESSION, record_type: 'resource', kind: 'textual.expression', description: 'Translation and commentary by P. Le Page Renouf, continued and completed by Edouard Naville; 1904 edition.', extensions: { textual: { work: WORK, language: 'en', script: 'Latn' } } },
       { id: EDITION, record_type: 'resource', kind: 'textual.edition', extensions: { textual: { expressions: [EXPRESSION], edition_statement: 'The Egyptian Book of the Dead — Renouf / Naville, 1904' } } },
-      { id: ARTIFACT, record_type: 'resource', kind: 'textual.artifact', labels: [{ value: 'Project Gutenberg #69566', role: 'preferred', language: 'en' }], extensions: { textual: { represents: EDITION, representation_kind: 'plain_text', media_type: 'text/plain' }, source: { title: 'The Egyptian Book of the dead', institution: 'Project Gutenberg', language: 'en', revision: 'eBook #69566', descriptor: { availability: 'remote', locations: ['https://www.gutenberg.org/cache/epub/69566/pg69566.txt'], media_type: 'text/plain', byte_size: context.acquisition.source.byte_size, sha256: context.acquisition.sha256 }, rights: { status: 'public_domain_in_usa', redistribution: 'per_project_gutenberg_terms', attribution: 'P. Le Page Renouf / Edouard Naville / Project Gutenberg', rights_uri: 'https://www.gutenberg.org/ebooks/69566', note: 'Verify target-jurisdiction status before redistribution.' } } } },
+      { id: ARTIFACT, record_type: 'resource', kind: 'textual.artifact', labels: [{ value: 'Project Gutenberg #69566', role: 'preferred', language: 'en' }], extensions: { textual: { represents: EDITION, representation_kind: 'plain_text', media_type: 'text/plain' }, source: { title: 'The Egyptian Book of the dead', canonical_url: 'https://www.gutenberg.org/ebooks/69566', identifiers: [{ scheme: 'gutenberg', value: '69566', uri: 'https://www.gutenberg.org/ebooks/69566' }], language: 'en', revision: 'eBook #69566', descriptor: { availability: 'external', locations: ['https://www.gutenberg.org/cache/epub/69566/pg69566.txt'], media_type: 'text/plain', byte_size: context.acquisition.source.byte_size, sha256: context.acquisition.sha256 }, rights: { status: 'public_domain', redistribution: 'unknown', attribution: 'P. Le Page Renouf / Edouard Naville / Project Gutenberg', rights_uri: 'https://www.gutenberg.org/ebooks/69566', note: 'Project Gutenberg identifies this edition as public domain in the USA; redistribution status outside the USA requires separate verification.' } } } },
       { id: PROVENANCE, record_type: 'provenance', source: ARTIFACT, source_reference: 'Project Gutenberg eBook #69566; Renouf/Naville 1904 edition', activities: [{ type: 'acquisition', method: 'HTTP download of pinned plain-text edition with source identity and payload checks', software: { name: 'mw:recipe:ancient-egyptian:book-dead-renouf-1904', version: '1' } }, { type: 'parsing', method: 'Parse numbered CHAPTER headings and preserve chapter bodies', software: { name: 'mw:recipe:ancient-egyptian:book-dead-renouf-1904', version: '1' } }] }
     ]
     for (const chapter of parsed.chapters) {
       const passage = `mw:passage:ancient-egyptian:book-dead-renouf:${chapter.number}`
       const content = `mw:content:ancient-egyptian:book-dead-renouf:${chapter.number}:en`
-      records.push({ id: passage, record_type: 'resource', kind: 'textual.passage', labels: [{ value: chapter.title, role: 'preferred', language: 'en', script: 'Latn' }], extensions: { textual: { container: EXPRESSION, unit: 'chapter', sequence: chapter.number, local_id: String(chapter.number), citation: `chapter-${chapter.number}` } } } as CorpusRecord)
+      records.push({ id: passage, record_type: 'resource', kind: 'textual.passage', labels: [{ value: chapter.title, role: 'preferred', language: 'en', script: 'Latn' }], extensions: { textual: { container: EXPRESSION, unit: 'chapter', sequence: chapter.number, local_id: String(chapter.number) } } } as CorpusRecord)
       records.push({ id: content, record_type: 'resource', kind: 'textual.content', extensions: { textual: { target: passage, language: 'en', script: 'Latn', representation: 'source', text: chapter.text }, source: { artifact: ARTIFACT, provenance: PROVENANCE } } } as CorpusRecord)
     }
     return records
