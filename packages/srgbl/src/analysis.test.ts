@@ -58,6 +58,26 @@ test('missing reviewer, uncertain/dissent or circular refs cannot be promoted',(
   assert.ok(v.errors.some(x=>x.includes('reviewer')))
   assert.equal(v.publishable,false)
 })
+test('supported R2 requires observed text on real source content, never a narrative claim',()=>{
+  // The invariant already existed at this dev SHA; these are the missing edges.
+  const clean=validateAnalysisRun(fixture())
+  assert.equal(clean.states.R2,'supported')
+  assert.equal(clean.maturity.score,15)
+  // An inferred story claim stays a story claim even when worded as history.
+  const inferred=fixture()
+  inferred.claims[1]={...inferred.claims[1],epistemic:'inferred',claim:'A historical event occurred'}
+  const v=validateAnalysisRun(inferred)
+  assert.ok(v.errors.some(error=>error.includes('R2 supported claim must be observed text')))
+  assert.notEqual(v.states.R2,'supported')
+  assert.equal(v.publishable,false)
+  // An observed reading must attach to content this run actually witnesses.
+  const dangling=fixture()
+  dangling.claims[1].sourceContentIds=['mw:content:test:not-in-run']
+  const d=validateAnalysisRun(dangling)
+  assert.ok(d.errors.some(error=>error.includes('references unavailable source content')))
+  assert.notEqual(d.states.R2,'supported')
+  assert.ok(d.maturity.score<15)
+})
 test('translation lanes stay distinct and never substitute for the original reading',()=>{
   const run=fixture()
   const original=run.sourceWitnesses[0]
