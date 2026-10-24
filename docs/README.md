@@ -68,6 +68,7 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 - [**ADR-0005: Modular Fastify 5 REST Engine**](./decisions/ADR-0005-fastify-api-engine.md) — Transisi ke Fastify untuk startup instan dan kueri < 1ms.
 - [**ADR-0006: Universal Upstream Registry & Recipes**](./decisions/ADR-0006-universal-upstream-registry.md) — Registry sumber resmi dan resep ingestion.
 - [**ADR-0007: OpenTelemetry Distributed Tracing**](./decisions/ADR-0007-opentelemetry-w3c-tracing.md) — Integrasi W3C tracing dan metrik Prometheus.
+- [**ADR-0008: SRGBL v8 Derived Research (proposed)**](./decisions/ADR-0008-srgbl-derived-research.md) — Separasi corpus kanonik, penelitian, scoring, dan frame teologis.
 - [**P5 Universality Review**](./reviews/P5-universality-review.md) — Tinjauan universalitas teks lintas tradisi awal.
 - [**P16-P17 Multi-Tradition Review**](./reviews/P16-P17-multi-tradition-review.md) — Tinjauan hak cipta dan integritas 12 tradisi dunia.
 
