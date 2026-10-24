@@ -32,6 +32,11 @@ pnpm check
 pnpm srgbl:build-reviewed --input /secure/reviewed-input.json --out dist/srgbl/reviewed.json
 pnpm srgbl:build-reviewed --input /secure/reviewed-input.json --out dist/srgbl/reviewed.json --check
 
+# Optional static/browser public projection. This writes only reviewed public claims
+# and evidence/source IDs under apps/web/public; no reviewer rows, scores, or text.
+pnpm srgbl:export-static --input dist/srgbl/reviewed.json
+pnpm srgbl:export-static --input dist/srgbl/reviewed.json --check
+
 # Fastify loads only the pinned reviewed file and local catalog.
 SRGBL_REVIEWED_PATH=dist/srgbl/reviewed.json pnpm serve
 ```
@@ -48,6 +53,8 @@ Source input must be produced only by authorized reviewers. Do not store private
 | Empty but structurally valid snapshot | `source-trace-only` | 404 passage absent |
 
 The `/source-trace` endpoint is separate. It reveals metadata/gaps and never grants rights clearance automatically.
+
+The static export uses the same verifier and corpus hash as the API. The browser fallback compares the static projection's corpus hash to `/corpus-catalog.json` before displaying claims. A missing projection leaves the page in its explicit UNKNOWN state; never create placeholder reviewed data to populate it.
 
 ## What still blocks production
 

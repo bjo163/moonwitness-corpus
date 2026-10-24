@@ -5,7 +5,7 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog, srgbl] = await Promise.all([
   read("src/data.ts"),
   read("src/corpus-app.tsx"),
   read("src/api.ts"),
@@ -17,6 +17,7 @@ const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, sema
   read("../../scripts/export-web-catalog.mjs"),
   read("../../config/textual-semantic-rules.json"),
   read("public/corpus-catalog.json"),
+  read("src/app/research/srgbl/page.tsx"),
 ])
 
 const pkg = JSON.parse(pkgRaw)
@@ -75,6 +76,9 @@ expect(page.includes('ssr: false'), "browser-only corpus app must not be server-
 expect(api.includes("NEXT_PUBLIC_RGBL_API_URL"), "REST base URL must use the Next public env prefix")
 expect(!api.includes("import.meta.env"), "Vite-only import.meta.env must be removed")
 expect(main.includes("239,841") === false && main.includes("537K+") === false, "runtime corpus metrics must not be hardcoded")
+expect(srgbl.includes('/research/srgbl/reviewed.json'), "SRGBL static reviewed fallback path is missing")
+expect(srgbl.includes('catalog.corpusHash!==body.corpusHash'), "SRGBL static fallback must reject a stale corpus projection")
+expect(srgbl.includes('UNKNOWN / not materialized'), "SRGBL UI must retain UNKNOWN when no reviewed static or API claim exists")
 
 if (failures.length) {
   console.error("RGBL web contract smoke failed:")
