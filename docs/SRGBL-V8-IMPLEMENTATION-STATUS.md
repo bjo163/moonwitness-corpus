@@ -1,6 +1,7 @@
 # P19 SRGBL v8 — Implementation Status / Outstanding Release Gates
 
 **As of 2026-10-25:** RFC and P19 foundations are merged via PRs #445, #447, and #448. This is not a claim that P19 is complete.
+**Master Grandplan:** [MOONWITNESS SRGBL v8 × Key Witness — Grandplan](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md).
 **Master issue:** [#446](https://github.com/bjo163/moonwitness-corpus/issues/446)
 **Scope:** Additive derived features on top of P17 evidence graph and P18 Key Witness; canonical v0.1 remains unchanged.
 
