@@ -33,6 +33,9 @@ A provenance-first **multi-tradition text, scripture, sacred-literature, and evi
 
 ## SRGBL v8 — MASTER GRANDPLAN & AI LOCAL WORK PACKETS
 
+**Untuk memahami produk secara konkret:** [Contoh alur pengguna, layar dan status nyata](docs/MOONWITNESS-EXPLAINED-WALKTHROUGH.md) · [Input/output dan test semua 38 issue](docs/MOONWITNESS-P19-EXECUTABLE-SPECS.md).
+
+
 **[OPEN THE MASTER GRANDPLAN](docs/MOONWITNESS-SRGBL-V8-GRANDPLAN.md)** · [Narrative](docs/MOONWITNESS-P19-PRODUCT-NARRATIVE.md) · [Implementation Blueprint](docs/MOONWITNESS-SRGBL-V8-BLUEPRINT.md) · [38 Small GitHub Issues](docs/MOONWITNESS-P19-MICROTASKS.md) · [Local AI Handoff: DEV only / No new branches](docs/MOONWITNESS-LOCAL-AI-HANDOFF.md)
 
 P19 micro issues #452–#489 are engineering work packets beneath P19 Epic #446 and TODO's 28 parent tasks. They do **not** imply that empirical research or reviewer/rights approval has been completed.
