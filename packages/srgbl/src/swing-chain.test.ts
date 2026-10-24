@@ -52,6 +52,44 @@ test('caller-supplied path history rejects duplicate candidates and exact relati
   }] }), /cycle detected/)
 })
 
+test('a repeated rotation stops the chain at duplicate-candidate without a hidden hop', () => {
+  // cause-effect drops the old relation, so hop 3 lands back on hop 1's triple.
+  const chain = proposeSwingChain(start, ['cause-effect','cause-effect','cause-effect'])
+  assert.equal(chain.stop,'duplicate-candidate')
+  assert.deepEqual(chain.candidates.map(candidate => candidate.depth),[1,2])
+  assert.equal(new Set(chain.candidates.map(candidate => candidate.signature)).size,2)
+  for (const candidate of chain.candidates) {
+    assert.equal(candidate.inheritedScore,null)
+    assert.equal(candidate.evidenceStatus,'unverified')
+  }
+  // Deterministic: the same request yields the same stop and the same records.
+  assert.deepEqual(proposeSwingChain(start, ['cause-effect','cause-effect','cause-effect']), chain)
+})
+
+test('an exact cycle back to the origin triple stops as cycle, never as progress', () => {
+  const origin = { subject:'mw:entity:cause', relation:'candidate-possible-cause-of', object:'mw:passage:effect' }
+  const chain = proposeSwingChain(origin, ['cause-effect','cause-effect'])
+  assert.equal(chain.stop,'cycle')
+  // Only the first, genuinely new rotation survives; nothing is fabricated.
+  assert.deepEqual(chain.candidates.map(candidate => candidate.signature),
+    [JSON.stringify(['cause-effect', origin.object, origin.relation, origin.subject])])
+  assert.notEqual(chain.candidates.length, 2)
+})
+
+test('depth is an integer hop from 1 to 3 on every Swing entry point', () => {
+  for (const depth of [0, 4, 1.5, Number.NaN]) {
+    assert.throws(() => proposeSwing({ ...start, operator:'direction', depth }), /Maximum swing depth/, `depth ${depth}`)
+  }
+  for (const depth of [1, 2, 3]) {
+    assert.equal(proposeSwing({ ...start, operator:'direction', depth }).depth, depth)
+  }
+  assert.throws(() => proposeSwingChain(start, ['direction','polarity','subject-object','cause-effect']), /Maximum swing depth/)
+  // An empty operator list is not a hidden rotation.
+  assert.deepEqual(proposeSwingChain(start, []), { candidates: [], stop: 'complete' })
+  // A shorter accepted chain never silently gains a fourth rotation.
+  assert.equal(proposeSwingChain(start, ['direction','polarity']).candidates.length, 2)
+})
+
 test('reviewed Swing support needs independent sources and reviewed evidence, never an inherited score', () => {
   const origin = proposeSwing({ ...start, operator: 'direction', depth: 1 })
   const candidate: ReviewedCandidate = {
