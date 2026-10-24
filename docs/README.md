@@ -45,6 +45,7 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 | **Shinto** | Kojiki Sacred Chronicles (Kojiki 712 CE) | Sacred Texts Archive | `ingestion/recipes/shinto-kojiki/` |
 
 ### 4. 🧠 Semantics, Lexicons & Intertextual Graph
+- [**Key Witness v0 — Titik Tengah**](./KEY-WITNESS-V0.md) — Lapisan antara teks dan tafsir: key, frame, direction, message turunan, dan pilot 300 passage.
 - [**Lexicon Coverage & Bridges**](./P15-COVERAGE-REPORT.md) — Kamus bahasa suci: Arab, Ibrani, Yunani Koine, Sanskerta, Pali.
 - [**Intertextual Evidence Graph**](./INTERTEXTUAL_EVIDENCE_GRAPH_TARGETS.md) — Relasi paralel dan alignment antar tradisi.
 - [**Terminology Review Workflow**](./P15-TERMINOLOGY-REVIEW-WORKFLOW.json) — Tata kelola istilah, desensitisasi, dan tinjauan penerjemahan.
