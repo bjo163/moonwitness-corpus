@@ -3,6 +3,7 @@
 **Status:** Final v1.0 · 2026-10-24
 **Peran dokumen:** blueprint eksekusi dari narasi ke arsitektur, UX, data, pilot, dan rilis.
 **Pendamping:** [Cerita Produk](./PRODUCT-STORY.md) · [Key Witness v0](./KEY-WITNESS-V0.md) · [Roadmap](./ROADMAP.md)
+**Master execution grandplan (P18/P19):** [MoonWitness SRGBL v8 — Grandplan](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md). This is the consolidated research extension; Product Blueprint v1 remains unchanged in authority and product scope.
 **Scope:** v1.0 — kejelasan pembaca + pilot Key Witness. Dokumen ini tidak mengubah schema kanonik atau data yang sudah ada.
 **Research extension:** [SRGBL v8 Witness Intelligence (P19)](./SRGBL-V8-MASTER-RFC.md) is an additive experimental method, **not part of the v1.0 released product**. See also [Concept Crosswalk](./SRGBL-V8-CONCEPT-CROSSWALK.md).
 
