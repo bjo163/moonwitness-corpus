@@ -75,10 +75,43 @@ export function reconcileTodoContent(content: string, issues: GitHubIssue[]): { 
   return { content: lines.join('\n'), changed }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+export function describeReconcileChanges(original: string, reconciled: string): string[] {
+  const before = original.split(/\r?\n/)
+  const after = reconciled.split(/\r?\n/)
+  const changes: string[] = []
+  const length = Math.max(before.length, after.length)
+  for (let index = 0; index < length; index += 1) {
+    if (before[index] === after[index]) continue
+    changes.push(`line ${index + 1}: ${before[index] ?? '<missing>'} -> ${after[index] ?? '<missing>'}`)
+  }
+  return changes
+}
+
+async function main(): Promise<void> {
+  const checkOnly = process.argv.includes('--check')
   const original = await readFile(TODO_PATH, 'utf8')
   const issues = await listIssues()
   const reconciled = reconcileTodoContent(original, issues)
-  if (reconciled.changed > 0) await writeFile(TODO_PATH, reconciled.content, 'utf8')
-  console.log(`Issues → TODO reconciliation complete: ${reconciled.changed} checkbox(es) updated.`)
+
+  if (!checkOnly) {
+    if (reconciled.changed > 0) await writeFile(TODO_PATH, reconciled.content, 'utf8')
+    console.log(`Issues → TODO reconciliation complete: ${reconciled.changed} checkbox(es) updated.`)
+    return
+  }
+
+  if (reconciled.changed === 0) {
+    console.log('TODO.md is in sync with GitHub issue state. No files were written.')
+    return
+  }
+
+  console.log(`TODO.md drift detected: ${reconciled.changed} checkbox(es) require update. No files were written.`)
+  for (const line of describeReconcileChanges(original, reconciled.content)) console.log(`  ${line}`)
+  process.exitCode = 1
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error)
+    process.exit(2)
+  })
 }

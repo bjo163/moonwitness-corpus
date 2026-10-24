@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main, dev]
@@ -12,15 +15,22 @@ concurrency:
 
 jobs:
   check:
-    runs-on: self-hosted
-    timeout-minutes: 15
+    # Hosted runner avoids indefinite queue when self-hosted runner is offline.
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm install --no-frozen-lockfile
+          version: 10.33.4
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Enforce workflow safety contracts
+        run: node --test scripts/workflow-safety.test.mjs
       - run: pnpm check
 
       - name: Smoke test Fastify API Engine runtime & OpenTelemetry
@@ -52,24 +62,29 @@ jobs:
 
 
   web:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Verify generated corpus catalog
         run: node scripts/export-web-catalog.mjs --check
       - name: Install web dependencies
         working-directory: apps/web
-        run: npx --yes npm@11.6.0 install
+        run: npx --yes npm@11.6.0 ci
       - name: Typecheck web
         working-directory: apps/web
         run: npm run typecheck
       - name: Test web adapters
         working-directory: apps/web
         run: npm test
+      - name: Build candidate browser database for web verification
+        run: |
+          node scripts/build-browser-search-db.mjs
+          node scripts/chunk-browser-search-db.mjs
+          node scripts/prepare-local-browser-db.mjs
       - name: Build web
         working-directory: apps/web
         run: npm run build

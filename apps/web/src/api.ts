@@ -563,4 +563,3 @@ export async function loadAssertionTraversal(assertionId: string): Promise<LoadR
     return { data: null, source: "catalog", error: errorMessage(browserError) }
   }
 }
-

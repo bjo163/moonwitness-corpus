@@ -1,56 +1,73 @@
-name: Upstream Auto-Sync & Health Audit
+name: Upstream Source Audit (No Direct Push)
 
+# Scheduled audits run from the default branch (main) and are read-only.
+# GitHub never schedules this workflow on dev; dev uses manual dispatch to
+# rehearse the same audit. Network acquisition is opt-in and disposable.
 on:
   schedule:
-    # Run every Sunday at midnight UTC
+    # Weekly read-only registry/planner audit; no acquisition by default.
     - cron: '0 0 * * 0'
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/upstream-sync.yml', 'scripts/workflow-safety.test.mjs']
   workflow_dispatch:
+    inputs:
+      acquire:
+        description: 'Run remote source acquisition into the ephemeral runner only (no commit/push)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
 
 concurrency:
-  group: upstream-sync
+  group: upstream-audit-dev
   cancel-in-progress: false
 
 jobs:
-  sync:
-    runs-on: self-hosted
-    timeout-minutes: 45
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
-          node-version: 22
-
-      - run: corepack enable
-      - run: pnpm install --no-frozen-lockfile
-
-      - name: Audit Upstream API Connectivity & Latency
-        run: pnpm upstream:audit
+          version: 10.33.4
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies reproducibly
+        run: pnpm install --frozen-lockfile
+      - name: Validate pinned upstream registries
+        run: pnpm validate:upstream
+      - name: Report source planner without writing back to GitHub
+        run: pnpm upstream:list
+      - name: Optional network-dependent acquisition in disposable checkout
+        if: inputs.acquire == true
         env:
           UMMAH_API_KEY: ${{ secrets.UMMAH_API_KEY }}
-
-      - name: Synchronize All Upstream Sacred Text Sources
-        run: pnpm sync:all
-        env:
-          UMMAH_API_KEY: ${{ secrets.UMMAH_API_KEY }}
-
-      - name: Rebuild & Validate Master Corpus Pipeline
-        run: pnpm check
-
-      - name: Check for upstream updates & commit
+        run: |
+          pnpm upstream:audit
+          pnpm sync:all
+          pnpm check
+      - name: Report only local working-tree change names
+        if: always()
         shell: bash
         run: |
-          if git diff --quiet; then
-            echo "No upstream source updates detected. Everything is up to date."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # dist/ is a derived build output and is intentionally gitignored.
-          # Persist only source-controlled upstream inputs and datasets.
-          git add ingestion/recipes/ datasets/
-          git commit -m "chore(upstream): auto-sync latest scriptures and recipes from official hulu sources"
-          git push origin main
+          {
+            echo '## Upstream audit: read-only GitHub permissions'
+            echo ''
+            echo 'No git commit, push, release, or remote branch mutation in this workflow.'
+            echo 'Remote acquisition requested: ${{ inputs.acquire }}'
+            echo ''
+            echo 'Changed local paths after inspection (NOT committed):'
+            echo '~~~text'
+            git status --short --untracked-files=normal
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"

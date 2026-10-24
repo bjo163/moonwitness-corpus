@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   issues: write
 
 concurrency:
@@ -19,48 +19,76 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
-          node-version: 20
+          version: 10.33.4
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
 
-      - run: corepack enable
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
       - name: TODO → Issues
         if: github.event_name == 'push'
         run: pnpm exec tsx scripts/sync-todo-issues.ts todo-to-issues
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TODO_SYNC_NO_WRITE: '1'
           TODO_SYNC_MUTATION_DELAY_MS: 2200
           TODO_SYNC_MAX_RETRIES: 5
 
-      # Reconcile ALL managed issue states on every issue event. This makes the
-      # sync self-healing if an older run was cancelled or an event was missed.
-      - name: Issues → TODO
+      - name: Issues → TODO (check only)
+        id: reconcile
         if: github.event_name == 'issues' || github.event_name == 'workflow_dispatch'
-        run: pnpm exec tsx scripts/reconcile-issue-status.ts
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit synchronized TODO metadata/status
-        if: always()
-        shell: bash
         run: |
-          if git diff --quiet -- TODO.md; then
-            echo "TODO.md unchanged"
-            exit 0
+          set +e
+          pnpm exec tsx scripts/reconcile-issue-status.ts --check 2>&1 | tee todo-sync-report.txt
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -eq 1 ]; then
+            {
+              echo '### TODO.md drift detected'
+              echo 'The GitHub issue state no longer matches `TODO.md`. Open a pull request that updates the checkbox; this workflow does not write to protected branches.'
+              echo '```'
+              cat todo-sync-report.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
+          exit 0
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add TODO.md
-          git commit -m "chore(todo): synchronize GitHub issues [skip ci]"
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+      - name: Upload reconciliation report
+        if: github.event_name == 'issues' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: todo-sync-report
+          path: todo-sync-report.txt
+          if-no-files-found: ignore
+
+      - name: Fail on drift or sync error
+        if: github.event_name == 'issues' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          RECONCILE_STATUS: ${{ steps.reconcile.outputs.status }}
+        run: |
+          if [ "$RECONCILE_STATUS" = "1" ]; then
+            echo "::error::TODO.md drift detected; update TODO.md through a pull request."
+            exit 1
+          fi
+          if [ "$RECONCILE_STATUS" != "0" ]; then
+            echo "::error::TODO reconciliation failed with status ${RECONCILE_STATUS:-unknown}."
+            exit 1
+          fi

@@ -3,9 +3,12 @@ dist/
 .turbo/
 coverage/
 .pnpm-store/
+apps/web/public/corpus-db/
+apps/web/public/vendor/
 *.tsbuildinfo
 .env
 .env.*
 !.env.example
+!apps/web/.env.development
 .DS_Store
 *.log

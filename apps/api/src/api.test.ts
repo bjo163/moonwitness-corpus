@@ -36,9 +36,23 @@ test('Fastify Corpus API Engine with OpenTelemetry & Dynamic Traditions', async 
     assert.ok(json.data.some((d: any) => d.id === 'islam'), 'Must contain islam')
     assert.ok(json.data.some((d: any) => d.id === 'hinduism'), 'Must contain hinduism')
     assert.ok(json.data.some((d: any) => d.id === 'buddhism'), 'Must contain buddhism')
+    assert.ok(json.data.some((d: any) => d.tradition === 'islam' || d.id === 'islam'), 'Must contain islam')
+    assert.ok(json.data.some((d: any) => d.tradition === 'hinduism' || d.id === 'hinduism'), 'Must contain hinduism')
+    assert.ok(json.data.some((d: any) => d.tradition === 'buddhism' || d.id === 'buddhism'), 'Must contain buddhism')
+  })
+
+  await t.test('GET /v1/works returns all canonical works with structural levels', async () => {
+    const res = await app.inject({ method: 'GET', url: '/v1/works' })
+    assert.equal(res.statusCode, 200)
+    const json = res.json()
+    assert.equal(json.success, true)
+    assert.ok(json.total >= 5, `Expected at least 5 works, got ${json.total}`)
+    assert.ok(json.data.length > 0)
   })
 
   await t.test('GET /v1/search executes FTS5 sub-millisecond full-text queries', async () => {
+    // Warm up before measuring query latency, matching the original API regression.
+    await app.inject({ method: 'GET', url: '/v1/search?q=mercy&limit=1' })
     const start = performance.now()
     const res = await app.inject({ method: 'GET', url: '/v1/search?q=mercy&limit=5' })
     const duration = performance.now() - start
@@ -59,7 +73,7 @@ test('Fastify Corpus API Engine with OpenTelemetry & Dynamic Traditions', async 
     const res = await app.inject({ method: 'GET', url: '/v1/compare?theme=wisdom' })
     assert.equal(res.statusCode, 200)
     const json = res.json()
-    assert.ok(json.traditionsCovered >= 1, 'Must find wisdom in at least one active tradition')
+    assert.ok(json.traditionsCovered >= 3, `Expected at least 3 traditions covered, got ${json.traditionsCovered}`)
   })
 
   await t.test('GET /v1/passages returns parallel text lanes and trace metadata', async () => {
