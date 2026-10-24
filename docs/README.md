@@ -18,6 +18,7 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 - [**Product Blueprint (final)**](./PRODUCT-BLUEPRINT.md) — arsitektur, UX, data, editorial, pengukuran, roadmap, dan work breakdown Key Witness.
 - [**SRGBL v8 Master RFC (research extension)**](./SRGBL-V8-MASTER-RFC.md) — S1–L5, scoring 15/40/100, Key, Swing, Positive Correction, research-only guardrails.
 - [**SRGBL Historical Concept Crosswalk**](./SRGBL-V8-CONCEPT-CROSSWALK.md) — sejarah WITNESS, Swing, Middle Point, Offside dan beda score.
+- [**SRGBL v8 Reviewed Publication Runbook**](./SRGBL-V8-PUBLICATION-RUNBOOK.md) — corpusHash pinning, reviewer approval boundaries, deterministic hashes, runtime verification, and manual CI.
 - [**SRGBL v8 Implementation Status**](./SRGBL-V8-IMPLEMENTATION-STATUS.md) — Completed code slices, API, CLI, rights/pilot/release blockers, and precise gaps.
 - [**P18/P19 Progress**](../TODO.md) — issue-synchronized tasks, dependencies, and implementation evidence. Pure SRGBL primitives exist; full application integration is pending.
 
