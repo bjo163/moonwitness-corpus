@@ -1,0 +1,771 @@
+{
+  "schema": "moonwitness-p19-local-microtasks-v1",
+  "date": "2026-10-25",
+  "repository": "bjo163/moonwitness-corpus",
+  "workBranch": "dev",
+  "branchPolicy": "NO NEW BRANCH; direct dev only; report protection blockers",
+  "masterIssue": 446,
+  "parentTodo": "TODO.md P19-001..028",
+  "description": "Small atomic issues for local coding agents; issue closure does not automatically complete the parent P19 TODO unless full DoD is met.",
+  "tasks": [
+    {
+      "id": "P19-L01",
+      "parent": "P19-027",
+      "title": "Baseline local tests and manual-CI smoke instructions",
+      "dependsOn": [],
+      "fileScope": [
+        "docs/MOONWITNESS-LOCAL-AI-HANDOFF.md",
+        "package.json"
+      ],
+      "acceptance": [
+        "Record exact Node24/pnpm10 commands for pnpm check and web test; no workflow trigger changes.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm typecheck",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L02",
+      "parent": "P19-004",
+      "title": "Reject blank or malformed SRGBL actor/recipient frames",
+      "dependsOn": [],
+      "fileScope": [
+        "packages/srgbl/src/analysis.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Reject missing actor, recipient, domain, scope or genre; return actionable field errors.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L03",
+      "parent": "P19-005",
+      "title": "Resolve exact source IDs against repository records",
+      "dependsOn": [],
+      "fileScope": [
+        "packages/srgbl/src/sources.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Unresolved source/edition/artifact/provenance IDs remain explicit gaps; do not mark S1 supported.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L04",
+      "parent": "P19-005",
+      "title": "Fail closed for unverified rights on source witnesses",
+      "dependsOn": [
+        "P19-L03"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/sources.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "No source text returned for unknown/restricted rights; separate rights evidence from bare string field.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L05",
+      "parent": "P19-006",
+      "title": "Validate source selectors against exact passage/edition",
+      "dependsOn": [
+        "P19-L03"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/sources.ts",
+        "packages/srgbl/src/sources.test.ts"
+      ],
+      "acceptance": [
+        "Reject selector targeting another passage/edition; explicitly flag unresolved selectors.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/sources.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L06",
+      "parent": "P19-006",
+      "title": "Prevent translation from masquerading as original reading",
+      "dependsOn": [
+        "P19-L05"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/analysis.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Original, translation, variant and transliteration must remain distinguishable in R2 records.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L07",
+      "parent": "P19-006",
+      "title": "Validate R2 observed text versus inferred story claims",
+      "dependsOn": [
+        "P19-L06"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/analysis.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "R2 supported is a sourced observation only; narrative historicity or tafsir stays inferred/interpreted.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L08",
+      "parent": "P19-007",
+      "title": "Reject dangling and cyclic level-claim dependencies",
+      "dependsOn": [
+        "P19-L02"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/analysis.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Unknown IDs, self-dependency, cycles and duplicated claim IDs fail validation.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L09",
+      "parent": "P19-008",
+      "title": "Test all contiguous maturity gates 0 to 15",
+      "dependsOn": [
+        "P19-L08"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/index.test.ts"
+      ],
+      "acceptance": [
+        "Maturity yields only 0,1,3,6,10,15; out-of-order later evidence cannot advance it.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L10",
+      "parent": "P19-010",
+      "title": "Treat zero evidence weight as UNKNOWN, not neutral",
+      "dependsOn": [
+        "P19-L09"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/index.test.ts"
+      ],
+      "acceptance": [
+        "Direction is bounded -2..2 and zero denominator yields unknown/null not 0.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L11",
+      "parent": "P19-009",
+      "title": "Verify quality 10-dimension integer rubric and missingness",
+      "dependsOn": [
+        "P19-L09"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/index.test.ts"
+      ],
+      "acceptance": [
+        "Quality dimensions are 0..4, maximum40; missing/invalid values cannot pass as zero.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L12",
+      "parent": "P19-010",
+      "title": "Enforce scheme-versioned P18 key tokens",
+      "dependsOn": [],
+      "fileScope": [
+        "packages/srgbl/src/keys.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Reject unapproved exploratory tokens; do not modify 20-key definitions pending P18 #425/#426 ratification.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L13",
+      "parent": "P19-010",
+      "title": "Reject derived messages with dangling key IDs",
+      "dependsOn": [
+        "P19-L12"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/keys.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Message references approved key IDs, same passage/method, source evidence and boundary note.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L14",
+      "parent": "P19-004",
+      "title": "Make OFFSIDE diagnostic return reason and proposed frame",
+      "dependsOn": [
+        "P19-L02"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/analysis.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Detect actor/recipient/genre mismatch without auto approving ONSIDE repair.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L15",
+      "parent": "P19-011",
+      "title": "Exercise all seven Swing operators as candidate-only transforms",
+      "dependsOn": [],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/swing-chain.test.ts"
+      ],
+      "acceptance": [
+        "Each operator emits candidate/unverified and no score; none claims inverse truth.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L16",
+      "parent": "P19-011",
+      "title": "Reject Swing duplicate signatures, exact cycles and depth 4",
+      "dependsOn": [
+        "P19-L15"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/swing-chain.test.ts"
+      ],
+      "acceptance": [
+        "Two semantically identical candidate paths de-duplicate deterministically; depth>3 fails.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L17",
+      "parent": "P19-012",
+      "title": "Check legacy Witness /100 bounds without truth promotion",
+      "dependsOn": [
+        "P19-L16"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/index.test.ts"
+      ],
+      "acceptance": [
+        "25/25/20/15/15 bounded; score>=70 means review eligibility only, no canon approval.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L18",
+      "parent": "P19-013",
+      "title": "Require independent source-origin evidence for reviewed Swing",
+      "dependsOn": [
+        "P19-L17"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/research-ledger.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Reviewed candidate rejects empty source origins and missing contrary-evidence field.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L19",
+      "parent": "P19-013",
+      "title": "Implement candidate ledger serialization with stable IDs",
+      "dependsOn": [
+        "P19-L18"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/research-ledger.ts",
+        "packages/srgbl/src/research-ledger.test.ts"
+      ],
+      "acceptance": [
+        "Stable sorted JSONL records; source/status/contrary fields roundtrip; no writable public API.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/research-ledger.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L20",
+      "parent": "P19-014",
+      "title": "Validate two-sided cross-text relation source references",
+      "dependsOn": [
+        "P19-L05"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/index.test.ts"
+      ],
+      "acceptance": [
+        "Require both exact passage IDs, method, frame, relation type and evidence array.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L21",
+      "parent": "P19-015",
+      "title": "Expose explicit neutral versus Quran-anchored lens selector",
+      "dependsOn": [
+        "P19-L20"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/index.test.ts"
+      ],
+      "acceptance": [
+        "Neutral view cannot secretly apply Islamic correction; declared lens persists in relation output.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L22",
+      "parent": "P19-015",
+      "title": "Reject unframed Quran positive correction assertions",
+      "dependsOn": [
+        "P19-L21"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/index.ts",
+        "packages/srgbl/src/index.test.ts"
+      ],
+      "acceptance": [
+        "CORRECTS_WITHIN_FRAME rejected in neutral frame; reviewed needs named evidence and reviewer.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L23",
+      "parent": "P19-016",
+      "title": "Keep miracle claim attribution separate from numeric scoring",
+      "dependsOn": [
+        "P19-L20"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/research-ledger.ts",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Claim stores claimant/tradition/evidence; no auto proof, no score bonus, no fabricated attribution.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L24",
+      "parent": "P19-018",
+      "title": "Add rights-safe QS 37:30 context and OFFSIDE fixture",
+      "dependsOn": [
+        "P19-L14",
+        "P19-L05"
+      ],
+      "fileScope": [
+        "fixtures/srgbl/quran-research-cases.json",
+        "packages/srgbl/src/analysis.test.ts"
+      ],
+      "acceptance": [
+        "Metadata-only exact neighboring-context pointers; editorial referee/coach metaphor never rendered as source quote.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L25",
+      "parent": "P19-019",
+      "title": "Audit five pilot Quran passage rights/edition matrix",
+      "dependsOn": [
+        "P19-L04"
+      ],
+      "fileScope": [
+        "docs/SRGBL-V8-SOURCE-EDITION-MATRIX.md",
+        "fixtures/srgbl/quran-research-cases.json"
+      ],
+      "acceptance": [
+        "Record exact edition, source URL/locator, reuse terms and unknown gaps per case; no invented clearance.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm validate:editions",
+      "gate": "blocked-human-rights",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L26",
+      "parent": "P19-020",
+      "title": "Bind reviewed analysis input hashes to source evidence",
+      "dependsOn": [
+        "P19-L03",
+        "P19-L09"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/derived.ts",
+        "packages/srgbl/src/publication.test.ts"
+      ],
+      "acceptance": [
+        "Mutated claim/source/reviewer after input hash must fail deterministic reviewed export.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/publication.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L27",
+      "parent": "P19-020",
+      "title": "Reject stale/mismatched corpusHash on reviewed projection",
+      "dependsOn": [
+        "P19-L26"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/publication.ts",
+        "packages/srgbl/src/publication.test.ts"
+      ],
+      "acceptance": [
+        "Exact 64-character hash, reviewed stage coherence, projection integrity; stale snapshot rejected.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/publication.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L28",
+      "parent": "P19-021",
+      "title": "Make reviewed Fastify endpoints fail closed with 404 and 503",
+      "dependsOn": [
+        "P19-L27"
+      ],
+      "fileScope": [
+        "apps/api/src/routes/srgbl.ts",
+        "apps/api/src/api.test.ts"
+      ],
+      "acceptance": [
+        "404 for absent review; 503 for corrupt/stale projection; no unlicensed text or rank leaked.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test apps/api/src/api.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L29",
+      "parent": "P19-022",
+      "title": "Match browser/static SRGBL export to current corpus catalog",
+      "dependsOn": [
+        "P19-L27"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/static.ts",
+        "packages/srgbl/src/static.test.ts"
+      ],
+      "acceptance": [
+        "No stale/mismatched corpus-hash fallback; public-only projection; deterministic export.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/static.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L30",
+      "parent": "P19-023",
+      "title": "Render five S1–L5 tabs with true UNKNOWN states",
+      "dependsOn": [
+        "P19-L28"
+      ],
+      "fileScope": [
+        "apps/web/src/app/research/srgbl/page.tsx",
+        "apps/web/scripts/contract-test.mjs"
+      ],
+      "acceptance": [
+        "Each tab loads existing reviewed claims only; missing stage shows UNKNOWN and no synthetic text.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm --dir apps/web test",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L31",
+      "parent": "P19-023",
+      "title": "Add source-linked key/message panel to witness viewer",
+      "dependsOn": [
+        "P19-L13",
+        "P19-L30"
+      ],
+      "fileScope": [
+        "apps/web/src/app/research/srgbl/page.tsx",
+        "apps/web/scripts/contract-test.mjs"
+      ],
+      "acceptance": [
+        "Show method, key, context and boundary labels; do not call derived message original scripture.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm --dir apps/web test",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L32",
+      "parent": "P19-024",
+      "title": "Render Swing candidates with independent evidence state",
+      "dependsOn": [
+        "P19-L19",
+        "P19-L30"
+      ],
+      "fileScope": [
+        "apps/web/src/app/research/srgbl/page.tsx",
+        "apps/web/scripts/contract-test.mjs"
+      ],
+      "acceptance": [
+        "Candidate badge and depth visible; unreviewed transformation never shown as established fact.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm --dir apps/web test",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L33",
+      "parent": "P19-024",
+      "title": "Add comparative lens and correction/contrast panels",
+      "dependsOn": [
+        "P19-L22",
+        "P19-L30"
+      ],
+      "fileScope": [
+        "apps/web/src/app/research/srgbl/page.tsx",
+        "apps/web/scripts/contract-test.mjs"
+      ],
+      "acceptance": [
+        "Both source references and method shown; neutral and Quran-anchored not conflated.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm --dir apps/web test",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L34",
+      "parent": "P19-023",
+      "title": "Verify RTL, keyboard, mobile and reduced-motion research UI",
+      "dependsOn": [
+        "P19-L30"
+      ],
+      "fileScope": [
+        "apps/web/src/app/research/srgbl/page.tsx",
+        "apps/web/scripts/contract-test.mjs"
+      ],
+      "acceptance": [
+        "Arabic/Hebrew text dir respected; keyboard focus, reduced motion and mobile layout auditable.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm --dir apps/web test",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L35",
+      "parent": "P19-025",
+      "title": "Define source-grounded annotation input validator",
+      "dependsOn": [
+        "P19-L12",
+        "P19-L05"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/keys.ts",
+        "packages/srgbl/src/annotation.test.ts"
+      ],
+      "acceptance": [
+        "Validate two independent annotator records and preserve dissent; no fake reviewer identities.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/annotation.test.ts",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L36",
+      "parent": "P19-026",
+      "title": "Compute inter-rater agreement only from real paired annotations",
+      "dependsOn": [
+        "P19-L35"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/agreement.ts",
+        "packages/srgbl/src/agreement.test.ts"
+      ],
+      "acceptance": [
+        "No agreement without >=2 independent annotators and actual matched cases; report denominator/N.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm exec tsx --test packages/srgbl/src/agreement.test.ts",
+      "gate": "blocked-pilot-input",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L37",
+      "parent": "P19-027",
+      "title": "Add adversarial rights/claims/publication regression matrix",
+      "dependsOn": [
+        "P19-L28",
+        "P19-L22"
+      ],
+      "fileScope": [
+        "packages/srgbl/src/publication.test.ts",
+        "apps/api/src/api.test.ts"
+      ],
+      "acceptance": [
+        "Cover tampered status, source IDs, false neutral correction, cross-corpus mismatch and unavailable review.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm test",
+      "gate": "ready",
+      "done": false,
+      "issue": null
+    },
+    {
+      "id": "P19-L38",
+      "parent": "P19-028",
+      "title": "Prepare honest P19 release/validation decision record",
+      "dependsOn": [
+        "P19-L37",
+        "P19-L25",
+        "P19-L36"
+      ],
+      "fileScope": [
+        "docs/SRGBL-V8-IMPLEMENTATION-STATUS.md",
+        "docs/SRGBL-V8-PUBLICATION-RUNBOOK.md"
+      ],
+      "acceptance": [
+        "List actual CI SHA, human approval, edition rights, pilot reliability and unresolved release blockers; never auto-merge main.",
+        "Add/update a regression test and document truthful current status; preserve canonical corpus and UNKNOWN."
+      ],
+      "testCommand": "pnpm todo:check",
+      "gate": "blocked-review",
+      "done": false,
+      "issue": null
+    }
+  ]
+}
