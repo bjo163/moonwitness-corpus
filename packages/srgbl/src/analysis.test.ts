@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { validateAnalysisRun, validateResearchFrame, diagnoseOffside, type AnalysisRun, type ResearchFrame } from './analysis.js'
+import { validateAnalysisRun, validateResearchFrame, validateRepresentationLanes, diagnoseOffside, type AnalysisRun, type ResearchFrame, type WitnessSource } from './analysis.js'
 import { evaluateFramedKeys, validateKeyAssessment, validateKeyMessage, validateKeyToken, type FramedKeyAssessment } from './keys.js'
 import { adaptPassageSources, resolveSourceReference, type SourceCatalog } from './sources.js'
 import { validateReviewedCandidate, validateMiracleAttribution, summarizeCandidate } from './research-ledger.js'
@@ -57,6 +57,26 @@ test('missing reviewer, uncertain/dissent or circular refs cannot be promoted',(
   assert.ok(v.errors.some(x=>x.includes('dependency cycle')))
   assert.ok(v.errors.some(x=>x.includes('reviewer')))
   assert.equal(v.publishable,false)
+})
+test('translation lanes stay distinct and never substitute for the original reading',()=>{
+  const run=fixture()
+  const original=run.sourceWitnesses[0]
+  const translation:WitnessSource={...original,id:'source:2',contentId:'mw:content:test:tr',
+    editionId:'mw:edition:translation',language:'id',representation:'translation',text:'terjemahan sintetis'}
+  run.sourceWitnesses=[original,translation]
+  for(const claim of run.claims) claim.sourceContentIds=[original.contentId,translation.contentId]
+  const both=validateAnalysisRun(run)
+  assert.deepEqual(both.errors,[])
+  assert.equal(both.maturity.score,15)
+  assert.deepEqual(validateRepresentationLanes(run.sourceWitnesses,[original.contentId,translation.contentId]),[])
+  // A translation may not take the edition identity of the original witness.
+  const colliding=validateAnalysisRun({...run,sourceWitnesses:[original,{...translation,editionId:original.editionId}]})
+  assert.ok(colliding.errors.some(e=>e.includes('reuses original edition')))
+  assert.equal(colliding.publishable,false)
+  // A missing original reading is never reconstructed from the translation.
+  const translationOnly=validateAnalysisRun({...run,sourceWitnesses:[translation]})
+  assert.ok(translationOnly.errors.some(e=>e.includes('observed claim cites no original text witness')))
+  assert.equal(translationOnly.publishable,false)
 })
 test('blank or malformed research frames name the failing field and never mutate the caller',()=>{
   assert.deepEqual(validateResearchFrame(frame),[])

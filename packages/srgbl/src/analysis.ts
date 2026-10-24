@@ -100,6 +100,20 @@ export function validateWitnessSource(source: WitnessSource): string[] {
 }
 
 /**
+ * A translation is a derived lane and can never take the identity of the
+ * original reading: it may not reuse the edition of a source_text witness, and
+ * representation/language/edition stay exactly as recorded (no silent swap).
+ */
+export function validateRepresentationLanes(witnesses: readonly WitnessSource[],
+  citedContentIds: readonly string[]): string[] {
+  const cited = (witnesses || []).filter(source => (citedContentIds || []).includes(source.contentId))
+  const originalEditions = new Set(cited.filter(s => s.representation === 'source_text').map(s => s.editionId))
+  return cited
+    .filter(s => s.representation === 'translation' && originalEditions.has(s.editionId))
+    .map(s => 'translation ' + s.id + ' reuses original edition ' + s.editionId)
+}
+
+/**
  * A supported stage requires source witnesses, explicit evidence IDs and typed
  * claims. No reviewer or algorithm may silently promote unverified stages.
  * The checker returns diagnostics rather than mutating the run.
@@ -134,6 +148,15 @@ export function validateAnalysisRun(run: AnalysisRun): AnalysisValidation {
     if (c.method !== run.method) errors.push('claim method mismatch')
     if (c.status === 'supported' && (!c.evidenceIds?.length || !c.sourceContentIds?.length)) errors.push('supported claim must cite evidence and source')
     for (const id of c.sourceContentIds || []) if (!contentIds.has(id)) errors.push('claim references unavailable source content')
+    errors.push(...validateRepresentationLanes(run.sourceWitnesses || [], c.sourceContentIds || []))
+    // Only an observed claim asserts what the text itself says; a translation
+    // lane cannot substitute for a missing original reading.
+    if (c.epistemic === 'observed' && c.status === 'supported') {
+      const cited = (run.sourceWitnesses || []).filter(s => (c.sourceContentIds || []).includes(s.contentId))
+      if (cited.length && !cited.some(s => s.representation === 'source_text')) {
+        errors.push('observed claim cites no original text witness')
+      }
+    }
     if (c.level === 'R2' && c.epistemic !== 'observed' && c.status === 'supported') errors.push('R2 supported claim must be observed text, not inference')
     if (c.level === 'L5' && c.status === 'supported' && !nonblank(c.boundaryNote)) errors.push('L5 supported claim requires boundary note')
     if (SRGBL_LEVELS.includes(c.level)) byLevel.set(c.level,[...(byLevel.get(c.level) || []),c])
