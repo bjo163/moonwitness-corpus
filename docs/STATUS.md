@@ -1,26 +1,28 @@
 # MoonWitness Corpus — Current Status
 
-Snapshot date: 2026-08-28.
+Snapshot date: 2026-10-24.
 
 This file is a concise implementation/release snapshot. `TODO.md` remains the canonical executable task state, while `docs/ROADMAP.md` preserves the detailed architecture and milestone rationale. `docs/DATASET_TARGETS.md` defines the current data-first source/target plan. `docs/APP_INTEGRATION_ADVICE.md` defines the seed pathway to the MoonWitness app.
 
-## Authoritative state
+## Current snapshot (2026-10-24)
 
-- `main` is the authoritative implementation branch.
-- There are no open pull requests at this snapshot.
-- P0–P7 implementation and the P8 release infrastructure are merged.
-- Full CI remains green after introducing the P12 roadmap/source plan.
-- Historical feature/bootstrap branches are non-authoritative; consumers and downstream work must pin `main`/release commits, not those branch refs.
+- `main` and `dev` are converged: `git diff origin/main origin/dev` is empty and `main` is an ancestor of `dev`. Snapshot SHAs are recorded in the merge report; use `git rev-parse origin/main origin/dev` for live values.
+- Only `main` and `dev` exist locally and on `origin`; there are no open pull requests.
+- Rulesets `25772824` (canonical branches) and `25772825` (immutable `corpus-v*` / `browser-db-*` tags) are active. Both canonical branches require a pull request plus exact-head `check` and `web`; `required_approving_review_count` is 0 by explicit owner decision. This is a single-admin setup without independent approval, documented in `docs/BRANCHING.md`.
+- All workflow `uses:` entries are pinned to 40-character commit SHAs; Dependabot updates them weekly.
+- TODO ↔ Issues sync is check-only: it never writes or pushes to a protected branch. Drift fails the run with an artifact report.
+- `pnpm research:audit` is a read-only contract audit of TODO markers, research issue metadata, and PR heads. It never mutates issues or data; see `docs/RESEARCH_ISSUE_LIFECYCLE.md`.
+- P8 npm publication is **blocked on owner decisions**; see `docs/P8-RELEASE-DECISION.md`. Issues #92–#96 stay open.
+- P12-006 (Pali↔English Dhammapada alignment) remains `blocked_pending_source_language_rights_audit`. Issue #149 carries a corrected status comment; the earlier "Completed and verified" comment is not supported by the data.
+- The experimental `ui/vercel-observatory` branch was removed; its head is preserved by tag `archive/ui-vercel-observatory-2026-10-24`.
+
+Historical feature/bootstrap branches are non-authoritative; consumers and downstream work must pin `main`/release commits, not deleted branch refs.
 
 ## Current operational priority
 
-The project is now deliberately in **data-first mode**.
+The P12 foundation corpus is complete except for P12-006, which cannot proceed without cleared Pali root redistribution rights. No P12 coding work is actionable from the repository data alone. The next milestone has not been selected; the options are documented in the handoff below.
 
-```text
-P12 — Foundation Text Corpus expansion
-```
-
-P9–P11 feature/integration work is deferred while P12 is active. P8 npm publication remains blocked by repository code-license/npm-scope authorization, but that blocker does not prevent source-specific dataset expansion because dataset rights are tracked independently.
+P9–P11 feature/integration work remains deferred. P8 publication remains blocked by licence and npm-scope authorization, not by dataset rights.
 
 ## Milestone state
 
@@ -34,8 +36,8 @@ P5  Two real dataset proofs             complete
 P6  Repository / query / build          complete
 P7  Public Corpus Explorer              complete
 P8  Package/release infrastructure      complete
-    npm publication tasks               blocked/deferred
-P12 Foundation Text Corpus expansion   ACTIVE / current priority
+    npm publication tasks               BLOCKED on owner decisions (#92–#96)
+P12 Foundation Text Corpus expansion   complete except P12-006 (blocked)
 P9  MoonWitness integration             deferred
 P10 Advanced profiles                   deferred
 P11 Curation / collaboration            deferred
@@ -92,7 +94,9 @@ Broader Buddhist English corpus
 
 See `docs/DATASET_TARGETS.md` for exact paths, source boundaries, alignment policy, and acceptance criteria.
 
-## Verified implementation baseline
+## Verified implementation baseline (2026-08-28, historical)
+
+The numbers below describe the 2026-08-28 snapshot and are not current counts. They are retained for comparison with the P12 expansion.
 
 The release/CI baseline already verifies:
 
@@ -139,46 +143,23 @@ For P12 and later data work:
 8. reject or externalize content whose redistribution rights remain unresolved;
 9. require deterministic recipe/checksum validation before closing the dataset task.
 
-## Next execution sequence
+## Next execution sequence (revised 2026-10-24)
 
 ```text
-P12-001 coverage matrix
+P12-001..005, P12-007..027  complete in TODO.md
+P12-006 Pali↔English Dhammapada alignment
+        BLOCKED: Pali root redistribution rights unresolved
+        (docs/P12-004-PALI-RIGHTS-AUDIT.md; do not bundle)
       ↓
-P12-002 Quran baseline verification
-      ↓
-P12-003..006 complete Dhammapada + Pali rights/alignment
-      ↓
-P12-007..009 OSHB/WLC Hebrew + morphology
-      ↓
-P12-010..011 SBLGNT v1.2
-      ↓
-P12-012..016 WEB Classic + alignments
-      ↓
-P12-017..018 SuttaCentral DN/MN/SN/AN English
-      ↓
-P12-019..020 completeness / checksum / rights exit gate
-      ↓
-── New: Seed & Multi-Religion Expansion ──
-      ↓
-P12-021 Seed data architecture (corpus → app bundle)
-      ↓
-P12-022 Asmaul Husna 99 complete
-      ↓
-P12-023 Hadith Bukhari Arabic (CC0, bounded)
-      ↓
-P12-024 Devotional baseline expansion (multi-religion)
-      ↓
-P12-025 Non-Abrahamic scripture ingestion
-        (Tao Te Ching, Analects, Yoga Sutras, Gathas)
-      ↓
-P12-026 Bhagavad Gita promote to active
-      ↓
-revisit npm publication and P9
+choose the next milestone only after an explicit owner decision:
+  a) clear Pali rights and finish P12-006; or
+  b) P8 package build/licence work, still blocked on scope ownership; or
+  c) P11 curation, P9 integration, or P10 profiles
 ```
 
 The project should not expand to additional source ecosystems merely because text is easy to scrape. Sanskrit/Hindu, Sikh, Avestan/Zoroastrian, Chinese Buddhist, Taoist/Confucian, and Quran-translation candidates remain audit-only until an exact rights-safe source is approved. See `datasets/EXPANSION_TARGETS.json` for the full candidate list with rights status.
 
-## Seed data coverage (corpus → app)
+## Seed data coverage (2026-08-28, historical)
 
 The corpus is the canonical seed data source for the MoonWitness app (`X:\REPO\moonwitness`). Current state:
 

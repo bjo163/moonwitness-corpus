@@ -27,7 +27,7 @@ Active states currently recognized in canonical `main` steward code: `discovered
 - *reviewed candidate* → `canonicalized` only **after** authorized source/rights review, ingestion, schema, reference integrity, deterministic build and human-approved publication decision.
 - `merged` (deduplicated under another canonical issue) and `rejected` (reviewed and explicitly rejected) are terminal disposition states with linked reasons.
 
-`canonicalized`, `merged` and `rejected` are proposed terminal machine states in existing **draft** [PR #393](https://github.com/bjo163/moonwitness-corpus/pull/393). Their implementation is **not yet merged**. Reuse/review that PR; **do not implement a duplicate terminal-state parser in `dev` while the branches diverge**. Do not equate GitHub `closed` with `canonicalized`.
+`canonicalized`, `merged` and `rejected` are terminal machine states implemented by merged [PR #393](https://github.com/bjo163/moonwitness-corpus/pull/393). Terminal states are excluded from actionable WIP and from scheduler ranking. Do not implement a second terminal-state parser; import the one in `scripts/research-steward.ts`. Do not equate GitHub `closed` with `canonicalized`.
 
 ## Required witness record envelope
 
@@ -46,7 +46,7 @@ Before observation or canonical ingestion, record:
 1. `mw-todo:Pn-nnn` is a **roadmap engineering** marker. The repository's existing `scripts/sync-todo-issues.ts` and `scripts/reconcile-issue-status.ts` must manage only those marked tasks; research issue text, state and witness are not derived from a TODO checkbox.
 2. Exactly **one authoritative roadmap issue** may claim an `mw-todo` key; duplicated keys **fail closed** and must be reviewed without synthetic replacement issues.
 3. Research issues have their own stable GitHub issue URL/number and research-machine metadata; multiple PRs or observations can reference the *same* canonical issue.
-4. PR #393 is the existing terminal-state parser proposal; PR #394 is bounded Avilés witness-locator review for issue #380. Neither is automatically canonical data.
+4. Merged PR #393 supplies terminal-state parsing; merged PR #394 records the bounded Avilés locator review for issue #380. Neither is automatically canonical data, and #380 stays open until promotion gates are separately met.
 5. Opening, closing or merging a PR does not automatically move a research issue into a later evidence state.
 6. An outside workspace `MASTER-TODO.json` or another repository's issue/knowledge base must not be edited by local TODO sync without explicit ownership and separate approval.
 7. On stale issue SHA, missing source, missing rights, conflicted locators or API errors, report the mismatch; perform **zero unattended canonical mutations**.
@@ -55,20 +55,34 @@ Before observation or canonical ingestion, record:
 
 | Case | Expected outcome |
 | --- | --- |
-| #380 Avilés issue + draft #394 | `ready_for_observation` remains noncanonical; Spanish/Portuguese official PDFs stay distinct |
+| #380 Avilés issue + #394 review | `ready_for_observation` remains noncanonical; Spanish/Portuguese PDFs stay distinct with verified hashes; audit reports missing steward-gate checkboxes instead of rewriting the issue |
 | #375 Ur III Dugga | `source_inspected` pending bounded line/surface witness matrix |
-| Draft #393 lifecycle parser | Review existing code/tests; requires exact-head green CI; terminal states excluded from actionable WIP only once merged |
+| Merged #393 lifecycle parser | Terminal states parse and are excluded from actionable WIP; no second parser is implemented |
 | #384 repository control metadata | Operational issue, not research state or `mw-todo` ownership |
 | Missing/malformed marker | Fail closed; never manufacture a completed research state |
 | Duplicate TODO marker claim | Fail closed; no synthetic duplicate GitHub issue |
 | Cross-domain person label | Keep TEXT label attribution; no minted PERSON identity |
 | Rights/version ambiguity | Leave as research candidate; never canonicalize by automation |
 
+## Read-only audit
+
+`pnpm research:audit` runs `scripts/research-contract-audit.ts --check`. It fetches issues and open PRs, reads `TODO.md`, and prints a Markdown report:
+
+- duplicate or orphan `mw-todo` claims (no issue creation, no TODO rewrite);
+- malformed or duplicated `ROCKSOUL-RESEARCH-*` metadata;
+- `closed` GitHub issues with active research states, and open issues with terminal states;
+- `ready_for_observation` without all three steward-gate checkboxes;
+- missing source URL, rights statement, or bounded witness locator;
+- foreign canonical ownership;
+- stale, noncanonical-base, draft, or short-SHA PR heads.
+
+The command performs **zero writes**, exits `1` when any error-severity finding exists, and exits `2` on API failure. It is an evidence tool, not an automation trigger. The 2026-10-24 run against this repository found 3 errors, 32 warnings and 9 info findings: #380 claims `ready_for_observation` without the three steward-gate checkboxes, 13 closed P9 issues still claim `mw-todo` keys absent from `TODO.md`, and several older research issues lack machine metadata or a rights statement. None of these were auto-fixed.
+
 ## Implementation gates
 
-- **Stage A (read-only):** inventory TODO markers, issue machine states, related PR head SHAs, duplicate keys, and source locators; publish dry-run delta and evidence to #401.
-- **Stage B (review):** reuse PR #393 after dev/main history reconciliation [FIX-001 / #399](https://github.com/bjo163/moonwitness-corpus/issues/399); do not blindly cherry-pick files from `main`.
-- **Stage C (tests):** add malformed/duplicate marker, source-vs-translation, terminal state, uncertain rights, stale PR, closed-not-canonical, idempotent no-op coverage.
-- **Stage D (mutations):** only separately approved actions after branch safety [FIX-003 / #396](https://github.com/bjo163/moonwitness-corpus/issues/396), CI reliability [FIX-004 / #397](https://github.com/bjo163/moonwitness-corpus/issues/397), and verified exact-head green checks.
+- **Stage A (read-only): completed.** Marker/state/PR inventory is implemented by `scripts/research-contract-audit.ts` and exercised by `scripts/research-contract-audit.test.ts`.
+- **Stage B (review): completed.** PR #393 was merged after dev/main reconciliation [FIX-001 / #399](https://github.com/bjo163/moonwitness-corpus/issues/399); no competing parser was added.
+- **Stage C (tests): completed.** Fixtures cover duplicate keys, malformed/duplicate metadata, terminal states, closed-not-canonical, missing gates/rights/locators, stale PR heads, foreign ownership, and deterministic no-write output.
+- **Stage D (mutations): not enabled.** Mutating sync still requires separate approval after branch safety [FIX-003 / #396](https://github.com/bjo163/moonwitness-corpus/issues/396), CI reliability [FIX-004 / #397](https://github.com/bjo163/moonwitness-corpus/issues/397), and exact-head green checks.
 
-No code/data/issue status was changed by the creation of this contract document.
+This contract is advisory and fail-closed. The audit is the only implemented code path, and it never writes to issues, TODOs, branches, or datasets.
