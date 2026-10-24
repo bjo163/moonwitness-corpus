@@ -14,6 +14,9 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 
 ## START HERE — SRGBL V8 GRANDPLAN / LOCAL AI EXECUTION
 
+**BELUM JELAS MULAI DARI MANA?** Baca [**MoonWitness Dijelaskan — alur pengguna dan contoh data**](./MOONWITNESS-EXPLAINED-WALKTHROUGH.md), lalu [**38 spesifikasi issue dapat-dieksekusi**](./MOONWITNESS-P19-EXECUTABLE-SPECS.md) sebelum memberi tugas pada AI lokal.
+
+
 - **[MASTER GRANDPLAN — SRGBL v8 × Key Witness × Swing](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md)** — one current programme map, source-integrity boundaries, milestone M0–M5, evidence and release gates.
 - **[Product Narrative — Witness → Message](./MOONWITNESS-P19-PRODUCT-NARRATIVE.md)** — preserve the original public story and explain Quran-anchored/neutral research lenses without conflating claims with scripture.
 - **[SRGBL v8 Implementation & UX Blueprint](./MOONWITNESS-SRGBL-V8-BLUEPRINT.md)** — record contracts, UI architecture, API/static ingestion, review and release stages.
