@@ -1,5 +1,4 @@
-import { StrictMode, useEffect, useMemo, useRef, useState, type FormEvent } from "react"
-import { createRoot } from "react-dom/client"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import {
   AlertTriangle,
   BookOpen,
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
 } from "lucide-react"
 
-import "./index.css"
 import {
   loadAssertionTraversal,
   loadHealth,
@@ -138,7 +136,7 @@ function stringOr(...values: unknown[]) {
   return "—"
 }
 
-function CorpusApp() {
+export default function CorpusApp() {
   const [traditions, setTraditions] = useState<Tradition[]>([])
   const [works, setWorks] = useState<Work[]>([])
   const [selectedTradition, setSelectedTradition] = useState(() => initialParam("tradition"))
@@ -1182,9 +1180,3 @@ function CorpusApp() {
     </div>
   )
 }
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <CorpusApp />
-  </StrictMode>,
-)

@@ -1,9 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
+  "framework": "nextjs",
   "installCommand": "npm install --global npm@11.6.0 && npm install --prefix apps/web",
   "buildCommand": "npm --prefix apps/web run build",
-  "outputDirectory": "apps/web/dist",
   "headers": [
     {
       "source": "/corpus-db/config.json",

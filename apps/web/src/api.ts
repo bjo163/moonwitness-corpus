@@ -24,7 +24,7 @@ import {
   browserTraverseAssertion,
 } from "./browser-db"
 
-const API_BASE = (import.meta.env.VITE_RGBL_API_URL as string | undefined)?.replace(/\/+$/, "") ?? ""
+const API_BASE = (process.env.NEXT_PUBLIC_RGBL_API_URL as string | undefined)?.replace(/\/+$/, "") ?? ""
 const REQUEST_TIMEOUT_MS = 8_000
 const CATALOG_URL = "/corpus-catalog.json"
 

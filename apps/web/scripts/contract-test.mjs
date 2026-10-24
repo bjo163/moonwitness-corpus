@@ -5,14 +5,15 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, indexHtml, styles, generator, semanticRules, catalog] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog] = await Promise.all([
   read("src/data.ts"),
-  read("src/main.tsx"),
+  read("src/corpus-app.tsx"),
   read("src/api.ts"),
   read("src/browser-db.ts"),
   read("package.json"),
-  read("index.html"),
-  read("src/index.css"),
+  read("src/app/layout.tsx"),
+  read("src/app/page.tsx"),
+  read("src/app/globals.css"),
   read("../../scripts/export-web-catalog.mjs"),
   read("../../config/textual-semantic-rules.json"),
   read("public/corpus-catalog.json"),
@@ -40,7 +41,7 @@ expect(!pkg.dependencies?.["@rocksoul/ui"], "web UI must no longer depend on the
 expect(main.includes('from "@/components/ui/'), "web UI must compose standard shadcn/ui components")
 expect(!main.includes("raw.githubusercontent.com/bjo163/rocksoul-assets/main"), "runtime must not consume rocksoul-assets/main")
 expect(!main.includes("ASSET_BASE"), "runtime must use the stable @rocksoul/ui asset resolver")
-expect(indexHtml.includes("4050b6b5ea88f187a31a304bf978abfe637db9ce"), "document assets must use the stable Rocksoul asset release")
+expect(layout.includes("4050b6b5ea88f187a31a304bf978abfe637db9ce"), "document assets must use the stable Rocksoul asset release")
 expect(api.includes("/v1/passages/"), "passage trace API adapter is missing")
 expect(api.includes("/v1/assertions/"), "assertion traversal API adapter is missing")
 expect(api.includes('const CATALOG_URL = "/corpus-catalog.json"'), "generated catalog adapter is missing")
@@ -67,6 +68,12 @@ expect(main.includes("STATIC SEMANTIC GUARDRAILS"), "semantic matrix must be lab
 expect(styles.includes("prefers-reduced-motion"), "reduced-motion contract is missing")
 expect(styles.includes("focus-visible"), "visible focus contract is missing")
 expect(pkg.scripts?.build?.includes("ensure-browser-db.mjs"), "production build must materialize the full browser database")
+expect(pkg.dependencies?.next, "web runtime must be Next.js")
+expect(!pkg.devDependencies?.vite && !pkg.dependencies?.vite, "web runtime must not depend on Vite")
+expect(pkg.scripts?.build?.includes("next build"), "production build must run next build")
+expect(page.includes('ssr: false'), "browser-only corpus app must not be server-rendered")
+expect(api.includes("NEXT_PUBLIC_RGBL_API_URL"), "REST base URL must use the Next public env prefix")
+expect(!api.includes("import.meta.env"), "Vite-only import.meta.env must be removed")
 expect(main.includes("239,841") === false && main.includes("537K+") === false, "runtime corpus metrics must not be hardcoded")
 
 if (failures.length) {
