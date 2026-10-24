@@ -4,6 +4,7 @@ Status: draft produk & data untuk review, 2026-10-24.
 Scope: konsep, model data, kosakata, UI, editorial, pilot, dan kandidat task.
 Dokumen ini belum mengubah schema atau data kanonik.
 Narasi final: [Cerita Produk](./PRODUCT-STORY.md) · Blueprint: [Product Blueprint](./PRODUCT-BLUEPRINT.md).
+Grandplan integrasi: [SRGBL v8 × Key Witness × Swing — Master Grandplan](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md); P18 v0 tetap menjadi spesifikasi Key Witness terpisah.
 
 ---
 
