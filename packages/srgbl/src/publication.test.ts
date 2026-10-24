@@ -42,6 +42,13 @@ test('reviewed source trace is hashed, pinned and can be verified before publica
   assert.equal(JSON.stringify(verified).includes('SYNTHETIC DATA - NOT SCRIPTURE'),false)
   assert.equal(JSON.stringify(verified.publicSummaries).includes('maturity'),false)
 })
+test('reviewed export rejects a modified analysis even if status is still reviewed',()=>{
+  const run=oneStageRun()
+  run.claims[0].claim='Altered after reviewer input seal'
+  assert.throws(()=>createReviewedSnapshot({
+    corpusHash,methodVersion:run.methodVersion,runs:[run],candidates:[],miracleClaims:[]
+  }),/analysis input hash mismatch/)
+})
 test('missing verified S1 stage cannot be published even if reviewer exists',()=>{
   const run=oneStageRun()
   run.claims=[]
