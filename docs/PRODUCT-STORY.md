@@ -3,6 +3,7 @@
 **Status:** Final v1.0 · 2026-10-24
 **Peran dokumen:** narasi kanonik brand dan produk.
 **Pendamping:** [Product Blueprint](./PRODUCT-BLUEPRINT.md) · [Key Witness v0](./KEY-WITNESS-V0.md)
+**Extended witness/message narrative (P19 research scope):** [MoonWitness P19 Narrative](./MOONWITNESS-P19-PRODUCT-NARRATIVE.md) · [Master Grandplan](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md). Product Story v1 remains the original product narrative.
 
 > **Bukan tafsir. Bukan sekadar teks. Titik tengahnya.**
 
