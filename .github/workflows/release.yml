@@ -9,6 +9,9 @@ on:
     paths:
       - '.github/workflows/release.yml'
       - 'release/**'
+      - 'CHANGELOG.md'
+      - 'scripts/render-release-changelog.ts'
+      - 'scripts/release-changelog.ts'
       - 'scripts/build-release.ts'
       - 'scripts/verify-release.ts'
       - 'scripts/build-consumer-release.ts'
@@ -42,6 +45,8 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Verify changelog matches release plans
+        run: pnpm release:changelog:check
       - name: Build and validate release candidate without publishing
         run: pnpm build:release
       - name: Verify deterministic release checksums and manifest
