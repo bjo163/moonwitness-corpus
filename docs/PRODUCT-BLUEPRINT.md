@@ -4,6 +4,7 @@
 **Peran dokumen:** blueprint eksekusi dari narasi ke arsitektur, UX, data, pilot, dan rilis.
 **Pendamping:** [Cerita Produk](./PRODUCT-STORY.md) · [Key Witness v0](./KEY-WITNESS-V0.md) · [Roadmap](./ROADMAP.md)
 **Scope:** v1.0 — kejelasan pembaca + pilot Key Witness. Dokumen ini tidak mengubah schema kanonik atau data yang sudah ada.
+**Research extension:** [SRGBL v8 Witness Intelligence (P19)](./SRGBL-V8-MASTER-RFC.md) is an additive experimental method, **not part of the v1.0 released product**. See also [Concept Crosswalk](./SRGBL-V8-CONCEPT-CROSSWALK.md).
 
 ---
 
@@ -745,3 +746,29 @@ Blueprint ini selesai ketika pembaca dapat pergi dari kutipan ke sitasi tanpa ke
 ```text
 TRACE THE TEXT. DON'T QUOTE THE VIBE.
 ```
+
+
+---
+
+## Addendum v1.1 (proposed) — SRGBL v8 / P19 Witness Intelligence
+
+This addendum does **not** supersede the P18 reader-first plan. Keep P18's 20 controlled keys, 9-field context coverage, reviewer decisions, no-global-ranking, citation-first flow, rights gates and separate derived score profiles.
+
+```text
+Canonical TEXT (unchanged)
+  → Key Witness P18 (key + frame + evidence + message)
+  → SRGBL P19 (S1/R2/G3/B4/L5; claims and UNKNOWN)
+  → bounded Swing candidate / reviewed multi-text correlation
+  → perspective-scoped correction or attributed miracle claim
+  → research-only evaluation and public source-traceable summary
+```
+
+**Data boundary:** v8 engine exists in `packages/srgbl` as pure research functions. No native canonical `record_type` added. No source text, edition, rights or `mw:*` identifiers rewritten. Derived outputs will be versioned and tied to `corpusHash` after P19 data-contract/build tasks.
+
+**Interface policy:** public readers see text, precise citation, witness, context and disagreement, not global per-verse scores or research leaderboard. Research panel may show separate maturity /15, quality /40, key direction -2..2, and candidate Witness /100 with method, frame, N/coverage, disagreement and missing status.
+
+**Implementation order:** (1) P18 key contracts/review, (2) P19 RFC/engine, (3) source + evidence adapters, (4) deterministic projections, (5) read-only API and static/browser support, (6) accessible five-column research UI and review workflow, (7) empirical validation/rights/release gate. The three unresolved P18 editorial decisions—pilot traditions, 20-key freeze, reviewer authority—remain open.
+
+**Distinct interpretive lenses:** `comparative-neutral` and `islamic-quran-anchored` are different methodologies. Positive Correction cannot be applied as a global universal fact; claim of miracle remains attributed rather than algorithmically detected. `OFFSIDE` is an actor/frame diagnostic and historic creative metaphor; not a literal scriptural term.
+
+See [SRGBL v8 RFC](./SRGBL-V8-MASTER-RFC.md), [historical concept crosswalk](./SRGBL-V8-CONCEPT-CROSSWALK.md) and [P19 TODO](../TODO.md).
