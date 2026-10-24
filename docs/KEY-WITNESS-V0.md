@@ -594,7 +594,7 @@ disagreement rate   % key dengan >1 arah
 
 ## 11. Kandidat task
 
-Format ID `KW-xxx`; belum ditulis ke `TODO.md`.
+Format ID `KW-xxx`; dipetakan ke `TODO.md` sebagai P18-001..P18-020.
 
 | ID | Task | Acceptance | Prioritas |
 |---|---|---|---|

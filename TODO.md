@@ -365,6 +365,35 @@ P17 connects P12–P16 through explainable, reviewable evidence rather than opaq
 
 **Exit gate:** P17 supplies a deterministic, explainable evidence graph in which every canonical link can be traced to exact data, method, provenance, and review state, including uncertainty and gaps.
 
+## P18 — Key Witness / titik tengah (product & data review)
+
+P18 adds the middle layer between text and interpretation without changing canonical text. Narrative and product decisions live in [`docs/PRODUCT-STORY.md`](docs/PRODUCT-STORY.md); architecture, UX, data, and the decision register live in [`docs/PRODUCT-BLUEPRINT.md`](docs/PRODUCT-BLUEPRINT.md); the layer specification lives in [`docs/KEY-WITNESS-V0.md`](docs/KEY-WITNESS-V0.md). Tasks stay unchecked so an online AI or human review can correct them before the pilot is ratified.
+
+- [ ] Build the v0 key registry: 20 keys with neutral definitions, examples, exclusions, and `en`/`id` labels. <!-- mw-todo:P18-001 -->
+- [ ] Validate controlled vocabularies for relation, frame, direction, intensity, and review status. <!-- mw-todo:P18-002 -->
+- [ ] Add an assessment-extension validator so key assessments validate without a new core schema. <!-- mw-todo:P18-003 -->
+- [ ] Define the derived message contract: key message, boundary note, context note, and provenance. <!-- mw-todo:P18-004 -->
+- [ ] Select the pilot set: 3 traditions × 100 stratified passages with rights review. <!-- mw-todo:P18-005 -->
+- [ ] Build an annotation tool for two annotators to record key, relation, frame, direction, and confidence. <!-- mw-todo:P18-006 -->
+- [ ] Run the annotation pilot on 300 passages with disagreements preserved. <!-- mw-todo:P18-007 -->
+- [ ] Produce the agreement report: per-key alpha, disagreement reasons, and go/no-go recommendation. <!-- mw-todo:P18-008 -->
+- [ ] Build the Titik Tengah card UI: witness, key, message, boundary, and disagreement. <!-- mw-todo:P18-009 -->
+- [ ] Add the balance view: key distribution per passage/work without a single verdict. <!-- mw-todo:P18-010 -->
+- [ ] Add key-spectrum search with filters for key, relation, direction, and frame. <!-- mw-todo:P18-011 -->
+- [ ] Build the disagreement UI with alternate assessments and annotator identity. <!-- mw-todo:P18-012 -->
+- [ ] Add the context coverage meter: 9 required fields and explicit gaps. <!-- mw-todo:P18-013 -->
+- [ ] Implement the research-only score profile v0 with coverage, `n`, and agreement. <!-- mw-todo:P18-014 -->
+- [ ] Add compare-by-key for two passages using the same method and explicit frame boundaries. <!-- mw-todo:P18-015 -->
+- [ ] Add citation export with text, key bundle, rights, provenance, and deep link. <!-- mw-todo:P18-016 -->
+- [ ] Implement the review workflow: draft → reviewed → disputed → deprecated with an audit trail. <!-- mw-todo:P18-017 -->
+- [ ] Record annotation provenance: assessor, method, time, and evidence. <!-- mw-todo:P18-018 -->
+- [ ] Separate text licensing from annotation licensing. <!-- mw-todo:P18-019 -->
+- [ ] Expose a read-only key/message API and JSONL/Parquet derived export. <!-- mw-todo:P18-020 -->
+
+Pilot tasks P18-005..P18-008 stay blocked until decisions 2 (pilot traditions), 3 (20-key scope), and 6 (reviewer authority) in the blueprint are ratified.
+
+**Exit gate:** a reader can open one passage and see its witness, at least one reviewed key with frame and direction, a derived message with boundary note, context coverage, and a balance view; no global positive/negative score or verse/tradition ranking exists.
+
 ## P10 — advanced profiles (after v0.1 proof)
 
 - [x] Temporal/chronology profile with uncertainty/ranges/calendars. <!-- mw-todo:P10-001 -->

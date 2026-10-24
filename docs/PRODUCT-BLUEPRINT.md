@@ -613,7 +613,7 @@ Ukur: pemahaman addressee, persepsi ancaman, kepercayaan pada sitasi, dan waktu 
 
 ## 10. Work breakdown
 
-Format `KW-xxx` dipetakan ke `P18-xxx` saat disetujui masuk `TODO.md`. P18 belum ditulis ke `TODO.md` agar tidak memicu pembuatan issue otomatis sebelum keputusan pilot diratifikasi.
+Format `KW-xxx` dipetakan ke `P18-xxx` di `TODO.md`. Task P18 masih unchecked agar dapat dikoreksi oleh review AI/manusia sebelum pilot diratifikasi; sinkronisasi issue mengikuti kontrak `TODO.md` ↔ Issues.
 
 | KW | P18 | Fase | Deliverable | Depends | Acceptance |
 |---|---|---|---|---|---|
