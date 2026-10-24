@@ -24,7 +24,7 @@
       "testCommand": "pnpm typecheck",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 452
     },
     {
       "id": "P19-L02",
@@ -42,7 +42,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 453
     },
     {
       "id": "P19-L03",
@@ -60,7 +60,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 454
     },
     {
       "id": "P19-L04",
@@ -80,7 +80,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 455
     },
     {
       "id": "P19-L05",
@@ -100,7 +100,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/sources.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 456
     },
     {
       "id": "P19-L06",
@@ -120,7 +120,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 457
     },
     {
       "id": "P19-L07",
@@ -140,7 +140,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 458
     },
     {
       "id": "P19-L08",
@@ -160,7 +160,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 459
     },
     {
       "id": "P19-L09",
@@ -180,7 +180,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 460
     },
     {
       "id": "P19-L10",
@@ -200,7 +200,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 461
     },
     {
       "id": "P19-L11",
@@ -220,7 +220,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 462
     },
     {
       "id": "P19-L12",
@@ -238,7 +238,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 463
     },
     {
       "id": "P19-L13",
@@ -258,7 +258,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 464
     },
     {
       "id": "P19-L14",
@@ -278,7 +278,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 465
     },
     {
       "id": "P19-L15",
@@ -296,7 +296,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 466
     },
     {
       "id": "P19-L16",
@@ -316,7 +316,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 467
     },
     {
       "id": "P19-L17",
@@ -336,7 +336,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 468
     },
     {
       "id": "P19-L18",
@@ -356,7 +356,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 469
     },
     {
       "id": "P19-L19",
@@ -376,7 +376,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/research-ledger.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 470
     },
     {
       "id": "P19-L20",
@@ -396,7 +396,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 471
     },
     {
       "id": "P19-L21",
@@ -416,7 +416,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 472
     },
     {
       "id": "P19-L22",
@@ -436,7 +436,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/index.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 473
     },
     {
       "id": "P19-L23",
@@ -456,7 +456,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 474
     },
     {
       "id": "P19-L24",
@@ -477,7 +477,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/analysis.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 475
     },
     {
       "id": "P19-L25",
@@ -497,7 +497,7 @@
       "testCommand": "pnpm validate:editions",
       "gate": "blocked-human-rights",
       "done": false,
-      "issue": null
+      "issue": 476
     },
     {
       "id": "P19-L26",
@@ -518,7 +518,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/publication.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 477
     },
     {
       "id": "P19-L27",
@@ -538,7 +538,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/publication.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 478
     },
     {
       "id": "P19-L28",
@@ -558,7 +558,7 @@
       "testCommand": "pnpm exec tsx --test apps/api/src/api.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 479
     },
     {
       "id": "P19-L29",
@@ -578,7 +578,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/static.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 480
     },
     {
       "id": "P19-L30",
@@ -598,7 +598,7 @@
       "testCommand": "pnpm --dir apps/web test",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 481
     },
     {
       "id": "P19-L31",
@@ -619,7 +619,7 @@
       "testCommand": "pnpm --dir apps/web test",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 482
     },
     {
       "id": "P19-L32",
@@ -640,7 +640,7 @@
       "testCommand": "pnpm --dir apps/web test",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 483
     },
     {
       "id": "P19-L33",
@@ -661,7 +661,7 @@
       "testCommand": "pnpm --dir apps/web test",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 484
     },
     {
       "id": "P19-L34",
@@ -681,7 +681,7 @@
       "testCommand": "pnpm --dir apps/web test",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 485
     },
     {
       "id": "P19-L35",
@@ -702,7 +702,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/annotation.test.ts",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 486
     },
     {
       "id": "P19-L36",
@@ -722,7 +722,7 @@
       "testCommand": "pnpm exec tsx --test packages/srgbl/src/agreement.test.ts",
       "gate": "blocked-pilot-input",
       "done": false,
-      "issue": null
+      "issue": 487
     },
     {
       "id": "P19-L37",
@@ -743,7 +743,7 @@
       "testCommand": "pnpm test",
       "gate": "ready",
       "done": false,
-      "issue": null
+      "issue": 488
     },
     {
       "id": "P19-L38",
@@ -765,7 +765,10 @@
       "testCommand": "pnpm todo:check",
       "gate": "blocked-review",
       "done": false,
-      "issue": null
+      "issue": 489
     }
-  ]
+  ],
+  "issueCount": 38,
+  "firstIssue": 452,
+  "lastIssue": 489
 }
