@@ -13,13 +13,41 @@ export const KEY_RELATIONS = [
 export type KeyToken = (typeof P18_KEY_CANDIDATES)[number]
 export type KeyRelation = (typeof KEY_RELATIONS)[number]
 
+/**
+ * Versioned P18 semantic-core registry. A token is only valid inside the scheme
+ * version that lists it, so a future scheme needs its own entry instead of
+ * silently inheriting these tokens. v0 stays a *candidate* vocabulary until P18
+ * review ratifies it; nothing here may be auto-mapped into an approved list.
+ */
+export const KEY_REGISTRY_SCHEMES = ['semantic-core:v0'] as const
+export type KeySchemeVersion = (typeof KEY_REGISTRY_SCHEMES)[number]
+export const KEY_REGISTRY: Readonly<Record<KeySchemeVersion,
+  { readonly tokens: readonly KeyToken[]; readonly status: 'candidate' | 'ratified' }>> = {
+  'semantic-core:v0': { tokens: P18_KEY_CANDIDATES, status: 'candidate' }
+}
+
+/** null means the scheme version itself is unknown, not that every token is valid. */
+export function registeredKeyTokens(scheme: string): readonly string[] | null {
+  return Object.prototype.hasOwnProperty.call(KEY_REGISTRY, scheme)
+    ? KEY_REGISTRY[scheme as KeySchemeVersion].tokens
+    : null
+}
+
+/** Syntactic vocabulary check only: no registry decision is edited or inferred. */
+export function validateKeyToken(scheme: string, key: string): string[] {
+  const tokens = registeredKeyTokens(scheme)
+  if (!tokens) return ['unknown key scheme version ' + scheme]
+  if (!tokens.includes(key)) return ['key not in ' + scheme + ' controlled candidate registry']
+  return []
+}
+
 /** v0 registry remains unratified until P18 review; do not silently extend it. */
 export type FramedKeyAssessment = {
   id: string
   passageId: string
   contentId: string
   key: KeyToken
-  scheme: 'semantic-core:v0'
+  scheme: KeySchemeVersion
   method: string
   assessor: string
   reviewer?: string
@@ -51,9 +79,8 @@ const string = (s: unknown): s is string => typeof s === 'string' && s.trim().le
 export function validateKeyAssessment(record: FramedKeyAssessment): string[] {
   const errors = validateResearchFrame(record.frame)
   for (const k of ['id','passageId','contentId','method','assessor'] as const) if (!string(record[k])) errors.push('key.'+k+' required')
-  if (!P18_KEY_CANDIDATES.includes(record.key)) errors.push('key not in v0 controlled candidate registry')
+  errors.push(...validateKeyToken(record.scheme, record.key))
   if (!KEY_RELATIONS.includes(record.relation)) errors.push('invalid key relation')
-  if (record.scheme !== 'semantic-core:v0') errors.push('wrong key scheme')
   if (!Number.isInteger(record.direction) || Math.abs(record.direction)>2) errors.push('direction out of range')
   if (!Number.isInteger(record.intensity) || record.intensity<1 || record.intensity>3) errors.push('intensity out of range')
   if (!Number.isFinite(record.confidence) || record.confidence<0 || record.confidence>1) errors.push('confidence out of range')

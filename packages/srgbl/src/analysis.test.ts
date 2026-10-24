@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { validateAnalysisRun, diagnoseOffside, type AnalysisRun, type ResearchFrame } from './analysis.js'
-import { evaluateFramedKeys, validateKeyMessage, type FramedKeyAssessment } from './keys.js'
+import { evaluateFramedKeys, validateKeyAssessment, validateKeyMessage, validateKeyToken, type FramedKeyAssessment } from './keys.js'
 import { adaptPassageSources, resolveSourceReference, type SourceCatalog } from './sources.js'
 import { validateReviewedCandidate, validateMiracleAttribution, summarizeCandidate } from './research-ledger.js'
 import { proposeSwing, type ScopedTextRelation } from './index.js'
@@ -128,6 +128,20 @@ test('Key Witness frame scoring is distinct and never invents agreement',()=>{
     assessments:[{...key(),key:'invented_key' as never}],agreement:null,reviewerCount:1})
   assert.equal(invalid.direction,null)
   assert.ok(invalid.errors.length)
+})
+test('P18 key vocabulary is versioned: unknown token or scheme never auto-maps',()=>{
+  assert.deepEqual(validateKeyToken('semantic-core:v0','hope'),[])
+  assert.deepEqual(validateKeyAssessment(key()),[])
+  // 'faith' is exploratory, not a v0 candidate: it is rejected, never auto-approved.
+  assert.ok(validateKeyToken('semantic-core:v0','faith').some(error=>error.includes('controlled candidate registry')))
+  assert.ok(validateKeyAssessment({...key(),key:'faith' as never}).some(error=>error.includes('controlled candidate registry')))
+  // A future scheme needs its own registry entry; v0 tokens must not carry over silently.
+  assert.ok(validateKeyToken('semantic-core:v1','hope').some(error=>error.includes('unknown key scheme version')))
+  assert.ok(validateKeyAssessment({...key(),scheme:'semantic-core:v1' as never}).some(error=>error.includes('unknown key scheme version')))
+  const bundled=evaluateFramedKeys({method:'test:v8',profile:'hope:v8',frame,expectedKeyCount:20,
+    assessments:[{...key(),key:'faith' as never}],agreement:null,reviewerCount:1})
+  assert.equal(bundled.direction,null)
+  assert.equal(bundled.coverage,null)
 })
 test('reviewed derived message must keep key and boundary note',()=>{
   const message={id:'msg:test',passageId:'mw:passage:test:a',method:'test:v8',frame,
