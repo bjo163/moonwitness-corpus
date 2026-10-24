@@ -135,6 +135,34 @@ test('legacy Witness 100 scoring never canonicalizes even maximum', () => {
   assert.equal(score.automaticCanonicalApproval,false)
   assert.throws(()=>scoreWitnessCandidate({sourceFidelity:26,observability:25,semanticConsistency:20,crossReference:15,nonOverlapping:15}),RangeError)
 })
+test('Witness bounds are integer, component-capped and eligibility never grants truth', () => {
+  const zero = scoreWitnessCandidate({sourceFidelity:0,observability:0,semanticConsistency:0,crossReference:0,nonOverlapping:0})
+  assert.deepEqual([zero.raw,zero.reviewEligibility], [0,'needs-more-evidence'])
+  // The components sum to at most 100 by construction; each cap is enforced exactly.
+  assert.equal(scoreWitnessCandidate({sourceFidelity:25,observability:25,semanticConsistency:20,crossReference:15,nonOverlapping:15}).raw, 100)
+  for (const [key, max] of Object.entries({sourceFidelity:25,observability:25,semanticConsistency:20,crossReference:15,nonOverlapping:15})) {
+    const atMax = {sourceFidelity:0,observability:0,semanticConsistency:0,crossReference:0,nonOverlapping:0,[key]:max}
+    assert.equal(scoreWitnessCandidate(atMax).raw, max, key)
+    assert.throws(() => scoreWitnessCandidate({...atMax,[key]:max+1}), RangeError, key)
+  }
+  // The 70 threshold is a review gate, not an approval: 69 / 70 / 100 all stay candidates.
+  const edge = (cross: number) => scoreWitnessCandidate({sourceFidelity:25,observability:25,semanticConsistency:19,crossReference:cross,nonOverlapping:0})
+  assert.equal(edge(0).raw, 69)
+  assert.equal(edge(0).reviewEligibility, 'needs-more-evidence')
+  assert.equal(edge(1).raw, 70)
+  assert.equal(edge(1).reviewEligibility, 'eligible-for-review')
+  for (const score of [edge(1), scoreWitnessCandidate({sourceFidelity:25,observability:25,semanticConsistency:20,crossReference:15,nonOverlapping:15})]) {
+    assert.equal(score.automaticCanonicalApproval,false)
+    assert.equal('approved' in score, false)
+  }
+  // Non-integers, negatives, missing fields and invented fields are all refused.
+  const full = {sourceFidelity:25,observability:25,semanticConsistency:20,crossReference:15,nonOverlapping:15}
+  assert.throws(() => scoreWitnessCandidate({...full,sourceFidelity:24.5}), RangeError)
+  assert.throws(() => scoreWitnessCandidate({...full,observability:-1}), RangeError)
+  assert.throws(() => scoreWitnessCandidate({sourceFidelity:25} as never), RangeError)
+  assert.throws(() => scoreWitnessCandidate({...full,inventedComponent:1} as never), /unknown witness component: inventedComponent/)
+  assert.throws(() => scoreWitnessCandidate(null as never), TypeError)
+})
 test('Swing always makes unverified candidate, depth-limited, no inherited score', () => {
   const r=proposeSwing({operator:'cause-effect',subject:'A',relation:'causes',object:'B',depth:1})
   assert.equal(r.relation,'candidate-possible-cause-of')

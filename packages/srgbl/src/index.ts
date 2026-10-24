@@ -135,8 +135,14 @@ export const WITNESS_COMPONENT_MAX = {
 export type WitnessComponents = Record<keyof typeof WITNESS_COMPONENT_MAX, number>
 /** Historical 100-point candidate rubric. A threshold never confers canonical authority. */
 export function scoreWitnessCandidate(values: WitnessComponents) {
+  if (!values || typeof values !== 'object' || Array.isArray(values)) {
+    throw new TypeError('witness components must be an object')
+  }
+  const componentNames = Object.keys(WITNESS_COMPONENT_MAX) as (keyof WitnessComponents)[]
+  const unknown = Object.keys(values).filter(key => !(componentNames as string[]).includes(key)).sort()
+  if (unknown.length) throw new TypeError('unknown witness component: ' + unknown.join(', '))
   let raw = 0
-  for (const key of Object.keys(WITNESS_COMPONENT_MAX) as (keyof WitnessComponents)[]) {
+  for (const key of componentNames) {
     const n = values[key]
     if (!Number.isInteger(n) || n < 0 || n > WITNESS_COMPONENT_MAX[key]) throw new RangeError(`Invalid witness component: ${key}`)
     raw += n
