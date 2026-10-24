@@ -4,6 +4,7 @@ Status: draft produk & data untuk review, 2026-10-24.
 Scope: konsep, model data, kosakata, UI, editorial, pilot, dan kandidat task.
 Dokumen ini belum mengubah schema atau data kanonik.
 Narasi final: [Cerita Produk](./PRODUCT-STORY.md) · Blueprint: [Product Blueprint](./PRODUCT-BLUEPRINT.md).
+P18/P19 engineering handoff: [SRGBL Five-Layer Blueprint](./MOONWITNESS-SRGBL-V8-BLUEPRINT.md) · [Micro-Issue Register](./MOONWITNESS-P19-MICROTASKS.md); P18 controlled registry and annotation pilot remain separate, with human ratification required.
 
 ---
 
