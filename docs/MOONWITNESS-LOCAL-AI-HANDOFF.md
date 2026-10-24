@@ -9,6 +9,8 @@
 **Preexisting P18 work:** GitHub Issues #425–#444.  
 **P19 atomic issue range:** #452–#489.
 
+**MANDATORY BEFORE EACH ISSUE:** [Walkthrough of the actual product](./MOONWITNESS-EXPLAINED-WALKTHROUGH.md) and [Issue-specific input/output, valid/invalid examples and executable tests](./MOONWITNESS-P19-EXECUTABLE-SPECS.md). An AI must read the exact micro-ID section, not merely the title. The corresponding GitHub issue now embeds these details.
+
 ## 0. Most important instruction — no new branches
 
 The user explicitly prohibits creating more branches. The local AI must work **only on dev**. Never run git switch -c, git checkout -b, git branch newname, or gh pr create. Do not push to main or release the application. Do not force-push or bypass protection. If dev is protected against direct push, show the exact error and preserve local work for user policy resolution; **do not create a branch as a workaround**.
