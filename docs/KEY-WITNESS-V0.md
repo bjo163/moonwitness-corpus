@@ -672,3 +672,19 @@ Produk dianggap berhasil jika:
 ## 15. Catatan penutup
 
 Key Witness bukan jalan pintas untuk membuat semua teks terasa menyenangkan. Ini jalan untuk membuat teks **terbaca dengan benar**: lengkap, berskop, dan bisa diperiksa. Kalau ada nilai "positif" yang bisa dijanjikan, itu adalah **kejelasan yang mengurangi kepanikan** — bukan penghapusan teks yang sulit.
+
+
+---
+
+## Appendix — SRGBL v8 extension (proposed, additive)
+
+[SRGBL v8 RFC](./SRGBL-V8-MASTER-RFC.md) introduces a separate research analysis-run method: S1 Source & Sense, R2 Reality, G3 Governing Order, B4 Being and L5 Light. Key Witness remains the **method-scoped semantic middle layer**; its v0 assessments, 20-key registry proposal, `extensions.key`, message and context coverage contracts are not renamed or replaced.
+
+- `textual witness` = source/edition/artifact support; `key` = anchored semantic concept; `message` = derived bounded synthesis; `tafsir` = separately attributed commentary; `miracle_claim` = attributed theological interpretation; none is interchangeable.
+- `S1` consumes text provenance, access/rights and evidence metadata. `R2` records what the text states. `G3/B4` model reviewed relations and frame. `L5` produces a bounded direction/message, not a revelation or universal judgement.
+- v8 **key-direction formula** normalizes intensity on numerator **and** denominator: `Σ(w*c*i*d)/Σ(w*c*i)`; bounds -2..+2. Zero positive denominator = UNKNOWN. This is a **distinct versioned v8 profile**, not a silent change to the v0 profile above.
+- Key direction, maturity /15, quality /40, candidate Witness /100 and context coverage /9 are separate method-bound measurements. NEVER aggregate them into a verse, belief, or religion ranking.
+- `Swing Swing Key` creates candidates only; max three rotations, independent verification and reviewer approval needed. `CORRECTS_WITHIN_FRAME` is allowed only when the interpretive lens is explicit and both text sources are traceable.
+- Exemplary `faith`, `good_deeds`, `paradise_promise` labels are not auto-approved members of the v0 controlled key registry. Scheme mapping and review are prerequisites.
+
+The P18 pilot remains unfinished, and SRGBL v8 prototype scoring/tests do not constitute human agreement, scholarly validation or publication approval.
