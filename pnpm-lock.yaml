@@ -202,6 +202,8 @@ importers:
 
   packages/schema: {}
 
+  packages/srgbl: {}
+
   packages/sdk:
     dependencies:
       '@moonwitness/corpus-core':
