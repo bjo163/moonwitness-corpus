@@ -232,7 +232,6 @@ RGBL reuses existing canonical Mark 13:2 passage identities rather than creating
 
 [Read the shared case →](cases/JERUSALEM-70-TEMPLE.md)
 
-
 ## AWS legal layer
 
 `rocksoul-aws` is the fifth research domain and owns LAW / applicability / legal assessment.

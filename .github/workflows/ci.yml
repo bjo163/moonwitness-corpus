@@ -26,7 +26,7 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Enforce workflow safety contracts
@@ -59,3 +59,32 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:3199/metrics | grep -q 'corpus_indexed_records_total'
           curl --fail --silent --show-error http://127.0.0.1:3199/v1/traditions | grep -q '"success":true'
           curl --fail --silent --show-error 'http://127.0.0.1:3199/v1/search?q=mercy' | grep -q '"success":true'
+
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify generated corpus catalog
+        run: node scripts/export-web-catalog.mjs --check
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npx --yes npm@11.6.0 ci
+      - name: Typecheck web
+        working-directory: apps/web
+        run: npm run typecheck
+      - name: Test web adapters
+        working-directory: apps/web
+        run: npm test
+      - name: Build candidate browser database for web verification
+        run: |
+          node scripts/build-browser-search-db.mjs
+          node scripts/chunk-browser-search-db.mjs
+          node scripts/prepare-local-browser-db.mjs
+      - name: Build web
+        working-directory: apps/web
+        run: npm run build

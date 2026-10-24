@@ -22,7 +22,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - name: Materialize and validate without publishing

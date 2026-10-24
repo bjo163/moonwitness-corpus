@@ -4,11 +4,13 @@
 
 ## Pinned heads (2026-10-24)
 
-- `dev`: `afb792c05f04aab3013ff6da8351ff99bfc0dcef`
+- `dev`: `42c0b2f2b1675300a70b58171167dd2ebfa84e66` (`origin/dev` at the current integration pass)
 - `main`: `df00706c98e21fb3fb0146b8389b0f2978f3d833`
-- GitHub compare reported **208 commits ahead / 100 behind** for `main...dev` at this snapshot. History is **diverged**.
+- Merge base: `f59331449fedf90ca494c4dcc35855f148b7afe1`; `main...dev` is **100 behind / 227 ahead**. History is **diverged**.
 - Existing [PR #360](https://github.com/bjo163/moonwitness-corpus/pull/360) is the canonical promotion PR, and was not mergeable in the audit.
 - [Compare branches](https://github.com/bjo163/moonwitness-corpus/compare/main...dev) (live, may differ from this snapshot).
+
+The current isolated merge candidate restores the main-only web explorer, API/SDK routes, browser database/catalog, research steward and metadata while preserving dev's corpus and safety work. Local Node 24 LTS core, API, web and release checks pass; the exact-head GitHub CI and reviewed PR remain pending. See [the exact conflict decisions](MAIN_DEV_MERGE_RESOLUTION_2026-10-24.md).
 
 ## Six changed-path intersections across both histories
 
