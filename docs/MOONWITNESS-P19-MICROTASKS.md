@@ -6,6 +6,8 @@
 **Epic:** [#446](https://github.com/bjo163/moonwitness-corpus/issues/446) · **Pre-existing P18 tasks:** #425–#444 (do not duplicate).  
 **Local instruction:** [Local AI Handoff](./MOONWITNESS-LOCAL-AI-HANDOFF.md).
 
+**Before coding, open:** [Detailed input/output and failure examples for all 38 issues](./MOONWITNESS-P19-EXECUTABLE-SPECS.md) and [What MoonWitness is supposed to do in one real user session](./MOONWITNESS-EXPLAINED-WALKTHROUGH.md). The issue bodies #452–#489 were expanded with those examples; a title by itself is not an executable specification.
+
 ## What “one small issue” means
 
 Every micro issue intentionally has **1 concrete outcome, no more than 3 initial files, 2 acceptance checks, 1 named focused test**, and dependencies. The issue describes a **small verification/hardening or implementation slice**; if the current code already covers it, the AI verifies a missing edge case and adds the regression test rather than duplicating existing functions.
