@@ -9,5 +9,6 @@ apps/web/public/vendor/
 .env
 .env.*
 !.env.example
+!apps/web/.env.development
 .DS_Store
 *.log

@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "turbo run build && tsx scripts/build-corpus.ts",
-    "dev": "turbo run dev",
+    "dev": "concurrently -k -n api,web -c blue,green \"pnpm api:dev\" \"pnpm dev:web\"",
+    "dev:web": "pnpm --dir apps/web dev",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test packages/*/src/**/*.test.ts apps/*/src/**/*.test.ts scripts/**/*.test.ts",
     "validate": "tsx packages/validator/src/cli.ts",
@@ -106,6 +107,7 @@
     "@moonwitness/corpus-node": "workspace:*",
     "@moonwitness/corpus-repository": "workspace:*",
     "@types/node": "^20.19.0",
+    "concurrently": "^10.0.6",
     "tsx": "^4.20.0",
     "turbo": "^2.9.0",
     "typescript": "^5.9.0"

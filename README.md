@@ -229,8 +229,15 @@ Runtime databases, FTS indexes, caches, and search artifacts must remain rebuild
 ```bash
 pnpm install
 pnpm check
+
+# Development: API on http://localhost:4310 and web on http://localhost:5174
+pnpm dev
+
+# API only
 pnpm serve
 ```
+
+The API reads `dist/corpus.sqlite` by default. Set `CORPUS_DB_PATH` to point at a different database file. The web app is a separate npm project, so run `npm install --prefix apps/web` once before `pnpm dev`.
 
 Useful endpoints:
 

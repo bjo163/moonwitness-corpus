@@ -4,6 +4,7 @@ import rateLimit from '@fastify/rate-limit'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { SqliteCorpusRepository } from '@moonwitness/corpus-node'
 
 import { telemetryPlugin } from './plugins/telemetry.js'
@@ -14,6 +15,13 @@ import { searchRoutes } from './routes/search.js'
 import { devotionalsRoutes } from './routes/devotionals.js'
 import { compareRoutes } from './routes/compare.js'
 import { recordsRoutes } from './routes/records.js'
+
+const DEFAULT_DB_PATH = fileURLToPath(new URL('../../../dist/corpus.sqlite', import.meta.url))
+
+export function resolveCorpusDbPath(): string {
+  const configured = process.env.CORPUS_DB_PATH
+  return configured ? path.resolve(configured) : DEFAULT_DB_PATH
+}
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify({
@@ -34,7 +42,10 @@ export async function buildApp(): Promise<FastifyInstance> {
         version: '0.1.0'
       },
       servers: [
-        { url: 'http://localhost:3000', description: 'Local Development Engine' }
+        {
+          url: process.env.API_PUBLIC_URL ?? `http://localhost:${process.env.PORT || 4310}`,
+          description: 'Local Development Engine'
+        }
       ]
     }
   })
@@ -48,7 +59,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // 3. Database & Repository
-  const dbPath = path.resolve(process.cwd(), 'dist/corpus.sqlite')
+  const dbPath = resolveCorpusDbPath()
   const repo = new SqliteCorpusRepository(dbPath)
   app.decorate('repo', repo)
   app.addHook('onClose', async () => {
