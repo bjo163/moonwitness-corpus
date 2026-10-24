@@ -1,50 +1,34 @@
-name: Materialize Ancient Egyptian Book of the Dead
+name: Budge Materialization Verification (Read Only)
 
+# FIX-002 / FIX-005: explicit audit only while source/rights gates are pending.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/15 * * * *'
-  push:
-    branches: [dev]
-    paths:
-      - 'scripts/materialize-ancient-egypt-book-dead-budge.ts'
-      - 'ingestion/recipes/ancient-egypt-book-dead-budge/**'
-      - 'datasets/ancient-egypt-book-dead-budge/**'
-      - 'datasets/registry.json'
-      - 'package.json'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: ancient-egypt-budge-materialization
+  group: budge-materialization-audit
   cancel-in-progress: true
 
 jobs:
-  materialize:
+  validate-budge:
     runs-on: self-hosted
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
-          fetch-depth: 1
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: corepack enable
-      - run: pnpm install --no-frozen-lockfile
-      - run: pnpm materialize:ancient-egypt-budge
-      - run: pnpm validate:corpus
-      - run: pnpm validate:editions
-      - run: pnpm build:sqlite
-      - run: pnpm home:stats
-      - name: Commit generated corpus and Home statistics
-        shell: bash
+      - run: pnpm install --frozen-lockfile
+      - name: Materialize and validate without publishing
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add datasets/ancient-egypt-book-dead-budge README.md
-          if git diff --cached --quiet; then echo 'No generated changes.'; exit 0; fi
-          git commit -m 'feat(corpus): materialize Ancient Egyptian Book of the Dead'
-          git push origin HEAD:dev
+          pnpm materialize:ancient-egypt-budge
+          pnpm validate:corpus
+          pnpm validate:editions
+      - name: Require committed generated dataset to match
+        run: git diff --exit-code -- datasets/ancient-egypt-book-dead-budge

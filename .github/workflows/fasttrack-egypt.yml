@@ -1,52 +1,37 @@
-name: Fast-Track Ancient Egyptian Corpus
+name: Fast-Track Ancient Egyptian Corpus (Read Only Audit)
 
+# FIX-002 / FIX-005: no periodic changes, automatic commits, or pushes.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/15 * * * *'
-
-concurrency:
-  group: fasttrack-egypt
-  cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: fasttrack-egypt-readonly
+  cancel-in-progress: true
 
 jobs:
-  materialize:
+  audit:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
-          fetch-depth: 1
-
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec tsx scripts/materialize-ancient-egypt-book-of-dead-budge.ts
-      - run: pnpm build:sqlite
-      - run: pnpm validate:corpus
-      - run: pnpm validate:materialization
-      - run: pnpm home:stats
-
-      - name: Commit generated corpus and Home statistics
-        shell: bash
+      - name: Materialize without pushing generated content
         run: |
-          if git diff --quiet; then
-            echo 'Ancient Egyptian corpus is already synchronized.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ingestion/recipes/ancient-egypt-book-of-dead-budge datasets/ancient-egypt-book-of-dead-budge README.md
-          git commit -m 'feat(egypt): materialize Budge Book of the Dead'
-          git push origin HEAD:dev
+          pnpm exec tsx scripts/materialize-ancient-egypt-book-of-dead-budge.ts
+          pnpm validate:corpus
+          pnpm validate:materialization
+      - name: Detect uncommitted output differences
+        run: git diff --exit-code -- datasets/ancient-egypt-book-of-dead-budge
