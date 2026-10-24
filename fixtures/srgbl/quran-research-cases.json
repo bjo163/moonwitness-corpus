@@ -1,0 +1,112 @@
+{
+  "schema": "srgbl-research-case-index-v1",
+  "status": "unreviewed-source-pointers-only",
+  "license": "no scripture or translation text is embedded",
+  "method": "srgbl-v8-textual-research-proposed",
+  "cases": [
+    {
+      "id": "quran-42-51",
+      "reference": {
+        "tradition": "islam",
+        "work": "al-quran",
+        "chapter": 42,
+        "verse": 51
+      },
+      "purpose": "Compare directly enumerated communication modes against inferred modes; do not invent revelation",
+      "intendedLevels": [
+        "S1",
+        "R2",
+        "G3"
+      ],
+      "rights": "unknown",
+      "sourceEdition": null,
+      "reviewer": null
+    },
+    {
+      "id": "quran-5-48",
+      "reference": {
+        "tradition": "islam",
+        "work": "al-quran",
+        "chapter": 5,
+        "verse": 48
+      },
+      "purpose": "Test Quran-anchored source-scoped comparative correction, not global proof",
+      "intendedLevels": [
+        "S1",
+        "R2",
+        "G3",
+        "B4"
+      ],
+      "rights": "unknown",
+      "sourceEdition": null,
+      "reviewer": null
+    },
+    {
+      "id": "quran-37-30",
+      "reference": {
+        "tradition": "islam",
+        "work": "al-quran",
+        "chapter": 37,
+        "verse": 30
+      },
+      "purpose": "OFFSIDE actor and addressee diagnostics require surrounding text, no editorial metaphor as literal scripture",
+      "neighboringContextRequired": true,
+      "intendedLevels": [
+        "S1",
+        "R2",
+        "G3",
+        "B4"
+      ],
+      "rights": "unknown",
+      "sourceEdition": null,
+      "reviewer": null
+    },
+    {
+      "id": "quran-20-5",
+      "reference": {
+        "tradition": "islam",
+        "work": "al-quran",
+        "chapter": 20,
+        "verse": 5
+      },
+      "purpose": "Distinct attributed theological/editorial reference; never claim literal football coaching text",
+      "intendedLevels": [
+        "S1",
+        "R2",
+        "B4"
+      ],
+      "rights": "unknown",
+      "sourceEdition": null,
+      "reviewer": null
+    },
+    {
+      "id": "quran-2-82",
+      "reference": {
+        "tradition": "islam",
+        "work": "al-quran",
+        "chapter": 2,
+        "verse": 82
+      },
+      "purpose": "Test multiple key candidates, recipients and bounded message without promoting unratified keys",
+      "intendedLevels": [
+        "S1",
+        "R2",
+        "G3",
+        "B4",
+        "L5"
+      ],
+      "rights": "unknown",
+      "sourceEdition": null,
+      "reviewer": null
+    }
+  ],
+  "qualityGate": {
+    "reviewRequired": true,
+    "exactPassageIdRequiredBeforeAnalysis": true,
+    "editionRequired": true,
+    "rightsReviewRequired": true,
+    "cannotAssumeMiracle": true,
+    "cannotInheritSwingScore": true
+  },
+  "note": "No claim has a canonical passage ID, source text, reviewed annotation, or SRGBL score until individually verified against a pinned corpus source."
+}
