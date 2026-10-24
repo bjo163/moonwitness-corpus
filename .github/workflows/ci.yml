@@ -29,6 +29,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Enforce workflow safety contracts
+        run: node --test scripts/workflow-safety.test.mjs
       - run: pnpm check
 
       - name: Smoke test Fastify API Engine runtime & OpenTelemetry

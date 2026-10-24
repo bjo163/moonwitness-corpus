@@ -3,6 +3,9 @@ name: Upstream Source Audit (No Direct Push)
 # Temporary FIX-004 safety gate. Scheduled sync belongs to the default
 # branch after review; this dev workflow is explicit/manual and read-only.
 on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/upstream-sync.yml', 'scripts/workflow-safety.test.mjs']
   workflow_dispatch:
     inputs:
       acquire:
