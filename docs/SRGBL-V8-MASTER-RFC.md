@@ -3,6 +3,7 @@
 **Status:** Working research RFC / proposed method, 2026-10-24. **Not approved canon, not empirical validation, not a scientific truth detector.**
 **Owner:** MoonWitness Corpus / TEXT. **Target:** `dev`.
 **Parent:** [Product Blueprint](./PRODUCT-BLUEPRINT.md), [Key Witness v0](./KEY-WITNESS-V0.md), [Intertextual Evidence Graph](./INTERTEXTUAL_EVIDENCE_GRAPH_TARGETS.md), [Proposed ADR-0008](./decisions/ADR-0008-srgbl-derived-research.md).
+**Grandplan:** [MoonWitness SRGBL v8 × Key Witness — Master Grandplan](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md) (execution ownership, milestones, progress and dependencies).
 **Backlog:** P18 key witness (prerequisite), P19 SRGBL Witness Intelligence. [Concrete implementation and unresolved gates](./SRGBL-V8-IMPLEMENTATION-STATUS.md).
 
 > TRACE THE TEXT. EXAMINE THE WITNESS. PRESERVE THE DIFFERENCE.
