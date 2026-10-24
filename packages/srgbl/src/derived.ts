@@ -45,6 +45,11 @@ export function sha256Json(value:unknown):string {
   return createHash('sha256').update(canonicalJson(value),'utf8').digest('hex')
 }
 
+/** Bind an analysis to its exact source/claim/reviewer bytes, excluding the hash field itself. */
+export function computeAnalysisInputHash(run: Omit<AnalysisRun,'inputHash'>): string {
+  return sha256Json(run)
+}
+
 /** Fail closed on any ineligible records, preserving exact analysis associations. */
 export function createReviewedSnapshot(input:SnapshotInput):ResearchPublication {
   if(!input.corpusHash?.trim() || !input.methodVersion?.trim()) throw new TypeError('corpusHash and methodVersion are required')
@@ -56,6 +61,9 @@ export function createReviewedSnapshot(input:SnapshotInput):ResearchPublication 
   for(const run of input.runs) {
     guard(run.id)
     if(run.corpusHash!==input.corpusHash||run.methodVersion!==input.methodVersion) throw new Error('analysis corpus/method snapshot mismatch')
+    const {inputHash,...hashable}=run
+    if(typeof inputHash !== 'string' || !/^[a-f0-9]{64}$/.test(inputHash) ||
+       inputHash !== computeAnalysisInputHash(hashable)) throw new Error('analysis input hash mismatch')
     const check=validateAnalysisRun(run)
     if(!check.publishable) throw new Error('analysis is not publishable: '+check.errors.join('; '))
     reviewedAnalyses.push({id:run.id,passageId:run.passageId,reviewer:run.reviewer!,maturity:check.maturity.score,max:15})
