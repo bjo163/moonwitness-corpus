@@ -37,7 +37,7 @@ export function scoreMaturity(states: LevelStates): MaturityResult {
     max: 15,
     normalized: score / 15,
     nextLevel: reached === 5 ? null : SRGBL_LEVELS[reached],
-    pending: SRGBL_LEVELS.filter(level => states[level] !== 'supported')
+    pending: SRGBL_LEVELS.slice(reached)
   }
 }
 
