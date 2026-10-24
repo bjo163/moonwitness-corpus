@@ -1,61 +1,60 @@
-name: Release bundle
+name: Release Candidate Verification (No Promotion)
 
+# FIX-005: fail-closed audit gate while dev/main histories diverge.
+# No scheduled version bumps, publication, direct main pushes, or ref mutation.
 on:
   workflow_dispatch:
-    inputs:
-      publish_npm:
-        description: Publish npm packages after all repository publication gates are enabled
-        required: true
-        type: boolean
-        default: false
-      create_github_release:
-        description: Create a GitHub Release from the generated bundle
-        required: true
-        type: boolean
-        default: false
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/release.yml'
+      - 'release/**'
+      - 'CHANGELOG.md'
+      - 'scripts/render-release-changelog.ts'
+      - 'scripts/release-changelog.ts'
+      - 'scripts/build-release.ts'
+      - 'scripts/verify-release.ts'
+      - 'scripts/build-consumer-release.ts'
+      - 'scripts/validate-consumer-release.ts'
+
+permissions:
+  contents: read
 
 concurrency:
-  group: release-bundle
-  cancel-in-progress: false
+  group: corpus-release-candidate-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  release:
-    runs-on: self-hosted
-    timeout-minutes: 30
+  verify-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout exact candidate commit
+        uses: actions/checkout@v4
         with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org
-      - run: corepack enable
-      - run: pnpm install --no-frozen-lockfile
-      - run: pnpm check
-      - uses: actions/upload-artifact@v4
+          persist-credentials: false
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
         with:
-          name: moonwitness-corpus-release
-          path: dist/release
+          version: 10.33.4
+          run_install: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify changelog matches release plans
+        run: pnpm release:changelog:check
+      - name: Build and validate release candidate without publishing
+        run: pnpm build:release
+      - name: Verify deterministic release checksums and manifest
+        run: pnpm release:verify
+      - name: Upload candidate evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-candidate-${{ github.sha }}
+          path: dist/release/
           if-no-files-found: error
-      - name: Verify npm publication gate
-        if: ${{ inputs.publish_npm }}
-        run: |
-          node -e "const c=require('./release/package-contract.json'); if(!c.npmPublishEnabled){console.error(c.publicationBlockers.join('\\n')); process.exit(1)}"
-      - name: Publish npm packages
-        if: ${{ inputs.publish_npm }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm release:publish
-      - name: Create GitHub Release
-        if: ${{ inputs.create_github_release }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSION="$(node -p "require('./release/corpus-release.json').version")"
-          gh release create "corpus-v${VERSION}" \
-            dist/release/SHA256SUMS \
-            dist/release/release-manifest.json \
-            dist/release/corpus.jsonld \
-            dist/release/ro-crate-metadata.json \
-            dist/release/packages/*.tgz \
-            --title "MoonWitness Corpus ${VERSION}" \
-            --generate-notes
+          retention-days: 14

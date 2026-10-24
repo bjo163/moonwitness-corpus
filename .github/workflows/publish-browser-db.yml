@@ -1,52 +1,76 @@
-name: Publish Browser Corpus Database
+name: Browser Corpus Database
 
+# Manual, opt-in publication. Push events only verify the build; creating or
+# updating the versioned GitHub Release requires an explicit dispatch input.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "datasets/**"
-      - "config/textual-semantic-rules.json"
-      - "scripts/build-browser-search-db.mjs"
-      - "scripts/chunk-browser-search-db.mjs"
-      - "scripts/export-web-catalog.mjs"
-      - ".github/workflows/publish-browser-db.yml"
+    inputs:
+      publish:
+        description: 'Create or update the versioned GitHub Release after verification'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: browser-corpus-db-main
-  cancel-in-progress: true
+  group: browser-corpus-db
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Ensure generated catalog
-        run: node scripts/export-web-catalog.mjs
+        run: node scripts/export-web-catalog.mjs --check
       - name: Build browser search database
         run: node scripts/build-browser-search-db.mjs
       - name: Chunk database
         run: node scripts/chunk-browser-search-db.mjs
       - name: Archive browser database
         run: tar -C dist/browser/chunks -czf dist/rgbl-browser-db.tar.gz .
+      - name: Record content-addressed release identity
+        run: |
+          HASH="$(node -e "console.log(JSON.parse(require('fs').readFileSync('apps/web/public/corpus-catalog.json','utf8')).corpusHash)")"
+          SCHEMA="$(node -e "console.log(JSON.parse(require('fs').readFileSync('dist/browser/chunks/config.json','utf8')).schemaVersion)")"
+          printf '{"tag":"browser-db-v%s-%s","hash":"%s","schema":"%s"}\n' "$SCHEMA" "$HASH" "$HASH" "$SCHEMA" > dist/browser/release-info.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-db-candidate
+          path: |
+            dist/rgbl-browser-db.tar.gz
+            dist/browser/release-info.json
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: verify
+    if: inputs.publish == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser-db-candidate
       - name: Publish versioned content-addressed browser database
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          HASH="$(node -e "console.log(JSON.parse(require('fs').readFileSync('apps/web/public/corpus-catalog.json','utf8')).corpusHash)")"
-          SCHEMA="$(node -e "console.log(JSON.parse(require('fs').readFileSync('dist/browser/chunks/config.json','utf8')).schemaVersion)")"
-          TAG="browser-db-v${SCHEMA}-${HASH}"
+          TAG="$(node -p "require('./release-info.json').tag")"
+          SCHEMA="$(node -p "require('./release-info.json').schema")"
+          HASH="$(node -p "require('./release-info.json').hash")"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --target "$GITHUB_SHA" --title "RGBL Browser DB v${SCHEMA} ${HASH}" --notes "Generated browser-compatible corpus database for schema v${SCHEMA} and immutable corpus hash ${HASH}."
           fi
-          gh release upload "$TAG" dist/rgbl-browser-db.tar.gz --clobber
+          gh release upload "$TAG" rgbl-browser-db.tar.gz --clobber
           echo "Published $TAG"

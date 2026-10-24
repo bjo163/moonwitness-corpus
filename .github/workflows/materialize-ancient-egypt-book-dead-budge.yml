@@ -1,0 +1,38 @@
+name: Budge Materialization Verification (Read Only)
+
+# FIX-002 / FIX-005: explicit audit only while source/rights gates are pending.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: budge-materialization-audit
+  cancel-in-progress: true
+
+jobs:
+  validate-budge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Materialize and validate without publishing
+        run: |
+          pnpm materialize:ancient-egypt-budge
+          pnpm validate:corpus
+          pnpm validate:editions
+      - name: Require committed generated dataset to match
+        run: git diff --exit-code -- datasets/ancient-egypt-book-dead-budge

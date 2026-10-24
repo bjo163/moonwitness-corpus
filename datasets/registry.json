@@ -335,6 +335,26 @@
       "tradition": "shinto",
       "genre": "classical_text",
       "sourceLanguage": "ja"
+    },
+    {
+      "id": "mw:dataset:world-religions:timeline-wikidata",
+      "path": "datasets/world-religions-timeline-wikidata",
+      "status": "active"
+    },
+    {
+      "id": "mw:dataset:zhuangzi:giles-1889",
+      "path": "datasets/zhuangzi-giles-1889",
+      "status": "supplemental"
+    },
+    {
+      "id": "mw:dataset:ancient-egyptian:book-dead-budge",
+      "path": "datasets/ancient-egypt-book-dead-budge",
+      "status": "supplemental"
+    },
+    {
+      "id": "mw:dataset:ancient-egyptian:book-dead-renouf-1904",
+      "path": "datasets/ancient-egypt-book-dead-renouf",
+      "status": "supplemental"
     }
   ]
 }
