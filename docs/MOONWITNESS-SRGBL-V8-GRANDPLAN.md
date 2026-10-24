@@ -12,6 +12,10 @@
 
 **Local-AI execution:** [Local AI Handoff](./MOONWITNESS-LOCAL-AI-HANDOFF.md) · [Micro-Issue Register](./MOONWITNESS-P19-MICROTASKS.md). **Branch policy:** work on existing `dev` only; DO NOT create any branch; if protection blocks writing directly, stop and report rather than creating another branch.
 
+### Explain it before implementing it
+
+Start with [**What exactly are we building?**](./MOONWITNESS-EXPLAINED-WALKTHROUGH.md) (real user journey + illustrative synthetic data + what is implemented) and [**38 executable micro-issue contracts**](./MOONWITNESS-P19-EXECUTABLE-SPECS.md) (per issue inputs, positive/negative examples, file scopes and tests). Read the product narrative/blueprint only after this basic explanation; keep claim/rights and review limits explicit.
+
 ### How to use this document
 
 This is the **single navigation and execution plan** for the user-requested corpus witness intelligence programme. It **does not replace** the original v1 Product Blueprint, P18 Key Witness spec, P19 methodology RFC, canonical corpus schema, or TODO identity markers. Their detailed requirements stay authoritative within their respective domains. In a conflict: preserve canonical text, rights, sourced evidence and reviewer decisions first; open an ADR/RFC review for semantic changes instead of silently redefining a term. The linked TODO is the canonical, issue-sync-compatible record of task IDs and completion state. GitHub commit evidence is not empirical or doctrinal verification.
