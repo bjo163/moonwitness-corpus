@@ -53,18 +53,18 @@ async function safeReviewedIndex() {
 export const srgblResearchRoutes: FastifyPluginAsync = async app => {
   app.get('/research/srgbl/manifest', {
     schema: { tags: ['Research: SRGBL v8'], summary: 'SRGBL v8 research implementation status' }
-  }, async () => {
+  }, async (_request, reply) => {
     const {index:reviewed,error}=await safeReviewedIndex()
-    if(error) return {
+    if(error) return reply.code(503).send({
       success:false,model:'SRGBL',researchStatus:'reviewed-publication-invalid',
       reviewedAnalysisMaterialized:false,publicGlobalScriptureScoring:false
-    }
+    })
     return {
       success: true,
       model: 'SRGBL', methodVersion: 'v8-research-proposal',
       levelNames: SRGBL_LEVELS,
       publicGlobalScriptureScoring: false,
-      researchStatus: reviewed ? 'reviewed-derived-available' : 'source-trace-only',
+      researchStatus: reviewed?.publicSummaries.length ? 'reviewed-derived-available' : 'source-trace-only',
       reviewedAnalysisMaterialized: Boolean(reviewed?.publicSummaries.length),
       corpusHash: reviewed?.corpusHash ?? null
     }
