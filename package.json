@@ -71,6 +71,7 @@
     "materialize:ancient-egypt-budge": "tsx scripts/materialize-ancient-egypt-book-dead-budge.ts",
     "materialize:ancient-egypt-renouf": "tsx scripts/materialize-ancient-egypt-book-dead-renouf-1904.ts",
     "research:steward": "tsx scripts/research-steward.ts",
+    "srgbl:build-reviewed": "tsx scripts/build-srgbl-reviewed.ts",
     "research:audit": "tsx scripts/research-contract-audit.ts --check",
     "todo:sync": "tsx scripts/sync-todo-issues.ts todo-to-issues",
     "todo:sync:issue": "tsx scripts/reconcile-issue-status.ts",

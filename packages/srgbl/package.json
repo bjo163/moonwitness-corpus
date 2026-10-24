@@ -3,6 +3,13 @@
   "version": "0.0.0-research.1",
   "private": true,
   "type": "module",
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./analysis": "./src/analysis.ts",
+    "./keys": "./src/keys.ts",
+    "./sources": "./src/sources.ts",
+    "./research-ledger": "./src/research-ledger.ts",
+    "./derived": "./src/derived.ts"
+  },
   "description": "Experimental, pure derived SRGBL v8 research scoring primitives. No corpus mutation or scripture ranking."
 }

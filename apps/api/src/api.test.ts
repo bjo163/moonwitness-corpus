@@ -113,5 +113,21 @@ test('Fastify Corpus API Engine with OpenTelemetry & Dynamic Traditions', async 
     assert.ok(json.data.every((item: any) => item.tradition === 'islam'))
   })
 
+  await t.test('SRGBL research status is explicit, read-only and makes no invented claims', async () => {
+    const status = await app.inject({method:'GET',url:'/v1/research/srgbl/manifest'})
+    assert.equal(status.statusCode,200)
+    assert.deepEqual(status.json().levelNames,['S1','R2','G3','B4','L5'])
+    assert.equal(status.json().reviewedAnalysisMaterialized,false)
+    const response = await app.inject({method:'GET',url:'/v1/research/srgbl/passages/mw%3Apassage%3Ahinduism%3Abhagavad-gita%3A1%3A1/source-trace'})
+    assert.equal(response.statusCode,200)
+    const detail = response.json()
+    assert.equal(detail.data.defaultLevelStatus,'pending')
+    assert.ok(detail.data.sources.length >= 2)
+    assert.ok(detail.data.sources.every((s: any) => s.text === undefined))
+    const missing = await app.inject({method:'GET',url:'/v1/research/srgbl/passages/mw%3Apassage%3Ahinduism%3Abhagavad-gita%3A1%3A1/analysis'})
+    assert.equal(missing.statusCode,404)
+    assert.equal(missing.json().error,'reviewed_analysis_not_materialized')
+  })
+
   await app.close()
 })

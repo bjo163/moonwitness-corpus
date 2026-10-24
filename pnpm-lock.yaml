@@ -65,6 +65,9 @@ importers:
       '@moonwitness/corpus-repository':
         specifier: workspace:*
         version: link:../../packages/repository
+      '@moonwitness/srgbl':
+        specifier: workspace:*
+        version: link:../../packages/srgbl
       '@opentelemetry/api':
         specifier: ^1.9.1
         version: 1.9.1

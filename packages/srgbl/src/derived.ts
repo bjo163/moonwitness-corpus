@@ -1,0 +1,80 @@
+import { createHash } from 'node:crypto'
+import { validateAnalysisRun, type AnalysisRun } from './analysis.js'
+import { summarizeCandidate, validateMiracleAttribution, type ReviewedCandidate, type MiracleAttribution } from './research-ledger.js'
+
+export interface SnapshotInput {
+  corpusHash: string
+  methodVersion: string
+  runs: AnalysisRun[]
+  candidates: ReviewedCandidate[]
+  miracleClaims: MiracleAttribution[]
+}
+export type ResearchPublication = {
+  schema: 'srgbl-v8-reviewed-derived-v1'
+  corpusHash: string
+  methodVersion: string
+  inputSha256: string
+  records: {
+    /** Full assessment details are retained in review-only view. */
+    reviewedAnalyses: Array<{id:string;passageId:string;reviewer:string;maturity:number;max:15}>
+    reviewedRelations: Array<{id:string;method:string;relation:string;reviewer:string}>
+    attributedClaims: Array<{id:string;targetPassageId:string;tradition:string;method:string;claimant:string;reviewer:string}>
+  }
+  /** Public projection deliberately lacks ranking scores, text, and unreviewed claims. */
+  publicSummaries: Array<{id:string;passageId:string;method:string;status:'reviewed'}>
+}
+
+/** Stable JSON used for reproducible SHA-256. Reject unsupported data structures. */
+export function canonicalJson(value:unknown):string {
+  if (value===null) return 'null'
+  if (typeof value==='string' || typeof value==='boolean') return JSON.stringify(value)
+  if (typeof value==='number' && Number.isFinite(value)) return JSON.stringify(value)
+  if (Array.isArray(value)) return '['+value.map(canonicalJson).join(',')+']'
+  if (typeof value==='object' && value && Object.getPrototypeOf(value)===Object.prototype) {
+    const v=value as Record<string,unknown>
+    const keys=Object.keys(v).sort()
+    if(keys.some(k=>v[k]===undefined)) throw new TypeError('Undefined property is forbidden')
+    return '{'+keys.map(k=>JSON.stringify(k)+':'+canonicalJson(v[k])).join(',')+'}'
+  }
+  throw new TypeError('Unsupported value in canonical research record')
+}
+export function sha256Json(value:unknown):string {
+  return createHash('sha256').update(canonicalJson(value),'utf8').digest('hex')
+}
+
+/** Fail closed on any ineligible records, preserving exact analysis associations. */
+export function createReviewedSnapshot(input:SnapshotInput):ResearchPublication {
+  if(!input.corpusHash?.trim() || !input.methodVersion?.trim()) throw new TypeError('corpusHash and methodVersion are required')
+  if(!Array.isArray(input.runs)||!Array.isArray(input.candidates)||!Array.isArray(input.miracleClaims)) throw new TypeError('input records must be arrays')
+  const ids=new Set<string>()
+  const guard=(id:string)=>{if(!id?.trim()||ids.has(id))throw new TypeError('duplicated/blank derived ID');ids.add(id)}
+  const reviewedAnalyses=[] as ResearchPublication['records']['reviewedAnalyses']
+  const publicSummaries=[] as ResearchPublication['publicSummaries']
+  for(const run of input.runs) {
+    guard(run.id)
+    if(run.corpusHash!==input.corpusHash||run.methodVersion!==input.methodVersion) throw new Error('analysis corpus/method snapshot mismatch')
+    const check=validateAnalysisRun(run)
+    if(!check.publishable) throw new Error('analysis is not publishable: '+check.errors.join('; '))
+    reviewedAnalyses.push({id:run.id,passageId:run.passageId,reviewer:run.reviewer!,maturity:check.maturity.score,max:15})
+    publicSummaries.push({id:run.id,passageId:run.passageId,method:run.method,status:'reviewed'})
+  }
+  const reviewedRelations=[] as ResearchPublication['records']['reviewedRelations']
+  for(const item of input.candidates){
+    guard(item.id)
+    const review=summarizeCandidate(item)
+    if(!review.publishable) throw new Error('candidate requires full independent review')
+    reviewedRelations.push({id:item.id,method:item.relation.method,relation:item.relation.relation,reviewer:item.reviewer!})
+  }
+  const attributedClaims=[] as ResearchPublication['records']['attributedClaims']
+  for(const item of input.miracleClaims){
+    guard(item.id)
+    if(item.reviewStatus!=='reviewed'||validateMiracleAttribution(item).length) throw new Error('miracle attribution requires reviewed, evidenced claimant')
+    attributedClaims.push({id:item.id,targetPassageId:item.targetPassageId,tradition:item.tradition,method:item.method,claimant:item.claimant,reviewer:item.reviewer!})
+  }
+  reviewedAnalyses.sort((a,b)=>a.id.localeCompare(b.id))
+  reviewedRelations.sort((a,b)=>a.id.localeCompare(b.id))
+  attributedClaims.sort((a,b)=>a.id.localeCompare(b.id))
+  publicSummaries.sort((a,b)=>a.id.localeCompare(b.id))
+  return {schema:'srgbl-v8-reviewed-derived-v1',corpusHash:input.corpusHash,methodVersion:input.methodVersion,
+    inputSha256:sha256Json(input),records:{reviewedAnalyses,reviewedRelations,attributedClaims},publicSummaries}
+}
