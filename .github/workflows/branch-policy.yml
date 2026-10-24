@@ -7,9 +7,10 @@ on:
     paths:
       - '.github/workflows/branch-policy.yml'
       - 'docs/BRANCHING.md'
+      - 'scripts/branch-retention-policy.mjs'
+      - 'scripts/branch-retention-policy.test.mjs'
   workflow_dispatch:
 
-# No action in this workflow may delete or rewrite refs.
 permissions:
   contents: read
   pull-requests: read
@@ -21,35 +22,15 @@ concurrency:
 jobs:
   inventory:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Inventory remote branches and active pull request heads
-        shell: bash
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test fail-closed retention rules
+        run: node --test scripts/branch-retention-policy.test.mjs
+      - name: Audit branch and active PR retention (read-only)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          : "${GITHUB_REPOSITORY:?missing repository}"
-
-          # On API or authentication error this fails without performing any write.
-          branches="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/branches?per_page=100" --jq '.[].name' | sort)"
-          open_prs="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" --jq '.[] | "#\(.number) \(.head.repo.full_name // "unknown"):\(.head.ref) (draft=\(.draft))"')"
-
-          {
-            echo '## Branch policy: read-only retention audit'
-            echo ''
-            echo 'Canonical long-lived branches: main, dev.'
-            echo 'Temporary review and research branches are retained, including open/draft PR heads.'
-            echo 'No branch is deleted or force-updated by this workflow.'
-            echo ''
-            echo '### Remote branch inventory'
-            echo '~~~text'
-            printf '%s\n' "$branches"
-            echo '~~~'
-            echo '### Open PR source branches'
-            echo '~~~text'
-            printf '%s\n' "${open_prs:-No open PRs reported}"
-            echo '~~~'
-          } | tee -a "${GITHUB_STEP_SUMMARY}"
-
-          echo '::notice::Audit-only branch policy: 0 deletions, 0 pushes, 0 ref updates.'
+        run: node scripts/branch-retention-policy.mjs
