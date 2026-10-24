@@ -1,0 +1,109 @@
+name: One-Time Stage Reviewed Main Dev Integration Candidate
+
+# Safe scope: one new work/* ref only after a complete ephemeral green merge.
+# Never push main/dev, force-update refs, delete branches, tag or publish.
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/one-time-stage-integration.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-main-dev-candidate
+  cancel-in-progress: false
+
+jobs:
+  stage-reviewed-draft-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact triggering dev SHA with required push access
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Prepare exact-ancestry integration in disposable runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'bjo163/moonwitness-corpus'
+          test "$GITHUB_REF" = 'refs/heads/dev'
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/dev:refs/remotes/origin/dev'
+          expected_main='df00706c98e21fb3fb0146b8389b0f2978f3d833'
+          test "$(git rev-parse origin/main)" = "$expected_main"
+          test "$(git rev-parse origin/dev)" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          set +e
+          git merge --no-commit --no-ff origin/main
+          status="$?"
+          set -e
+          if [[ "$status" -ne 1 ]]; then
+            echo "::error::Expected exactly the already-reviewed five conflict paths; got merge status $status"
+            exit 1
+          fi
+          node scripts/reconcile-integration-dry-run.mjs
+          git diff --cached --check
+          {
+            echo '## Candidate staging gate'
+            echo ''
+            echo "Dev SHA: $GITHUB_SHA"
+            echo "Main SHA: $expected_main"
+            echo 'Conflict resolution: reviewed five-file policy; no silent ours/theirs merge.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify complete merged workspace before any ref write
+        run: |
+          pnpm install --lockfile-only --ignore-scripts
+          pnpm install --frozen-lockfile
+          pnpm check
+      - name: Create a two-parent reviewed integration commit on NEW work ref only
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate='work/main-dev-reconciled-20261024'
+          expected_main='df00706c98e21fb3fb0146b8389b0f2978f3d833'
+          # Prevent any repo-level mutation if main or dev changed during tests.
+          remote_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          remote_dev="$(git ls-remote origin refs/heads/dev | cut -f1)"
+          test "$remote_main" = "$expected_main"
+          test "$remote_dev" = "$GITHUB_SHA"
+          set +e
+          existing="$(git ls-remote --exit-code --heads origin "$candidate")"
+          rc="$?"
+          set -e
+          if [[ "$rc" -ne 2 || -n "$existing" ]]; then
+            echo "::error::Candidate ref already exists or GitHub cannot safely confirm absence (status $rc)"
+            exit 1
+          fi
+          git add -- pnpm-lock.yaml
+          # Remove elevated ONE-TIME workflow from the candidate tree.
+          git rm -- .github/workflows/one-time-stage-integration.yml
+          git diff --cached --check
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git commit -m 'merge: reconcile main ancestry with dev corpus and consumer contracts (#399)'
+          parents="$(git rev-list --parents -n 1 HEAD)"
+          test "$(printf '%s\n' "$parents" | wc -w)" -eq 3
+          git merge-base --is-ancestor "$expected_main" HEAD
+          git merge-base --is-ancestor "$GITHUB_SHA" HEAD
+          git push origin "HEAD:refs/heads/$candidate"
+          {
+            echo ''
+            echo '### New integration review candidate (not a production promotion)'
+            echo "Candidate: $candidate"
+            echo "Commit SHA: $(git rev-parse HEAD)"
+            echo 'Both original histories preserved as parents.'
+            echo 'No main/dev write, no forced push, no release/publish.'
+          } >> "$GITHUB_STEP_SUMMARY"
