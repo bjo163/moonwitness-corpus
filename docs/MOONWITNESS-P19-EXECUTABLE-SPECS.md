@@ -151,7 +151,7 @@
 
 **Change to implement.** Test count m=0..5 and triangular m(m+1)/2, with first unsatisfied level ending accumulation.
 
-**Expected positive example.** S1,S2? Use canonical S1/R2/G3/B4/L5: all supported => 15; S1/R2 => 3.
+**Expected positive example.** Using canonical stages S1/R2/G3/B4/L5: all five supported => 15; only S1 and R2 supported => 3.
 
 **Expected negative example.** S1 supported,R2 unknown,G3 supported => maturity 1, not 6/15.
 
