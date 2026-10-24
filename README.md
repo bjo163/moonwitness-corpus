@@ -31,6 +31,12 @@ A provenance-first **multi-tradition text, scripture, sacred-literature, and evi
 </div>
 
 
+## SRGBL v8 — MASTER GRANDPLAN & AI LOCAL WORK PACKETS
+
+**[OPEN THE MASTER GRANDPLAN](docs/MOONWITNESS-SRGBL-V8-GRANDPLAN.md)** · [Narrative](docs/MOONWITNESS-P19-PRODUCT-NARRATIVE.md) · [Implementation Blueprint](docs/MOONWITNESS-SRGBL-V8-BLUEPRINT.md) · [38 Small GitHub Issues](docs/MOONWITNESS-P19-MICROTASKS.md) · [Local AI Handoff: DEV only / No new branches](docs/MOONWITNESS-LOCAL-AI-HANDOFF.md)
+
+P19 micro issues #452–#489 are engineering work packets beneath P19 Epic #446 and TODO's 28 parent tasks. They do **not** imply that empirical research or reviewer/rights approval has been completed.
+
 ## MoonWitness Witness Intelligence — current scope
 
 **Current public product:** provenance-first TEXT observatory (technical alias: **RGBL**). Its exact text, source/edition, rights, evidence, and provenance remain canonical and unchanged.
