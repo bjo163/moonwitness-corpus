@@ -398,7 +398,7 @@ Pilot tasks P18-005..P18-008 stay blocked until decisions 2 (pilot traditions), 
 
 P19 extends the P17 evidence graph and P18 Key Witness with five-layer S1–L5 reasoning, Swing Swing Key, candidate Witness /100, frame-scoped Quran-anchored Positive Correction, and OFFSIDE review diagnostics. RFC: [SRGBL v8](docs/SRGBL-V8-MASTER-RFC.md). Historical crosswalk: [source crosswalk](docs/SRGBL-V8-CONCEPT-CROSSWALK.md). All P19 tasks remain unchecked until their complete acceptance gates, integration and reviews pass; a pure scoring primitive is not proof of the end-to-end capability. Canonical scripture text, IDs and v0.1 schema remain untouched.
 
-The merged PR #448 adds corpus-pinned reviewed API publication. Static/browser export is an additional partial implementation; no reviewed input dataset is available for publication, and no P19 acceptance checkbox is complete on that basis alone.
+Merged PRs #448 and #449 add corpus-pinned reviewed API publication and a verified static/browser projection. Swing now has a bounded chain proposal helper with path duplicate/cycle guards. No approved reviewed input dataset or pilot is available; these engineering slices do not complete any P19 acceptance checkbox by themselves.
 
 - [ ] Freeze historical WITNESS/SWING/SRGBL/KEY/OFFSIDE source crosswalk and distinct scoring systems. **Depends:** P17. <!-- mw-todo:P19-001 -->
 - [ ] Review and approve five-level SRGBL v8 RFC, ADR, theological boundaries and decision register. **Depends:** P19-001. <!-- mw-todo:P19-002 -->
