@@ -58,6 +58,47 @@ test('missing reviewer, uncertain/dissent or circular refs cannot be promoted',(
   assert.ok(v.errors.some(x=>x.includes('reviewer')))
   assert.equal(v.publishable,false)
 })
+test('level-claim graph diagnostics name the claim, the edge and the exact cycle',()=>{
+  // Positive control: the legal S1 -> R2 -> G3 chain has no graph error.
+  const clean=validateAnalysisRun(fixture())
+  assert.deepEqual(clean.errors.filter(e=>e.includes('claim dependency')||e.includes('dangling')||e.includes('duplicate claim id')),[])
+  // A predecessor that is not in the run is dangling and must say which claim carries the edge.
+  const unknown=fixture()
+  unknown.claims[2].dependsOn=['claim:does-not-exist']
+  const u=validateAnalysisRun(unknown)
+  assert.ok(u.errors.some(e=>e==='dangling claim dependency claim:does-not-exist in claim:G3'),String(u.errors))
+  // The rejected edge is preserved for the researcher, never silently deleted.
+  assert.deepEqual(unknown.claims[2].dependsOn,['claim:does-not-exist'])
+  assert.equal(u.states.G3,'pending')
+  assert.equal(u.publishable,false)
+  // Self-dependency is named, not reported as a bare anonymous failure.
+  const self=fixture()
+  self.claims[1].dependsOn=['claim:R2','claim:S1']
+  assert.ok(validateAnalysisRun(self).errors.some(e=>e==='claim:R2 depends on itself'))
+  // Duplicated ids collide in the graph and block publication.
+  const duplicated=fixture()
+  duplicated.claims[2]={...duplicated.claims[2],id:'claim:R2'}
+  const d=validateAnalysisRun(duplicated)
+  assert.ok(d.errors.some(e=>e==='duplicate claim id claim:R2 in the dependency graph'),String(d.errors))
+  assert.equal(d.publishable,false)
+  // A real cycle is reported with its closed path, once, and stably.
+  const cyclic=fixture()
+  cyclic.claims[1].dependsOn=['claim:S1','claim:G3']
+  const c=validateAnalysisRun(cyclic)
+  const paths=c.errors.filter(e=>e.startsWith('claim dependency cycle: '))
+  assert.equal(paths.length,1)
+  assert.equal(paths[0],'claim dependency cycle: claim:G3 -> claim:R2 -> claim:G3')
+  assert.equal(c.publishable,false)
+  // Reordering the claims must not rotate or duplicate the reported cycle.
+  const shuffled=fixture()
+  shuffled.claims=[...shuffled.claims].reverse()
+  shuffled.claims.find(c2=>c2.level==='R2')!.dependsOn=['claim:S1','claim:G3']
+  assert.deepEqual(validateAnalysisRun(shuffled).errors.filter(e=>e.startsWith('claim dependency cycle: ')),paths)
+  // Blank ids are identified positionally instead of collapsing into one message.
+  const blank=fixture()
+  blank.claims[0].id='  '
+  assert.ok(validateAnalysisRun(blank).errors.some(e=>e==='claim at index 0 has a blank id'))
+})
 test('OFFSIDE names its reason and proposes a frame without rewriting the canonical one',()=>{
   const mismatch=diagnoseOffside(frame,{recipient:'individual'})
   assert.equal(mismatch.status,'candidate-offside')

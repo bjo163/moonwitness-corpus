@@ -153,44 +153,70 @@ export function validateAnalysisRun(run: AnalysisRun): AnalysisValidation {
   const claimIds = new Set<string>()
   const claims = Array.isArray(run.claims) ? run.claims : []
   const byLevel = new Map<SrgbLLevel, LevelClaim[]>()
-  for (const c of claims) {
-    if (!nonblank(c.id) || claimIds.has(c.id)) errors.push('duplicate/blank claim ID')
-    claimIds.add(c.id)
-    if (!SRGBL_LEVELS.includes(c.level)) errors.push('invalid claim level')
-    if (!['supported','partial','pending','unsupported','unknown'].includes(c.status)) errors.push('invalid claim status')
-    if (!['observed','inferred','interpreted'].includes(c.epistemic)) errors.push('invalid epistemic class')
-    if (!nonblank(c.claim) || !nonblank(c.method)) errors.push('claim and method required')
+  claims.forEach((c, index) => {
+    // Every diagnostic must name the claim it rejects: 'duplicate/blank' alone
+    // is not actionable for a researcher holding a five-claim run.
+    const where = nonblank(c?.id) ? c.id : 'claim at index ' + index
+    if (!nonblank(c?.id)) errors.push(where + ' has a blank id')
+    else if (claimIds.has(c.id)) errors.push('duplicate claim id ' + c.id + ' in the dependency graph')
+    if (!claimIds.has(c.id)) claimIds.add(c.id)
+    if (!SRGBL_LEVELS.includes(c.level)) errors.push(where + ': invalid claim level')
+    if (!['supported','partial','pending','unsupported','unknown'].includes(c.status)) errors.push(where + ': invalid claim status')
+    if (!['observed','inferred','interpreted'].includes(c.epistemic)) errors.push(where + ': invalid epistemic class')
+    if (!nonblank(c.claim) || !nonblank(c.method)) errors.push(where + ': claim and method required')
     errors.push(...validateResearchFrame(c.frame))
-    if (!Array.isArray(c.evidenceIds) || !Array.isArray(c.dependsOn) || !Array.isArray(c.sourceContentIds)) errors.push('claim references must be arrays')
-    if (c.method !== run.method) errors.push('claim method mismatch')
-    if (c.status === 'supported' && (!c.evidenceIds?.length || !c.sourceContentIds?.length)) errors.push('supported claim must cite evidence and source')
-    for (const id of c.sourceContentIds || []) if (!contentIds.has(id)) errors.push('claim references unavailable source content')
+    if (!Array.isArray(c.evidenceIds) || !Array.isArray(c.dependsOn) || !Array.isArray(c.sourceContentIds)) errors.push(where + ': claim references must be arrays')
+    if (c.method !== run.method) errors.push(where + ': claim method mismatch')
+    if (c.status === 'supported' && (!c.evidenceIds?.length || !c.sourceContentIds?.length)) errors.push(where + ': supported claim must cite evidence and source')
+    for (const id of c.sourceContentIds || []) if (!contentIds.has(id)) errors.push(where + ': claim references unavailable source content')
     errors.push(...validateRepresentationLanes(run.sourceWitnesses || [], c.sourceContentIds || []))
     // Only an observed claim asserts what the text itself says; a translation
     // lane cannot substitute for a missing original reading.
     if (c.epistemic === 'observed' && c.status === 'supported') {
       const cited = (run.sourceWitnesses || []).filter(s => (c.sourceContentIds || []).includes(s.contentId))
       if (cited.length && !cited.some(s => s.representation === 'source_text')) {
-        errors.push('observed claim cites no original text witness')
+        errors.push(where + ': observed claim cites no original text witness')
       }
     }
     if (c.level === 'R2' && c.epistemic !== 'observed' && c.status === 'supported') errors.push('R2 supported claim must be observed text, not inference')
     if (c.level === 'L5' && c.status === 'supported' && !nonblank(c.boundaryNote)) errors.push('L5 supported claim requires boundary note')
     if (SRGBL_LEVELS.includes(c.level)) byLevel.set(c.level,[...(byLevel.get(c.level) || []),c])
-  }
+  })
   for (const c of claims) {
-    if (c.dependsOn?.includes(c.id)) errors.push('claim depends on itself')
-    for (const parent of c.dependsOn || []) if (!claimIds.has(parent)) errors.push('dangling claim dependency ' + parent)
+    const where = nonblank(c?.id) ? c.id : 'claim with blank id'
+    if (c.dependsOn?.includes(c.id)) errors.push(where + ' depends on itself')
+    for (const parent of c.dependsOn || []) if (!claimIds.has(parent)) errors.push('dangling claim dependency ' + parent + ' in ' + where)
   }
-  // Detect dependency cycles (even if status is pending).
-  const refs = new Map(claims.map(c => [c.id,c.dependsOn || []]))
-  const visiting = new Set<string>(), visited = new Set<string>()
+  // Detect dependency cycles (even if status is pending). Two claims sharing an
+  // id merge their outgoing edges instead of one silently replacing the other.
+  const refs = new Map<string, string[]>()
+  for (const c of claims) {
+    if (!nonblank(c?.id)) continue
+    const known = refs.get(c.id) || []
+    const edges = Array.isArray(c.dependsOn) ? c.dependsOn : []
+    refs.set(c.id, edges.reduce((list: string[], dep: string) => list.includes(dep) ? list : [...list, dep], known))
+  }
+  const visiting: string[] = []
+  const visited = new Set<string>()
+  const reported = new Set<string>()
   const visit = (id: string): void => {
-    if (visiting.has(id)) { errors.push('claim dependency cycle'); return }
+    const at = visiting.indexOf(id)
+    if (at >= 0) {
+      // Rotate the ring so the same cycle reads identically whatever order the
+      // claims were supplied in.
+      const ring = visiting.slice(at)
+      const smallest = ring.reduce((min, node) => node < min ? node : min, ring[0])
+      const start = ring.indexOf(smallest)
+      const canonical = [...ring.slice(start), ...ring.slice(0, start)]
+      canonical.push(canonical[0])
+      const message = 'claim dependency cycle: ' + canonical.join(' -> ')
+      if (!reported.has(canonical.join('>'))) { reported.add(canonical.join('>')); errors.push(message) }
+      return
+    }
     if (visited.has(id)) return
-    visiting.add(id)
+    visiting.push(id)
     for (const dep of refs.get(id) || []) if (refs.has(dep)) visit(dep)
-    visiting.delete(id)
+    visiting.pop()
     visited.add(id)
   }
   for (const id of claimIds) visit(id)
