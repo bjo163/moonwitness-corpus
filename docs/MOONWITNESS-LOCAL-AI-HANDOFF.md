@@ -64,7 +64,7 @@ Do not execute pnpm todo:sync indiscriminately: the repository issue-sync contra
 
 ## 2.1 Measured command matrix (baseline P19-L01 / #452)
 
-Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`. Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
+Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`; re-measured at `dev` HEAD after the P19-L01..L14 wave. Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
 
 **Root workspace (`pnpm`, monorepo gate):**
 
@@ -72,10 +72,11 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 |---|---|---|---|
 | `pnpm install --frozen-lockfile` | exit 0 | `node_modules/` only (ignored) | Reports ignored build scripts for `esbuild`, `protobufjs`; do not run `pnpm approve-builds` casually |
 | `pnpm typecheck` | exit 0 (`tsc --noEmit`, no output) | none | Root `tsconfig.json` only; `apps/web` is not covered |
-| `pnpm test` | exit 0, 301 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
-| `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 14 tests pass | none | Default focused command for SRGBL analysis tasks |
-| `pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts` | exit 0, 5 tests pass | none | Swing candidate/chain tasks |
-| `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 13 tests pass | none | Run whenever `packages/srgbl` changes reach the Fastify adapter |
+| `pnpm test` | exit 0, 308 tests pass, 0 fail, 3 suites | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
+| `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 17 tests pass, 0 fail | none | Default focused command for SRGBL analysis tasks |
+| `pnpm exec tsx --test packages/srgbl/src/sources.test.ts` | exit 0, 4 tests pass, 0 fail | none | Selector/rights-scope file introduced by P19-L05 / #456 |
+| `pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts` | exit 0, 5 tests pass, 0 fail | none | Swing candidate/chain tasks |
+| `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 13 tests pass, 0 fail | none | Run whenever `packages/srgbl` changes reach the Fastify adapter |
 | `pnpm check` | **not run in this session** | SQLite database build output and repository build artifacts (ignored) | Release-grade gate; deliberately not run per micro issue because it builds and validates the whole corpus |
 | `pnpm todo:check` | **not run in this session** | none | Read-only audit; see the warning above |
 
@@ -88,7 +89,7 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 | `npm test` | exit 0 (`RGBL web contract smoke: OK`) | none | Contract smoke test, not the application build |
 | `npm run build` | **not run in this session** | `apps/web/.next/`, `apps/web/public/corpus-catalog.json` (tracked!), `apps/web/public/corpus-db/`, `apps/web/public/vendor/sqlite-httpvfs/` | Fetches the catalog from GitHub raw when missing, so it needs network and can modify a tracked file |
 
-**Manual CI:** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only and runs install, `node --test scripts/workflow-safety.test.mjs`, `pnpm check`, then a Fastify health smoke. **No CI run was executed for the commits listed in this section.** Trigger it explicitly with `gh workflow run ci.yml --ref dev` only when the GitHub CLI is installed and authenticated.
+**Manual CI:** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only and runs install, `node --test scripts/workflow-safety.test.mjs`, `pnpm check`, then a Fastify health smoke. **No CI run was executed for the commits listed in this section.** `gh` 2.103.2 is now installed at `C:\Program Files\GitHub CLI\` and authenticated as `bjo163` (keyring, scopes `repo`, `workflow`, `read:org`, `gist`), so `gh workflow run ci.yml --ref dev` is runnable; the machine-wide PATH entry only reaches terminals started after the install.
 
 **Worktree policy for these commands:**
 
