@@ -1,0 +1,118 @@
+import { scoreDirection, type FrameDirectionInput } from './index.js'
+import { validateResearchFrame, type ResearchFrame, type ReviewStatus } from './analysis.js'
+
+export const P18_KEY_CANDIDATES = [
+  'mercy','compassion','forgiveness','comfort','justice','truth','accountability','restoration',
+  'praise','gratitude','trust','hope','patience','humility','generosity','wisdom',
+  'narrative','warning','promise','covenant'
+] as const
+export const KEY_RELATIONS = [
+  'expresses','commands','prohibits','promises','warns','narrates','praises',
+  'condemns','comforts','questions','describes','covenants'
+] as const
+export type KeyToken = (typeof P18_KEY_CANDIDATES)[number]
+export type KeyRelation = (typeof KEY_RELATIONS)[number]
+
+/** v0 registry remains unratified until P18 review; do not silently extend it. */
+export type FramedKeyAssessment = {
+  id: string
+  passageId: string
+  contentId: string
+  key: KeyToken
+  scheme: 'semantic-core:v0'
+  method: string
+  assessor: string
+  reviewer?: string
+  evidenceIds: string[]
+  relation: KeyRelation
+  frame: ResearchFrame
+  direction: -2|-1|0|1|2
+  intensity: 1|2|3
+  confidence: number
+  weight: number
+  reviewStatus: ReviewStatus
+}
+
+export type KeyMessage = {
+  id: string
+  passageId: string
+  method: string
+  frame: ResearchFrame
+  sourceKeyAssessmentIds: string[]
+  message: string
+  boundaryNote: string
+  contextNote: string
+  evidenceIds: string[]
+  reviewStatus: ReviewStatus
+  reviewer?: string
+}
+
+const string = (s: unknown): s is string => typeof s === 'string' && s.trim().length > 0
+export function validateKeyAssessment(record: FramedKeyAssessment): string[] {
+  const errors = validateResearchFrame(record.frame)
+  for (const k of ['id','passageId','contentId','method','assessor'] as const) if (!string(record[k])) errors.push('key.'+k+' required')
+  if (!P18_KEY_CANDIDATES.includes(record.key)) errors.push('key not in v0 controlled candidate registry')
+  if (!KEY_RELATIONS.includes(record.relation)) errors.push('invalid key relation')
+  if (record.scheme !== 'semantic-core:v0') errors.push('wrong key scheme')
+  if (!Number.isInteger(record.direction) || Math.abs(record.direction)>2) errors.push('direction out of range')
+  if (!Number.isInteger(record.intensity) || record.intensity<1 || record.intensity>3) errors.push('intensity out of range')
+  if (!Number.isFinite(record.confidence) || record.confidence<0 || record.confidence>1) errors.push('confidence out of range')
+  if (!Number.isFinite(record.weight) || record.weight < 0) errors.push('weight must be nonnegative')
+  if (!Array.isArray(record.evidenceIds) || record.evidenceIds.some(x=>!string(x))) errors.push('invalid key evidence')
+  if (record.reviewStatus === 'reviewed' && (!record.evidenceIds?.length || !string(record.reviewer))) errors.push('reviewed key requires evidence and reviewer')
+  return errors
+}
+
+/** Every message is a derived editorial object with explicit text boundary. */
+export function validateKeyMessage(message: KeyMessage, keys: readonly FramedKeyAssessment[]): string[] {
+  const errors = validateResearchFrame(message.frame)
+  for (const k of ['id','passageId','method','message','boundaryNote','contextNote'] as const)
+    if (!string(message[k])) errors.push('message.'+k+' required')
+  if (!Array.isArray(message.sourceKeyAssessmentIds) || !message.sourceKeyAssessmentIds.length) errors.push('message must cite key assessments')
+  if (!Array.isArray(message.evidenceIds)) errors.push('message evidence missing')
+  const index = new Map(keys.map(k=>[k.id,k]))
+  for (const id of message.sourceKeyAssessmentIds || []) {
+    const key = index.get(id)
+    if (!key) errors.push('missing source key '+id)
+    else if (key.passageId !== message.passageId || key.method !== message.method) errors.push('message key mismatch '+id)
+  }
+  if (message.reviewStatus === 'reviewed' && (!string(message.reviewer) || !message.evidenceIds?.length ||
+    (message.sourceKeyAssessmentIds || []).some(id=>index.get(id)?.reviewStatus!=='reviewed'))) errors.push('reviewed message needs reviewed keys, evidence and reviewer')
+  return errors
+}
+
+export type FramedDirectionBundle = {
+  method: string
+  profile: string
+  frame: ResearchFrame
+  expectedKeyCount: number
+  assessments: FramedKeyAssessment[]
+  /** Observed agreement only; null when pilot measurements are unavailable. */
+  agreement: number | null
+  reviewerCount: number
+}
+export function evaluateFramedKeys(bundle: FramedDirectionBundle) {
+  const errors = validateResearchFrame(bundle.frame)
+  if (!string(bundle.method) || !string(bundle.profile)) errors.push('method/profile required')
+  if (!Number.isInteger(bundle.expectedKeyCount) || bundle.expectedKeyCount<1) errors.push('expectedKeyCount must be positive')
+  if (!Number.isInteger(bundle.reviewerCount) || bundle.reviewerCount<0) errors.push('reviewerCount invalid')
+  if (bundle.agreement !== null && (!Number.isFinite(bundle.agreement) || bundle.agreement<0 || bundle.agreement>1)) errors.push('agreement invalid')
+  const ids=new Set<string>(),uniqueKeys=new Set<string>()
+  const items:FrameDirectionInput[]=[]
+  for(const a of bundle.assessments){
+    errors.push(...validateKeyAssessment(a))
+    if(ids.has(a.id)) errors.push('duplicate key annotation')
+    ids.add(a.id)
+    uniqueKeys.add(a.key)
+    if(a.method!==bundle.method) errors.push('key method mismatch')
+    if(JSON.stringify(a.frame)!==JSON.stringify(bundle.frame)) errors.push('key frame mismatch')
+    items.push({id:a.id,direction:a.direction,intensity:a.intensity,confidence:a.confidence,weight:a.weight})
+  }
+  if(uniqueKeys.size>bundle.expectedKeyCount) errors.push('annotated keys exceed expected keys')
+  const coverage=errors.length?null:uniqueKeys.size/bundle.expectedKeyCount
+  // No score if invalid inputs. Do not infer cross-annotator agreement from confidence.
+  const direction=errors.length?null:scoreDirection(JSON.stringify(bundle.frame),bundle.profile,items)
+  return {method:bundle.method,profile:bundle.profile,frame:bundle.frame,
+    direction,coverage,n:bundle.assessments.length,uniqueKeyCount:uniqueKeys.size,
+    agreement:bundle.agreement,reviewerCount:bundle.reviewerCount,errors}
+}
