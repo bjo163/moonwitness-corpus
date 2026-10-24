@@ -268,10 +268,12 @@ async function ensureLabel(name: string, color: string, description: string): Pr
 async function syncTodoToIssues(): Promise<void> {
   const parsed = await parseTodo(true)
 
-  // Persist deterministic markers before any network mutation. The workflow's
-  // final `if: always()` commit step preserves them even if GitHub rate-limits
-  // a later issue mutation, making subsequent runs safely resumable.
+  // Persist deterministic markers before any network mutation. Local runs may
+  // write; protected-branch CI must not, so it fails closed and asks for a PR.
   if (parsed.changed) {
+    if (process.env.TODO_SYNC_NO_WRITE === '1') {
+      throw new Error('TODO.md requires metadata changes; open a pull request instead of writing from CI')
+    }
     await writeFile(TODO_PATH, parsed.content, 'utf8')
   }
 

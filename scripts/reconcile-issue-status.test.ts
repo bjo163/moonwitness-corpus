@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { reconcileTodoContent } from './reconcile-issue-status.js'
+import { describeReconcileChanges, reconcileTodoContent } from './reconcile-issue-status.js'
 
 test('reconciles every managed issue state, not only the triggering issue', () => {
   const todo = [
@@ -27,4 +27,17 @@ test('ignores unmanaged issues and fails duplicate markers', () => {
     { number: 1, body: '<!-- mw-todo:P1-010 -->', state: 'open' },
     { number: 2, body: '<!-- mw-todo:P1-010 -->', state: 'closed' }
   ]), /Multiple GitHub issues/)
+})
+
+test('reports only changed lines for check-only runs', () => {
+  const todo = [
+    '- [ ] A <!-- mw-todo:P1-010 -->',
+    '- [x] B <!-- mw-todo:P1-011 -->'
+  ].join('\n')
+  const reconciled = reconcileTodoContent(todo, [
+    { number: 12, body: '<!-- mw-todo:P1-010 -->', state: 'closed' }
+  ])
+  assert.deepEqual(describeReconcileChanges(todo, reconciled.content), [
+    'line 1: - [ ] A <!-- mw-todo:P1-010 --> -> - [x] A <!-- mw-todo:P1-010 -->'
+  ])
 })
