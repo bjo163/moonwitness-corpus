@@ -124,6 +124,11 @@ export const SWING_OPERATORS = [
   'perspective', 'temporal', 'semantic-opposition'
 ] as const
 export type SwingOperator = (typeof SWING_OPERATORS)[number]
+export interface SwingTriple {
+  subject: string
+  relation: string
+  object: string
+}
 export interface SwingRequest {
   operator: SwingOperator
   subject: string
@@ -132,6 +137,8 @@ export interface SwingRequest {
   depth: number
   /** Used to reject a repeat in the caller's candidate chain. */
   seenSignatures?: readonly string[]
+  /** Exact prior relation triples, including the starting relation, for cycle checks. */
+  seenRelations?: readonly SwingTriple[]
 }
 export interface SwingCandidate {
   signature: string
@@ -164,11 +171,46 @@ export function proposeSwing(request: SwingRequest): SwingCandidate {
   }
   const [nextSubject, nextRelation, nextObject] = transformed[operator]
   const signature = JSON.stringify([operator, nextSubject, nextRelation, nextObject])
-  if (request.seenSignatures?.includes(signature)) throw new RangeError('Swing cycle / duplicate candidate')
+  if (request.seenSignatures?.includes(signature)) throw new RangeError('Swing duplicate candidate')
+  const relationKey = (triple: SwingTriple) => JSON.stringify([triple.subject, triple.relation, triple.object])
+  const nextRelationKey = relationKey({ subject: nextSubject, relation: nextRelation, object: nextObject })
+  if (request.seenRelations?.some(item => relationKey(item) === nextRelationKey)) throw new RangeError('Swing cycle detected')
   return {
     signature, operator, subject: nextSubject, relation: nextRelation, object: nextObject,
     depth, state: 'candidate', evidenceStatus: 'unverified', inheritedScore: null
   }
+}
+
+export interface SwingChainResult {
+  candidates: SwingCandidate[]
+  stop: 'complete' | 'duplicate-candidate' | 'cycle'
+}
+
+/** Apply up to three candidate rotations while retaining path-local duplicate/cycle guards. */
+export function proposeSwingChain(start: SwingTriple, operators: readonly SwingOperator[]): SwingChainResult {
+  if (![start?.subject, start?.relation, start?.object].every(value => typeof value === 'string' && value.trim())) {
+    throw new TypeError('starting subject, relation and object are required')
+  }
+  if (!Array.isArray(operators) || operators.length > 3) throw new RangeError('Maximum swing depth is 3')
+  const candidates: SwingCandidate[] = []
+  const seenSignatures: string[] = []
+  const seenRelations: SwingTriple[] = [{ ...start }]
+  let current = { ...start }
+  for (let index = 0; index < operators.length; index++) {
+    try {
+      const candidate = proposeSwing({ operator: operators[index], ...current, depth: index + 1, seenSignatures, seenRelations })
+      candidates.push(candidate)
+      seenSignatures.push(candidate.signature)
+      const relation = { subject: candidate.subject, relation: candidate.relation, object: candidate.object }
+      seenRelations.push(relation)
+      current = relation
+    } catch (error) {
+      if (error instanceof RangeError && error.message === 'Swing duplicate candidate') return { candidates, stop: 'duplicate-candidate' }
+      if (error instanceof RangeError && error.message === 'Swing cycle detected') return { candidates, stop: 'cycle' }
+      throw error
+    }
+  }
+  return {candidates,stop:'complete'}
 }
 
 export const SRGBL_RELATION_TYPES = [
