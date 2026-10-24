@@ -394,6 +394,41 @@ Pilot tasks P18-005..P18-008 stay blocked until decisions 2 (pilot traditions), 
 
 **Exit gate:** a reader can open one passage and see its witness, at least one reviewed key with frame and direction, a derived message with boundary note, context coverage, and a balance view; no global positive/negative score or verse/tradition ranking exists.
 
+## P19 — SRGBL v8 Witness Intelligence (experimental, additive)
+
+P19 extends the P17 evidence graph and P18 Key Witness with five-layer S1–L5 reasoning, Swing Swing Key, candidate Witness /100, frame-scoped Quran-anchored Positive Correction, and OFFSIDE review diagnostics. RFC: [SRGBL v8](docs/SRGBL-V8-MASTER-RFC.md). Historical crosswalk: [source crosswalk](docs/SRGBL-V8-CONCEPT-CROSSWALK.md). All P19 tasks remain unchecked until their complete acceptance gates, integration and reviews pass; a pure scoring primitive is not proof of the end-to-end capability. Canonical scripture text, IDs and v0.1 schema remain untouched.
+
+- [ ] Freeze historical WITNESS/SWING/SRGBL/KEY/OFFSIDE source crosswalk and distinct scoring systems. **Depends:** P17. <!-- mw-todo:P19-001 -->
+- [ ] Review and approve five-level SRGBL v8 RFC, ADR, theological boundaries and decision register. **Depends:** P19-001. <!-- mw-todo:P19-002 -->
+- [ ] Define versioned derived analysis/key/message/swing/correction record contracts, without changing core record types. **Depends:** P19-002,P18-003,P18-004. <!-- mw-todo:P19-003 -->
+- [ ] Define actor/addressee/frame validation and OFFSIDE/ONSIDE editorial diagnostics. **Depends:** P19-002,P18-002. <!-- mw-todo:P19-004 -->
+- [ ] Implement S1 source, edition, artifact, rights and provenance evidence adapter. **Depends:** P19-003. <!-- mw-todo:P19-005 -->
+- [ ] Implement R2 explicit-text vs translation/inference validator with exact source selectors. **Depends:** P19-005. <!-- mw-todo:P19-006 -->
+- [ ] Implement G3/B4/L5 typed claim transitions, UNKNOWN and auditable evidence obligations. **Depends:** P19-004,P19-006. <!-- mw-todo:P19-007 -->
+- [ ] Complete maturity /15 scoring integrated with verified claim transitions and adversarial fixtures. **Depends:** P19-007. <!-- mw-todo:P19-008 -->
+- [ ] Complete quality /40 assessment and annotator rubric with review evidence. **Depends:** P19-007. <!-- mw-todo:P19-009 -->
+- [ ] Integrate frame-scoped Key Direction v8 including coverage,n,agreement and missing-value handling. **Depends:** P18-001..004. <!-- mw-todo:P19-010 -->
+- [ ] Complete seven bounded Swing operators, depth<=3, cycle/dedupe guard and no inherited score. **Depends:** P19-007. <!-- mw-todo:P19-011 -->
+- [ ] Integrate historical Witness /100 support rubric as versioned research-only candidate score. **Depends:** P19-011. <!-- mw-todo:P19-012 -->
+- [ ] Add candidate evidence ledger, independent source checks and reviewer workflow. **Depends:** P19-011,P19-012,P18-017,P18-018. <!-- mw-todo:P19-013 -->
+- [ ] Build typed cross-text correlation records with perspective-scoped methodologies. **Depends:** P17,P19-007. <!-- mw-todo:P19-014 -->
+- [ ] Implement Quran-anchored Positive Correction as reviewed interpretation, never universal truth verdict. **Depends:** P19-014. <!-- mw-todo:P19-015 -->
+- [ ] Represent distinct sourced and attributed miracle claims without auto-proof or numeric bonus. **Depends:** P19-015. <!-- mw-todo:P19-016 -->
+- [ ] Build reviewed Unlock Treasure discovery ledger with both supporting and opposing evidence. **Depends:** P19-013,P19-014. <!-- mw-todo:P19-017 -->
+- [ ] Create rights-safe ASSAFAAT/OFFSIDE case with QS 37:30 context and 20:5 editorial lens. **Depends:** P19-004,P19-014. <!-- mw-todo:P19-018 -->
+- [ ] Review exact-edition rights-safe source fixtures for QS 42:51,5:48,37:30,20:5,2:82. **Depends:** P19-005..018. <!-- mw-todo:P19-019 -->
+- [ ] Build deterministic SRGBL derived index with corpusHash, input hash and rebuild verification. **Depends:** P19-003,P19-019. <!-- mw-todo:P19-020 -->
+- [ ] Expose reviewed derived output through read-only Fastify API and export. **Depends:** P19-020. <!-- mw-todo:P19-021 -->
+- [ ] Support static/browser DB/catalog data planes with explicit provenance and no eager full scans. **Depends:** P19-020. <!-- mw-todo:P19-022 -->
+- [ ] Create accessible five-stage witness viewer with RTL and mobile layout. **Depends:** P19-020..022,P18-009,P18-013. <!-- mw-todo:P19-023 -->
+- [ ] Create research-only Swing/correction/disagreement panels; prohibit public ranking. **Depends:** P19-013..018,P19-023. <!-- mw-todo:P19-024 -->
+- [ ] Complete independent multi-annotator pilot with rights checks, N and agreement. **Depends:** P18-005..008,P19-019. <!-- mw-todo:P19-025 -->
+- [ ] Validate inter-rater reliability, holdout, adversarial behavior and calibration limits. **Depends:** P19-008..025. <!-- mw-todo:P19-026 -->
+- [ ] Pass rights, source traceability, deterministic build, no-ranking, performance and CI gates. **Depends:** P19-020..026. <!-- mw-todo:P19-027 -->
+- [ ] Review final docs, versioning, migration notes and guarded dev-to-main promotion. **Depends:** P19-002..027. <!-- mw-todo:P19-028 -->
+
+**Exit gate:** reviewed derived witness/message/correlation outputs are source/rights-traceable, alternative/disputed claims remain visible, S1–L5 transitions and /15,/40,/100 scales are independently auditable, and no global ayat/religion scoring or automated miracle truth claim exists.
+
 ## P10 — advanced profiles (after v0.1 proof)
 
 - [x] Temporal/chronology profile with uncertainty/ranges/calendars. <!-- mw-todo:P10-001 -->

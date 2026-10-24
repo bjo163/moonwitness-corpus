@@ -1125,3 +1125,18 @@ The v0.1 corpus specification/profile should not be called ready until all of th
 - CI rejects known structural, referential, provenance, and licensing failures.
 
 At that point, v0.1 is not “finished religious knowledge.” It is a stable **contract and supply chain** on which much larger religious and historical corpora can safely grow.
+
+
+---
+
+## P19 — SRGBL v8 Witness Intelligence (additive research phase)
+
+**Status:** experimental primitives and RFC; integration, real pilot and production/public features pending. P19 builds on P17 evidence graph and P18 Key Witness; it **must not** alter canonical source text, rights, or global theological authority. The same repository hosts `packages/srgbl` but the v0.1 spec remains unchanged.
+
+See [Master RFC](./SRGBL-V8-MASTER-RFC.md), [Concept Crosswalk](./SRGBL-V8-CONCEPT-CROSSWALK.md), [P18 v0](./KEY-WITNESS-V0.md) and [P19 28-task execution list](../TODO.md).
+
+Execution path: terminology/source review → five-level engine → source adapter + key validator → Swing candidates + 100-point historical rubric → typed cross-text Quran-anchored and neutral comparisons → derived hashed projections → Fastify/static/browser interface → human editorial pilot, holdouts, release gates.
+
+The user-facing five-column view is a presentation of a reviewable *analysis*, not five automatically authoritative meanings of every ayat. Positive Correction is always explicitly perspective-scoped, and miracle remains an attributed claim. No numeric global ranking of passages, religions, traditions or persons.
+
+P19 gates: exact licensed/metadata-only source, source+evidence provenance, deterministic method/versioned score, all UNKNOWN/conflicts preserved, tested no-inherited-Swing score, reviewed corrections, no fabricated text or machine-certified miracles, maintained CI and reproducible derived export. Full implementation is **not** implied by roadmap inclusion.

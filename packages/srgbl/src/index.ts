@@ -1,0 +1,202 @@
+/**
+ * SRGBL v8 research-only primitives for MoonWitness Corpus.
+ * Values describe an analysis/candidate under a versioned method; never a verse,
+ * tradition, human, or theological-truth ranking.
+ * This module does not read/write canonical corpus records.
+ */
+export const SRGBL_LEVELS = ['S1', 'R2', 'G3', 'B4', 'L5'] as const
+export type SrgbLLevel = (typeof SRGBL_LEVELS)[number]
+export type LevelStatus = 'supported' | 'partial' | 'pending' | 'unsupported' | 'unknown'
+export type LevelStates = Partial<Record<SrgbLLevel, LevelStatus>>
+
+export interface MaturityResult {
+  verifiedLevel: SrgbLLevel | null
+  score: number
+  max: 15
+  normalized: number
+  nextLevel: SrgbLLevel | null
+  pending: SrgbLLevel[]
+}
+
+/** Only a contiguous, supported prefix may earn cumulative maturity points. */
+export function scoreMaturity(states: LevelStates): MaturityResult {
+  let reached = 0
+  for (const level of SRGBL_LEVELS) {
+    const status = states[level]
+    if (status !== undefined &&
+        !(['supported', 'partial', 'pending', 'unsupported', 'unknown'] as string[]).includes(status)) {
+      throw new RangeError(`Invalid status for ${level}: ${status}`)
+    }
+    if (status !== 'supported') break
+    reached++
+  }
+  const score = reached * (reached + 1) / 2
+  return {
+    verifiedLevel: reached ? SRGBL_LEVELS[reached - 1] : null,
+    score,
+    max: 15,
+    normalized: score / 15,
+    nextLevel: reached === 5 ? null : SRGBL_LEVELS[reached],
+    pending: SRGBL_LEVELS.slice(reached)
+  }
+}
+
+export const QUALITY_DIMENSIONS = [
+  'sGrounding', 'rAccuracy', 'gSupport', 'bDiscipline', 'lResponsibility',
+  'provenance', 'unknownHonesty', 'alternativeCoverage',
+  'confidenceCalibration', 'actionUsefulness'
+] as const
+export type QualityDimension = (typeof QUALITY_DIMENSIONS)[number]
+export type QualityInputs = Record<QualityDimension, number>
+
+export function scoreQuality(input: QualityInputs) {
+  for (const key of QUALITY_DIMENSIONS) {
+    const v = input[key]
+    if (!Number.isInteger(v) || v < 0 || v > 4) {
+      throw new RangeError(`quality.${key} must be an integer from 0 to 4`)
+    }
+  }
+  const raw = QUALITY_DIMENSIONS.reduce((sum, key) => sum + input[key], 0)
+  return { rubric: 'srgbl-quality-v8-proposal', raw, max: 40 as const, normalized: raw / 40, dimensions: { ...input } }
+}
+
+export interface FrameDirectionInput {
+  /** Unique annotation ID in the selected method/profile/frame. */
+  id: string
+  direction: number
+  intensity: number
+  confidence: number
+  weight: number
+}
+export interface DirectionResult {
+  status: 'scored' | 'unknown'
+  value: number | null
+  range: readonly [-2, 2]
+  count: number
+  reason?: string
+}
+/** Bounded direction of a declared frame-specific bundle; not scriptural worth. */
+export function scoreDirection(frame: string, profile: string, items: readonly FrameDirectionInput[]): DirectionResult {
+  if (!frame.trim() || !profile.trim()) throw new TypeError('frame and method profile are required')
+  const ids = new Set<string>()
+  let numerator = 0
+  let denominator = 0
+  for (const k of items) {
+    if (!k.id.trim() || ids.has(k.id)) throw new TypeError('key assessment IDs must be unique and nonblank')
+    ids.add(k.id)
+    if (!Number.isInteger(k.direction) || k.direction < -2 || k.direction > 2) throw new RangeError('direction must be -2..2')
+    if (!Number.isInteger(k.intensity) || k.intensity < 1 || k.intensity > 3) throw new RangeError('intensity must be 1..3')
+    if (!Number.isFinite(k.confidence) || k.confidence < 0 || k.confidence > 1) throw new RangeError('confidence must be 0..1')
+    if (!Number.isFinite(k.weight) || k.weight < 0) throw new RangeError('weight must be nonnegative')
+    const factor = k.intensity * k.weight * k.confidence
+    numerator += factor * k.direction
+    denominator += factor
+  }
+  if (denominator === 0) return { status: 'unknown', value: null, range: [-2, 2], count: items.length, reason: 'no positive evidence weight' }
+  const raw = numerator / denominator
+  return { status: 'scored', value: Math.max(-2, Math.min(2, raw)), range: [-2, 2], count: items.length }
+}
+
+export const WITNESS_COMPONENT_MAX = {
+  sourceFidelity: 25, observability: 25, semanticConsistency: 20,
+  crossReference: 15, nonOverlapping: 15
+} as const
+export type WitnessComponents = Record<keyof typeof WITNESS_COMPONENT_MAX, number>
+/** Historical 100-point candidate rubric. A threshold never confers canonical authority. */
+export function scoreWitnessCandidate(values: WitnessComponents) {
+  let raw = 0
+  for (const key of Object.keys(WITNESS_COMPONENT_MAX) as (keyof WitnessComponents)[]) {
+    const n = values[key]
+    if (!Number.isInteger(n) || n < 0 || n > WITNESS_COMPONENT_MAX[key]) throw new RangeError(`Invalid witness component: ${key}`)
+    raw += n
+  }
+  return {
+    rubric: 'legacy-witness-score-v1',
+    raw,
+    max: 100 as const,
+    reviewEligibility: raw >= 70 ? 'eligible-for-review' as const : 'needs-more-evidence' as const,
+    automaticCanonicalApproval: false as const
+  }
+}
+
+export const SWING_OPERATORS = [
+  'direction', 'polarity', 'subject-object', 'cause-effect',
+  'perspective', 'temporal', 'semantic-opposition'
+] as const
+export type SwingOperator = (typeof SWING_OPERATORS)[number]
+export interface SwingRequest {
+  operator: SwingOperator
+  subject: string
+  relation: string
+  object: string
+  depth: number
+  /** Used to reject a repeat in the caller's candidate chain. */
+  seenSignatures?: readonly string[]
+}
+export interface SwingCandidate {
+  signature: string
+  operator: SwingOperator
+  subject: string
+  relation: string
+  object: string
+  depth: number
+  state: 'candidate'
+  evidenceStatus: 'unverified'
+  inheritedScore: null
+}
+/**
+ * Generates a QUESTION/CANDIDATE ONLY. Reversal never implies truth;
+ * every candidate must independently earn evidence and a new score.
+ */
+export function proposeSwing(request: SwingRequest): SwingCandidate {
+  const { operator, subject, relation, object, depth } = request
+  if (!(SWING_OPERATORS as readonly string[]).includes(operator)) throw new RangeError('Invalid swing operator')
+  if (!Number.isInteger(depth) || depth < 1 || depth > 3) throw new RangeError('Maximum swing depth is 3')
+  if (![subject, relation, object].every(x => typeof x === 'string' && x.trim().length)) throw new TypeError('subject, relation and object are required')
+  const transformed: Record<SwingOperator, [string, string, string]> = {
+    direction: [object, `candidate-inverse-of:${relation}`, subject],
+    polarity: [subject, `candidate-negation-of:${relation}`, object],
+    'subject-object': [object, `candidate-object-perspective-of:${relation}`, subject],
+    'cause-effect': [object, 'candidate-possible-cause-of', subject],
+    perspective: [object, `candidate-perspective-of:${relation}`, subject],
+    temporal: [object, `candidate-retrospective-of:${relation}`, subject],
+    'semantic-opposition': [subject, `candidate-opposition-of:${relation}`, object]
+  }
+  const [nextSubject, nextRelation, nextObject] = transformed[operator]
+  const signature = JSON.stringify([operator, nextSubject, nextRelation, nextObject])
+  if (request.seenSignatures?.includes(signature)) throw new RangeError('Swing cycle / duplicate candidate')
+  return {
+    signature, operator, subject: nextSubject, relation: nextRelation, object: nextObject,
+    depth, state: 'candidate', evidenceStatus: 'unverified', inheritedScore: null
+  }
+}
+
+export const SRGBL_RELATION_TYPES = [
+  'AFFIRMS', 'PARALLELS', 'CLARIFIES', 'QUALIFIES', 'CONTRASTS',
+  'CORRECTS_WITHIN_FRAME', 'UNRESOLVED', 'NOT_RELATED'
+] as const
+export type SrgbLRelationType = (typeof SRGBL_RELATION_TYPES)[number]
+export interface ScopedTextRelation {
+  leftPassageId: string
+  rightPassageId: string
+  relation: SrgbLRelationType
+  method: string
+  frame: string
+  evidenceIds: string[]
+  reviewer?: string
+  reviewStatus: 'draft' | 'reviewed' | 'disputed' | 'deprecated'
+}
+/** Strictly validates a *record*, never infers a correction or miracle. */
+export function validateScopedRelation(record: ScopedTextRelation): void {
+  if (![record.leftPassageId, record.rightPassageId, record.method, record.frame].every(x => typeof x === 'string' && x.trim())) {
+    throw new TypeError('Both passages, method, and frame are required')
+  }
+  if (!(SRGBL_RELATION_TYPES as readonly string[]).includes(record.relation)) throw new RangeError('Unsupported relation')
+  if (!Array.isArray(record.evidenceIds) || record.evidenceIds.some(x => typeof x !== 'string' || !x.trim())) throw new TypeError('Invalid evidence IDs')
+  if (record.reviewStatus === 'reviewed' && (!record.reviewer?.trim() || !record.evidenceIds.length)) {
+    throw new TypeError('Reviewed relationship requires reviewer and explicit evidence')
+  }
+  if (record.relation === 'CORRECTS_WITHIN_FRAME' && record.frame === 'comparative-neutral') {
+    throw new RangeError('Doctrinal correction cannot be asserted as neutral')
+  }
+}
