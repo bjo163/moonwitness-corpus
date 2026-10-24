@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   SRGBL_LEVELS, QUALITY_DIMENSIONS, scoreMaturity, scoreQuality,
-  scoreDirection, scoreWitnessCandidate, proposeSwing, validateScopedRelation,
-  type LevelStatus, type LevelStates
+  scoreDirection, scoreWitnessCandidate, proposeSwing, validateScopedRelation, resolveRelationSources,
+  type LevelStatus, type LevelStates, type ScopedTextRelation
 } from './index.js'
 
 /** Caller-declared attribution for every quality bundle under test. */
@@ -181,4 +181,43 @@ test('cross-text correction always requires a non-neutral frame; reviewed requir
   assert.throws(()=>validateScopedRelation({...valid,frame:'comparative-neutral',evidenceIds:[...valid.evidenceIds]}),RangeError)
   assert.throws(()=>validateScopedRelation({...valid,reviewer:undefined,evidenceIds:[...valid.evidenceIds]}),TypeError)
   assert.throws(()=>validateScopedRelation({...valid,evidenceIds:[]}),TypeError)
+})
+test('cross-text relation keeps structural validation separate from repository lookup', () => {
+  const base:ScopedTextRelation={leftPassageId:'mw:passage:quran:5:48',rightPassageId:'mw:passage:example',
+    relation:'PARALLELS',method:'comparative:v8',frame:'comparative-neutral',
+    evidenceIds:['mw:evidence:test'],reviewer:'mw:agent:reviewer',reviewStatus:'reviewed'}
+  // Structural layer: no repository required, and it rejects fuzzy or one-sided records.
+  assert.doesNotThrow(()=>validateScopedRelation(base))
+  assert.throws(()=>validateScopedRelation({...base,leftPassageId:'Quran 5:48'}),/exact mw:passage IDs, not references/)
+  assert.throws(()=>validateScopedRelation({...base,rightPassageId:'mw:passages:b'}),/exact mw:passage IDs/)
+  assert.throws(()=>validateScopedRelation({...base,rightPassageId:base.leftPassageId}),/two distinct passages/)
+  assert.throws(()=>validateScopedRelation({...base,evidenceIds:['mw:evidence:a','mw:evidence:a']}),/Evidence IDs must be unique/)
+  assert.throws(()=>validateScopedRelation({...base,relation:'PROMISES' as never}),RangeError)
+  // Lookup layer: a confirmed pair plus evidence is publishable as attributed review only.
+  const known=new Set(['mw:passage:quran:5:48','mw:passage:example','mw:evidence:test'])
+  const resolved=resolveRelationSources(base,{hasPassage:id=>known.has(id),hasEvidence:id=>known.has(id)})
+  assert.deepEqual(resolved.unresolved,[])
+  assert.deepEqual(resolved.endpoints.map(endpoint=>endpoint.status),['resolved','resolved','resolved'])
+  assert.deepEqual([resolved.publishable,resolved.automaticCanonicalApproval],[true,false])
+  // One missing endpoint blocks publication and never rewrites the record.
+  const before=JSON.stringify(base)
+  const missing=resolveRelationSources(base,{hasPassage:id=>id!=='mw:passage:example',hasEvidence:()=>true})
+  assert.deepEqual(missing.unresolved,['right mw:passage:example is missing from the repository'])
+  assert.equal(missing.publishable,false)
+  assert.equal(JSON.stringify(base),before)
+  // Abstention and an absent hook fail closed instead of assuming existence.
+  const abstained=resolveRelationSources(base,{hasPassage:()=>undefined,hasEvidence:()=>undefined})
+  assert.equal(abstained.endpoints.every(endpoint=>endpoint.status==='unavailable'),true)
+  assert.equal(abstained.unresolved.length,3)
+  assert.ok(abstained.unresolved.every(reason=>reason.endsWith('is unresolvable: no lookup answered')))
+  const noHooks=resolveRelationSources(base,{})
+  assert.deepEqual([noHooks.publishable,noHooks.endpoints[0].status],[false,'unavailable'])
+  // The repository is never consulted for a structurally invalid record.
+  let asked=0
+  assert.throws(()=>resolveRelationSources({...base,rightPassageId:'not-a-passage'},
+    {hasPassage:()=>{asked++;return true}}),TypeError)
+  assert.equal(asked,0)
+  // A draft record is not publishable even when every endpoint resolves.
+  assert.equal(resolveRelationSources({...base,reviewStatus:'draft'},
+    {hasPassage:()=>true,hasEvidence:()=>true}).publishable,false)
 })

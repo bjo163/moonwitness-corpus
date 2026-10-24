@@ -255,6 +255,8 @@ export const SRGBL_RELATION_TYPES = [
   'CORRECTS_WITHIN_FRAME', 'UNRESOLVED', 'NOT_RELATED'
 ] as const
 export type SrgbLRelationType = (typeof SRGBL_RELATION_TYPES)[number]
+/** Exact canonical passage id; a fuzzy citation string is not a cross-text endpoint. */
+const PASSAGE_ID = /^mw:passage:[^\s:]+(?::[^\s:]+)*$/
 export interface ScopedTextRelation {
   leftPassageId: string
   rightPassageId: string
@@ -270,12 +272,74 @@ export function validateScopedRelation(record: ScopedTextRelation): void {
   if (![record.leftPassageId, record.rightPassageId, record.method, record.frame].every(x => typeof x === 'string' && x.trim())) {
     throw new TypeError('Both passages, method, and frame are required')
   }
+  if (!PASSAGE_ID.test(record.leftPassageId) || !PASSAGE_ID.test(record.rightPassageId)) {
+    throw new TypeError('Both relation endpoints must be exact mw:passage IDs, not references')
+  }
+  if (record.leftPassageId === record.rightPassageId) {
+    throw new TypeError('A cross-text relation needs two distinct passages')
+  }
   if (!(SRGBL_RELATION_TYPES as readonly string[]).includes(record.relation)) throw new RangeError('Unsupported relation')
   if (!Array.isArray(record.evidenceIds) || record.evidenceIds.some(x => typeof x !== 'string' || !x.trim())) throw new TypeError('Invalid evidence IDs')
+  if (new Set(record.evidenceIds).size !== record.evidenceIds.length) throw new TypeError('Evidence IDs must be unique')
   if (record.reviewStatus === 'reviewed' && (!record.reviewer?.trim() || !record.evidenceIds.length)) {
     throw new TypeError('Reviewed relationship requires reviewer and explicit evidence')
   }
   if (record.relation === 'CORRECTS_WITHIN_FRAME' && record.frame === 'comparative-neutral') {
     throw new RangeError('Doctrinal correction cannot be asserted as neutral')
+  }
+}
+
+/**
+ * A repository that can answer "does this exact ID exist?". Abstaining (undefined)
+ * is not existence, and a missing hook is not a pass.
+ */
+export interface RelationSourceLookup {
+  hasPassage?: (passageId: string) => boolean | undefined
+  hasEvidence?: (evidenceId: string) => boolean | undefined
+}
+export interface RelationEndpointStatus {
+  side: 'left' | 'right' | 'evidence'
+  id: string
+  status: 'resolved' | 'missing' | 'unavailable'
+}
+export interface RelationSourceResolution {
+  endpoints: RelationEndpointStatus[]
+  /** Human-readable reasons, one per endpoint the repository could not confirm. */
+  unresolved: string[]
+  /** True only for a reviewed record whose every endpoint the repository confirms. */
+  publishable: boolean
+  automaticCanonicalApproval: false
+}
+/**
+ * Repository lookup, deliberately separate from structural validation: the shape
+ * of a relation is judged without any repository, and existence is only ever
+ * answered by the caller's repository. Nothing here writes to the record.
+ */
+export function resolveRelationSources(
+  record: ScopedTextRelation, lookup: RelationSourceLookup
+): RelationSourceResolution {
+  validateScopedRelation(record)
+  const ask = (fn?: (id: string) => boolean | undefined) => (id: string): RelationEndpointStatus['status'] => {
+    if (typeof fn !== 'function') return 'unavailable'
+    const answer = fn(id)
+    return answer === true ? 'resolved' : answer === false ? 'missing' : 'unavailable'
+  }
+  const passage = ask(lookup?.hasPassage)
+  const evidence = ask(lookup?.hasEvidence)
+  const endpoints: RelationEndpointStatus[] = [
+    { side: 'left', id: record.leftPassageId, status: passage(record.leftPassageId) },
+    { side: 'right', id: record.rightPassageId, status: passage(record.rightPassageId) },
+    ...record.evidenceIds.map(id => ({ side: 'evidence' as const, id, status: evidence(id) }))
+  ]
+  const unresolved = endpoints
+    .filter(endpoint => endpoint.status !== 'resolved')
+    .map(endpoint => endpoint.side + ' ' + endpoint.id + (endpoint.status === 'missing'
+      ? ' is missing from the repository'
+      : ' is unresolvable: no lookup answered'))
+  return {
+    endpoints,
+    unresolved,
+    publishable: record.reviewStatus === 'reviewed' && unresolved.length === 0,
+    automaticCanonicalApproval: false as const
   }
 }
