@@ -72,8 +72,8 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 |---|---|---|---|
 | `pnpm install --frozen-lockfile` | exit 0 | `node_modules/` only (ignored) | Reports ignored build scripts for `esbuild`, `protobufjs`; do not run `pnpm approve-builds` casually |
 | `pnpm typecheck` | exit 0 (`tsc --noEmit`, no output) | none | Root `tsconfig.json` only; `apps/web` is not covered |
-| `pnpm test` | exit 0, 300 tests pass, 0 fail | none | Baseline before the P19 wave was 295 tests; new micro issues add tests rather than replace them |
-| `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 13 tests pass | none | Default focused command for SRGBL analysis tasks |
+| `pnpm test` | exit 0, 301 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
+| `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 14 tests pass | none | Default focused command for SRGBL analysis tasks |
 | `pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts` | exit 0, 5 tests pass | none | Swing candidate/chain tasks |
 | `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 13 tests pass | none | Run whenever `packages/srgbl` changes reach the Fastify adapter |
 | `pnpm check` | **not run in this session** | SQLite database build output and repository build artifacts (ignored) | Release-grade gate; deliberately not run per micro issue because it builds and validates the whole corpus |
