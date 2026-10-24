@@ -12,7 +12,7 @@ const [data, main, api, browserDb, pkgRaw, indexHtml, styles, generator, semanti
   read("src/browser-db.ts"),
   read("package.json"),
   read("index.html"),
-  read("src/styles.css"),
+  read("src/index.css"),
   read("../../scripts/export-web-catalog.mjs"),
   read("../../config/textual-semantic-rules.json"),
   read("public/corpus-catalog.json"),
@@ -34,7 +34,10 @@ for (const legacy of [
   "evidenceRows",
 ]) expect(!data.includes(legacy), `hardcoded UI fallback remains: ${legacy}`)
 
-expect(pkg.dependencies?.["@rocksoul/ui"] === "github:bjo163/rocksoul-ui#1730eda55564654dc8d4131bbdbf126d0c2d1eca", "Rocksoul UI must be pinned to the merged textual-intelligence release")
+expect(pkg.dependencies?.tailwindcss, "standard shadcn/ui base (tailwindcss) must be a declared dependency")
+expect(pkg.dependencies?.["@radix-ui/react-slot"], "standard shadcn/ui primitives (radix) must be a declared dependency")
+expect(!pkg.dependencies?.["@rocksoul/ui"], "web UI must no longer depend on the merged Rocksoul UI package")
+expect(main.includes('from "@/components/ui/'), "web UI must compose standard shadcn/ui components")
 expect(!main.includes("raw.githubusercontent.com/bjo163/rocksoul-assets/main"), "runtime must not consume rocksoul-assets/main")
 expect(!main.includes("ASSET_BASE"), "runtime must use the stable @rocksoul/ui asset resolver")
 expect(indexHtml.includes("4050b6b5ea88f187a31a304bf978abfe637db9ce"), "document assets must use the stable Rocksoul asset release")
@@ -57,8 +60,8 @@ expect(typeof generated.corpusHash === "string" && generated.corpusHash.length =
 expect(generated.summary?.totalRecords > 500000, "generated canonical catalog must represent the full non-fixture corpus inventory")
 expect(generated.summary?.workCount > 0 && generated.summary?.sampledPassageCount > 0, "generated catalog must expose canonical work and passage samples")
 expect(main.includes("WORK → EXPRESSION → EDITION → ARTIFACT → PASSAGE → CONTENT"), "canonical textual hierarchy is not surfaced")
-for (const component of ["TextualHierarchyTrace", "ParallelTextLanes", "SourceRightsSummary", "TextualRelationTrace"]) {
-  expect(main.includes(component), `merged Rocksoul UI component is not used: ${component}`)
+for (const surface of ["HierarchyTrace", "TextLanes", "RightsTable", "RelationsTable"]) {
+  expect(main.includes(surface), `canonical trace surface is not rendered: ${surface}`)
 }
 expect(main.includes("STATIC SEMANTIC GUARDRAILS"), "semantic matrix must be labeled as a contract rather than live evidence")
 expect(styles.includes("prefers-reduced-motion"), "reduced-motion contract is missing")

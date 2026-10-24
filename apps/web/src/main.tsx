@@ -1,24 +1,18 @@
 import { StrictMode, useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { createRoot } from "react-dom/client"
 import {
-  Badge,
-  Button,
-  DossierHeader,
-  EvidenceMatrix,
-  MoonWitnessAssetImage,
-  MoonWitnessAssetProvider,
-  MoonWitnessBrand,
-  ObservatorySectionNav,
-  ProvenanceRail,
-  TextualRelationTrace,
-  type TextualRelationRecord,
-  TextualHierarchyTrace,
-  SourceRightsSummary,
-  ParallelTextLanes,
-  ThemeToggle,
-} from "@rocksoul/ui"
-import "@rocksoul/ui/styles.css"
-import "./styles.css"
+  AlertTriangle,
+  BookOpen,
+  Database,
+  FileSearch,
+  Library,
+  ScrollText,
+  Search,
+  ServerCog,
+  ShieldCheck,
+} from "lucide-react"
+
+import "./index.css"
 import {
   loadAssertionTraversal,
   loadHealth,
@@ -45,20 +39,43 @@ import {
   type Work,
   type WorkHierarchy,
 } from "./data"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ThemeToggle } from "@/components/theme-toggle"
+import {
+  EmptyState,
+  EvidenceList,
+  HierarchyTrace,
+  IdCode,
+  ProvenanceTimeline,
+  RelationsTable,
+  RightsTable,
+  SectionHeading,
+  SemanticRulesTable,
+  StatCard,
+  TextLanes,
+  type HierarchyItem,
+  type RelationRow,
+  type RightsRow,
+} from "@/components/corpus-panels"
+import { cn } from "@/lib/utils"
 
 type SourceMode = "api" | "browser" | "catalog"
 
-function strongestSource(...sources: SourceMode[]): SourceMode {
-  if (sources.includes("api")) return "api"
-  if (sources.includes("browser")) return "browser"
-  return "catalog"
-}
-
-function sourceModeLabel(source: SourceMode) {
-  if (source === "api") return "LIVE API"
-  if (source === "browser") return "FULL BROWSER DB"
-  return "GENERATED CATALOG"
-}
+const ALL_TRADITIONS = "all"
 
 const sections = [
   { id: "explore", label: "Corpus" },
@@ -68,13 +85,25 @@ const sections = [
   { id: "principles", label: "Rules" },
 ]
 
+function strongestSource(...sources: SourceMode[]): SourceMode {
+  if (sources.includes("api")) return "api"
+  if (sources.includes("browser")) return "browser"
+  return "catalog"
+}
+
+function sourceModeLabel(source: SourceMode) {
+  if (source === "api") return "Live API"
+  if (source === "browser") return "Full browser DB"
+  return "Generated catalog"
+}
+
 function formatCount(value?: number) {
   if (typeof value !== "number") return "—"
   return new Intl.NumberFormat("en-US", { notation: value > 9999 ? "compact" : "standard" }).format(value)
 }
 
 function object(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
 }
 
 function labelsOf(resource?: CorpusResource | null) {
@@ -91,10 +120,6 @@ function compactId(id?: string) {
   return id.length > 48 ? `${id.slice(0, 26)}…${id.slice(-16)}` : id
 }
 
-function textDirection(script?: string) {
-  return script === "Arab" || script === "Hebr" ? "rtl" : "ltr"
-}
-
 function updateQuery(params: Record<string, string | undefined>) {
   const url = new URL(window.location.href)
   for (const [key, value] of Object.entries(params)) {
@@ -106,6 +131,11 @@ function updateQuery(params: Record<string, string | undefined>) {
 
 function initialParam(key: string) {
   return new URLSearchParams(window.location.search).get(key) ?? ""
+}
+
+function stringOr(...values: unknown[]) {
+  for (const value of values) if (typeof value === "string" && value.trim()) return value
+  return "—"
 }
 
 function CorpusApp() {
@@ -156,20 +186,24 @@ function CorpusApp() {
 
   useEffect(() => {
     let active = true
-    void Promise.all([loadHealth(), loadTraditions(), loadWorks(), loadSemanticRules()]).then(([healthResult, traditionResult, workResult, semanticResult]) => {
-      if (!active) return
-      setHealth(healthResult.data)
-      setTraditions(traditionResult.data)
-      setWorks(workResult.data)
-      setSourceMode(healthResult.source)
-      setApiNotice(healthResult.error || traditionResult.error || workResult.error || semanticResult.error || "")
-      const requested = initialParam("work")
-      const candidates = workResult.data
-      if (!candidates.some((work) => work.id === (requested || selectedWorkId))) {
-        setSelectedWorkId(candidates[0]?.id ?? "")
-      }
-    })
-    return () => { active = false }
+    void Promise.all([loadHealth(), loadTraditions(), loadWorks(), loadSemanticRules()]).then(
+      ([healthResult, traditionResult, workResult, semanticResult]) => {
+        if (!active) return
+        setHealth(healthResult.data)
+        setTraditions(traditionResult.data)
+        setWorks(workResult.data)
+        setSourceMode(healthResult.source)
+        setApiNotice(healthResult.error || traditionResult.error || workResult.error || semanticResult.error || "")
+        const requested = initialParam("work")
+        const candidates = workResult.data
+        if (!candidates.some((work) => work.id === (requested || selectedWorkId))) {
+          setSelectedWorkId(candidates[0]?.id ?? "")
+        }
+      },
+    )
+    return () => {
+      active = false
+    }
   }, [])
 
   useEffect(() => {
@@ -214,7 +248,9 @@ function CorpusApp() {
       setApiNotice(error instanceof Error ? error.message : "Unable to load canonical passages")
       setLoadingPassages(false)
     })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [selectedWorkId])
 
   useEffect(() => {
@@ -229,7 +265,9 @@ function CorpusApp() {
       if (result.error) setApiNotice(result.error)
       if (result.source !== "catalog") setSourceMode(result.source)
     })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [selectedPassage?.id])
 
   useEffect(() => {
@@ -326,15 +364,25 @@ function CorpusApp() {
   const sourceArtifacts = [...hierarchyArtifacts, ...(trace?.artifacts ?? [])].filter(
     (artifact, index, all) => all.findIndex((candidate) => candidate.id === artifact.id) === index,
   )
-  const hierarchyItems = [
-    ...(hierarchy?.work ? [{ id: hierarchy.work.id, kind: hierarchy.work.kind ?? "textual.work", label: labelsOf(hierarchy.work), state: "available" as const }] : []),
+
+  const hierarchyItems: HierarchyItem[] = [
+    ...(hierarchy?.work
+      ? [{ id: hierarchy.work.id, kind: hierarchy.work.kind ?? "textual.work", label: labelsOf(hierarchy.work), state: "available" as const }]
+      : []),
     ...(hierarchy?.expressions ?? []).map((item) => ({ id: item.id, kind: item.kind ?? "textual.expression", label: labelsOf(item), state: "available" as const })),
     ...(hierarchy?.editions ?? []).map((item) => ({ id: item.id, kind: item.kind ?? "textual.edition", label: labelsOf(item), state: "available" as const })),
     ...hierarchyArtifacts.map((item) => ({ id: item.id, kind: item.kind ?? "textual.artifact", label: labelsOf(item), state: "available" as const })),
     ...(selectedPassage ? [{ id: selectedPassage.id, kind: "textual.passage", label: selectedPassage.label, detail: selectedPassage.locator, state: "available" as const }] : []),
-    ...(trace?.contents ?? []).map((item) => ({ id: item.id, kind: "textual.content", label: item.language + " · " + item.representation, detail: item.artifact, state: item.text ? "available" as const : "missing" as const })),
+    ...(trace?.contents ?? []).map((item) => ({
+      id: item.id,
+      kind: "textual.content",
+      label: `${item.language} · ${item.representation}`,
+      detail: item.artifact,
+      state: item.text ? ("available" as const) : ("missing" as const),
+    })),
   ]
-  const sourceRightsRecords = sourceArtifacts.length
+
+  const rightsRows: RightsRow[] = sourceArtifacts.length
     ? sourceArtifacts.map((artifact) => {
         const source = extension(artifact, "source")
         const descriptor = object(source.descriptor)
@@ -352,15 +400,18 @@ function CorpusApp() {
         }
       })
     : hierarchy?.dataset
-      ? [{
-          id: hierarchy.dataset.id,
-          label: hierarchy.dataset.id,
-          rights: hierarchy.dataset.rights,
-          availability: hierarchy.dataset.availability,
-          state: "partial" as const,
-        }]
+      ? [
+          {
+            id: hierarchy.dataset.id,
+            label: hierarchy.dataset.id,
+            rights: hierarchy.dataset.rights,
+            availability: hierarchy.dataset.availability,
+            state: "partial" as const,
+          },
+        ]
       : []
-  const textualRelations: TextualRelationRecord[] = (trace?.relations ?? []).flatMap<TextualRelationRecord>((relation) => {
+
+  const relationRows: RelationRow[] = (trace?.relations ?? []).flatMap<RelationRow>((relation) => {
     const textual = extension(relation, "textual")
 
     if (relation.kind === "textual.variant") {
@@ -370,26 +421,29 @@ function CorpusApp() {
       const readings = Array.isArray(textual.readings) ? textual.readings.map(object) : []
       const subjects = locus.length ? locus : [selectedPassage?.id ?? relation.id]
 
-      return subjects.flatMap((subject) => readings.flatMap((reading, readingIndex) => {
-        const witnesses = Array.isArray(reading.witnesses)
-          ? reading.witnesses.filter((value): value is string => typeof value === "string")
-          : []
-        const objects = [stringOr(reading.content), ...witnesses]
-          .filter((value, index, all): value is string => Boolean(value) && all.indexOf(value) === index)
+      return subjects.flatMap((subject) =>
+        readings.flatMap((reading, readingIndex) => {
+          const witnesses = Array.isArray(reading.witnesses)
+            ? reading.witnesses.filter((value): value is string => typeof value === "string")
+            : []
+          const objects = [stringOr(reading.content), ...witnesses].filter(
+            (value, index, all): value is string => Boolean(value) && all.indexOf(value) === index,
+          )
 
-        return (objects.length ? objects : [relation.id + ":reading:" + String(readingIndex)]).map((target, targetIndex) => ({
-          id: relation.id + ":variant:" + String(readingIndex) + ":" + String(targetIndex),
-          subject,
-          relation: stringOr(reading.label, "variant_reading"),
-          object: target,
-          method: stringOr(
-            textual.method,
-            reading.text ? "Witness reading recorded directly in the canonical variant resource." : undefined,
-          ),
-          provenance: stringOr(textual.provenance),
-          state: "partial" as const,
-        }))
-      }))
+          return (objects.length ? objects : [`${relation.id}:reading:${String(readingIndex)}`]).map((target, targetIndex) => ({
+            id: `${relation.id}:variant:${String(readingIndex)}:${String(targetIndex)}`,
+            subject,
+            relation: stringOr(reading.label, "variant_reading"),
+            object: target,
+            method: stringOr(
+              textual.method,
+              reading.text ? "Witness reading recorded directly in the canonical variant resource." : undefined,
+            ),
+            provenance: stringOr(textual.provenance),
+            state: "partial" as const,
+          }))
+        }),
+      )
     }
 
     const sources = Array.isArray(textual.sources) ? textual.sources.map(object) : []
@@ -398,415 +452,735 @@ function CorpusApp() {
     const objectIds = targets.map((item) => stringOr(item.target)).filter((value): value is string => Boolean(value))
     const subjects = subjectIds.length ? subjectIds : [selectedPassage?.id ?? relation.id]
     const objects = objectIds.length ? objectIds : [relation.id]
-    return subjects.flatMap((subject) => objects.map((target, index) => ({
-      id: relation.id + ":" + String(index) + ":" + subject + ":" + target,
-      subject,
-      relation: stringOr(textual.relation, relation.kind, "explicit_relation"),
-      object: target,
-      method: stringOr(textual.method),
-      provenance: stringOr(textual.provenance),
-      state: "available" as const,
-    })))
+    return subjects.flatMap((subject) =>
+      objects.map((target, index) => ({
+        id: `${relation.id}:${String(index)}:${subject}:${target}`,
+        subject,
+        relation: stringOr(textual.relation, relation.kind, "explicit_relation"),
+        object: target,
+        method: stringOr(textual.method),
+        provenance: stringOr(textual.provenance),
+        state: "available" as const,
+      })),
+    )
   })
+
   const provenanceNodes = trace?.provenanceRecords.length
     ? trace.provenanceRecords.map((record, index) => ({
         id: record.id,
-        kind: index === 0 ? "source" as const : "evidence" as const,
+        kind: index === 0 ? "source" : "evidence",
         label: index === 0 ? "Pinned provenance" : `Provenance activity ${index + 1}`,
         detail: record.source_reference ?? record.source ?? record.id,
         active: index === 0,
       }))
     : [
-        { id: "source-boundary", kind: "source" as const, label: "Source trace unavailable", detail: "No provenance record resolved for the current canonical selection.", active: true },
-        { id: "text-boundary", kind: "text" as const, label: "Canonical passage identity", detail: selectedPassage?.id ?? "No passage selected" },
+        {
+          id: "source-boundary",
+          kind: "source",
+          label: "Source trace unavailable",
+          detail: "No provenance record resolved for the current canonical selection.",
+          active: true,
+        },
+        {
+          id: "text-boundary",
+          kind: "text",
+          label: "Canonical passage identity",
+          detail: selectedPassage?.id ?? "No passage selected",
+        },
       ]
 
+  const lanes = trace?.contents ?? selectedPassage?.contents ?? []
+
   return (
-    <MoonWitnessAssetProvider>
-      <div className="rgbl-app">
-        <header className="rgbl-header">
-          <a className="brand-link" href="#top" aria-label="RGBL home">
-            <MoonWitnessBrand ecosystem subtitle="RGBL · TEXT INTELLIGENCE" />
+    <div className="min-h-svh bg-background">
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
+          <a href="#top" className="flex items-center gap-2.5">
+            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
+              R
+            </span>
+            <span className="leading-tight">
+              <span className="block text-sm font-semibold tracking-tight">RGBL</span>
+              <span className="block text-[10px] tracking-[0.16em] text-muted-foreground uppercase">Trace the text</span>
+            </span>
           </a>
-          <nav className="rgbl-nav" aria-label="Primary navigation">
-            <a href="#explore">Corpus</a>
-            <a href="#passage">Text trace</a>
-            <a href="#evidence">Evidence</a>
-            <a href="#provenance">Provenance</a>
-            <a href="https://github.com/bjo163/rocksoul-rgbl" target="_blank" rel="noreferrer">Repository</a>
+          <nav className="ml-4 hidden items-center gap-0.5 md:flex" aria-label="Primary">
+            {sections.map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                {section.label}
+              </a>
+            ))}
+            <a
+              href="https://github.com/bjo163/rocksoul-rgbl"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Repository
+            </a>
           </nav>
-          <div className="header-tools">
-            <Badge variant={sourceMode === "catalog" ? "partial" : "verified"}>
-              {sourceMode === "api" ? "LIVE CORPUS" : sourceMode === "browser" ? "FULL CORPUS" : "GENERATED CATALOG"}
+          <div className="ml-auto flex items-center gap-2">
+            <Badge variant={sourceMode === "catalog" ? "secondary" : "default"} className="hidden sm:inline-flex">
+              {sourceModeLabel(sourceMode)}
             </Badge>
             <ThemeToggle />
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main id="top">
-          <section className="hero-shell" aria-label="RGBL text intelligence">
-            <DossierHeader
-              eyebrow="RGBL / SCRIPTURE & REVELATION REFERENCE INTELLIGENCE"
-              title="TRACE THE TEXT."
-              summary="Inspect canonical work identity, expression, edition, source artifact, exact passage content, rights, provenance, evidence and explicit textual relations without collapsing their semantic boundaries."
-              recordId="TEXT ≠ INTERPRETATION · TRANSLATION ≠ SOURCE IDENTITY"
-              status={{ label: sourceMode === "api" ? "LIVE CANONICAL TEXT LAYER" : sourceMode === "browser" ? "FULL IMMUTABLE CORPUS" : "CANONICAL CATALOG MODE", variant: sourceMode === "catalog" ? "partial" : "verified" }}
-              metadata={[
-                { label: "Domain", value: "TEXT" },
-                { label: "Hierarchy", value: "WORK → EXPRESSION → EDITION → ARTIFACT → PASSAGE → CONTENT" },
-                { label: "Visual grammar", value: "@rocksoul/ui · registry-backed rocksoul-assets" },
-                { label: "Runtime", value: sourceMode === "api" ? `RGBL REST · ${health?.database ?? "healthy"}` : sourceMode === "browser" ? "Immutable FTS3 browser database" : "Generated canonical repository catalog" },
-              ]}
-              actions={
-                <>
-                  <Button onClick={() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" })}>
-                    Explore corpus
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => window.open("https://github.com/bjo163/rocksoul-rgbl/blob/main/docs/ROCKSOUL_INTEROP.md", "_blank", "noopener,noreferrer")}
-                  >
-                    Interop contract
-                  </Button>
-                </>
-              }
-            />
-          </section>
+      <main id="top">
+        <section className="border-b bg-muted/30">
+          <div className="mx-auto max-w-7xl px-4 py-14">
+            <Badge variant="outline" className="tracking-[0.16em] uppercase">
+              Scripture & revelation reference intelligence
+            </Badge>
+            <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+              Trace the text.
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+              Inspect canonical work identity, expression, edition, source artifact, exact passage content, rights,
+              provenance and explicit textual relations — without collapsing their semantic boundaries.
+            </p>
+            <p className="mt-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Text ≠ interpretation · Translation ≠ source identity · Inclusion ≠ authority
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button onClick={() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" })}>
+                Explore corpus
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  window.open(
+                    "https://github.com/bjo163/rocksoul-rgbl/blob/main/docs/ROCKSOUL_INTEROP.md",
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
+              >
+                Interop contract
+              </Button>
+            </div>
 
-          <div className="section-nav-shell">
-            <ObservatorySectionNav items={sections} label="TEXT INDEX /" offset={108} />
+            <div className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatCard
+                label="Indexed records"
+                value={health?.totalRecords ? formatCount(health.totalRecords) : aggregateRecords ? formatCount(aggregateRecords) : "—"}
+                hint={sourceModeLabel(sourceMode)}
+              />
+              <StatCard label="Traditions" value={String(traditions.length)} hint="registry scope" />
+              <StatCard label="Visible works" value={String(visibleWorks.length)} hint={selectedTraditionName} />
+              <StatCard
+                label="Datasets"
+                value={formatCount(health?.datasetCount ?? traditions.reduce((sum, tradition) => sum + (tradition.datasetCount ?? 0), 0))}
+                hint="declared corpus packages"
+              />
+            </div>
           </div>
+        </section>
 
-          <section className="runtime-band" aria-label="Runtime status">
-            <div className="runtime-state">
-              <span className={sourceMode === "catalog" ? "runtime-dot" : "runtime-dot live"} aria-hidden="true" />
-              <div>
-                <strong>{sourceMode === "api" ? "Canonical API connected" : sourceMode === "browser" ? "Full browser corpus connected" : "Generated canonical catalog active"}</strong>
-                <small>{sourceMode === "api" ? rgblApiBaseUrl : sourceMode === "browser" ? "Content-addressed SQLite · HTTP range/WASM" : rgblApiConfigured ? "Configured endpoint is unavailable; catalog is active" : "Repository catalog is active"}</small>
+        <div className="mx-auto max-w-7xl space-y-10 px-4 py-10">
+          {apiNotice ? (
+            <div className="flex gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+              <div className="text-sm">
+                <p className="font-medium">Canonical runtime notice</p>
+                <p className="mt-1 text-muted-foreground">
+                  {apiNotice}. Active source: {sourceModeLabel(sourceMode)}. Missing records stay unavailable rather than
+                  being synthesized.
+                </p>
               </div>
             </div>
-            <div className="runtime-metrics">
-              <span>ENGINE <b>{health?.version ?? "0.1"}</b></span>
-              <span>RECORDS <b>{health?.totalRecords ? formatCount(health.totalRecords) : aggregateRecords ? formatCount(aggregateRecords) : "—"}</b></span>
-              <span>STATUS <b>{health?.status ?? "fallback"}</b></span>
-            </div>
-          </section>
-
-          {apiNotice ? (
-            <aside className="api-notice" role="status">
-              <MoonWitnessAssetImage pack="state-illustrations" file="svg/source-missing.svg" alt="" aria-hidden="true" />
-              <div><strong>Canonical runtime notice.</strong><p>{apiNotice}. Active source: {sourceModeLabel(sourceMode)}. Missing records remain unavailable rather than being synthesized.</p></div>
-            </aside>
           ) : null}
 
-          <section className="search-band" aria-label="Corpus search">
-            <div>
-              <p className="section-kicker">EXACT SEARCH / {sourceMode === "api" ? "FTS5" : sourceMode === "browser" ? "FTS3 WASM" : "CATALOG"}</p>
-              <h2>Find the record before interpreting the record.</h2>
-            </div>
-            <form className="corpus-search" onSubmit={runSearch}>
-              <label className="sr-only" htmlFor="corpus-query">Search corpus</label>
-              <input
-                id="corpus-query"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search exact text, passage or indexed corpus term…"
-              />
-              <select
-                aria-label="Filter by tradition"
-                value={selectedTradition}
-                onChange={(event) => {
-                  const value = event.target.value
-                  setSelectedTradition(value)
-                  updateQuery({ tradition: value || undefined })
-                }}
-              >
-                <option value="">All traditions</option>
-                {traditions.map((tradition) => <option key={tradition.id} value={tradition.id}>{tradition.name}</option>)}
-              </select>
-              <Button type="submit" loading={searching}>Search</Button>
-            </form>
-            <div className="search-context">
-              <span>FILTER · {selectedTraditionName}</span>
-              <span>{typeof searchLatency === "number" ? `SERVER SEARCH · ${searchLatency.toFixed(2)} ms` : sourceMode === "api" ? "LIVE FTS5" : sourceMode === "browser" ? "FULL CORPUS · BROWSER FTS3" : "GENERATED CATALOG INDEX"}</span>
-            </div>
+          <section aria-label="Corpus search" className="space-y-4">
+            <SectionHeading
+              kicker={`Exact search · ${sourceMode === "api" ? "FTS5" : sourceMode === "browser" ? "FTS3 WASM" : "catalog"}`}
+              title="Find the record before interpreting the record."
+            />
+            <Card className="py-4">
+              <CardContent className="px-4">
+                <form className="flex flex-col gap-2 sm:flex-row" onSubmit={runSearch}>
+                  <div className="relative flex-1">
+                    <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search exact text, passage or indexed corpus term…"
+                      aria-label="Search corpus"
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select
+                    value={selectedTradition || ALL_TRADITIONS}
+                    onValueChange={(value) => {
+                      const next = value === ALL_TRADITIONS ? "" : value
+                      setSelectedTradition(next)
+                      updateQuery({ tradition: next || undefined })
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-56" aria-label="Filter by tradition">
+                      <SelectValue placeholder="All traditions" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_TRADITIONS}>All traditions</SelectItem>
+                      {traditions.map((tradition) => (
+                        <SelectItem key={tradition.id} value={tradition.id}>
+                          {tradition.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit" loading={searching}>
+                    Search
+                  </Button>
+                </form>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Database className="size-3.5" aria-hidden="true" />
+                    Filter · {selectedTraditionName}
+                  </span>
+                  <span>
+                    {typeof searchLatency === "number"
+                      ? `Server search · ${searchLatency.toFixed(2)} ms`
+                      : sourceModeLabel(sourceMode)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
             {results.length ? (
-              <>
-                <div className="search-results" aria-live="polite">
+              <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   {results.map((result) => (
-                    <article key={result.id} className="search-result">
-                      <div>
-                        <Badge variant="neutral">{result.kind}</Badge>
-                        {result.tradition ? <Badge variant="info">{result.tradition}</Badge> : null}
-                      </div>
-                      <h3>{result.title}</h3>
-                      <code title={result.id}>{result.id}</code>
-                      {result.snippet ? <p>{result.snippet}</p> : null}
-                      <small>{[result.datasetId, typeof result.score === "number" ? `score ${result.score.toFixed(3)}` : undefined].filter(Boolean).join(" · ")}</small>
-                      {result.workId ? (
-                        <Button variant="secondary" onClick={() => void inspectSearchResult(result)}>Inspect trace</Button>
-                      ) : null}
-                    </article>
+                    <Card key={result.id} className="gap-3 py-4">
+                      <CardContent className="px-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary" className="font-mono text-[10px]">
+                            {result.kind}
+                          </Badge>
+                          {result.tradition ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              {result.tradition}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <h3 className="mt-2 text-sm font-semibold break-words">{result.title}</h3>
+                        <IdCode id={result.id} className="mt-1" />
+                        {result.snippet ? (
+                          <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-muted-foreground">{result.snippet}</p>
+                        ) : null}
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="truncate text-[11px] text-muted-foreground">
+                            {[result.datasetId, typeof result.score === "number" ? `score ${result.score.toFixed(3)}` : undefined]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                          {result.workId ? (
+                            <Button variant="outline" size="sm" onClick={() => void inspectSearchResult(result)}>
+                              Inspect trace
+                            </Button>
+                          ) : null}
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
-                <div className="pager">
-                  <Button variant="secondary" disabled={searchOffset === 0 || searching} onClick={() => void executeSearch(Math.max(0, searchOffset - 20))}>Previous</Button>
-                  <span>OFFSET {searchOffset}</span>
-                  <Button variant="secondary" disabled={!searchHasMore || searching} onClick={() => void executeSearch(searchOffset + 20)}>Next</Button>
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={searchOffset === 0 || searching}
+                    onClick={() => void executeSearch(Math.max(0, searchOffset - 20))}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-xs text-muted-foreground">Offset {searchOffset}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!searchHasMore || searching}
+                    onClick={() => void executeSearch(searchOffset + 20)}
+                  >
+                    Next
+                  </Button>
                 </div>
-              </>
-            ) : query && !searching ? <p className="empty-note">No matching records in the active data source.</p> : null}
+              </div>
+            ) : query && !searching ? (
+              <EmptyState icon={FileSearch} title="No matching records in the active data source" />
+            ) : null}
           </section>
 
-          <section id="explore" className="content-section">
-            <div className="section-heading">
-              <div>
-                <p className="section-kicker">01 / CORPUS ATLAS</p>
-                <h2>Multi-tradition by design. Authority stays scoped.</h2>
-              </div>
-              <p>RGBL can preserve many textual traditions without collapsing translation, canon, revelation, identity or doctrinal status into a single global verdict.</p>
+          <Separator />
+
+          <section id="explore" className="scroll-mt-20 space-y-6">
+            <SectionHeading
+              kicker="01 / Corpus atlas"
+              title="Multi-tradition by design. Authority stays scoped."
+              description="RGBL preserves many textual traditions without collapsing translation, canon, revelation, identity or doctrinal status into a single global verdict."
+            />
+
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatCard label="Passages" value={formatCount(health?.passageCount)} hint="canonical textual units" />
+              <StatCard label="Content lanes" value={formatCount(health?.contentCount)} hint="exact searchable text" />
+              <StatCard label="Evidence" value={formatCount(health?.evidenceCount)} hint="explicit target records" />
+              <StatCard label="Relations" value={formatCount(health?.relationCount)} hint="alignment / variant graph" />
             </div>
 
-            <div className="metric-strip" aria-label="Corpus metrics">
-              <div><span>Indexed records</span><strong>{health?.totalRecords ? formatCount(health.totalRecords) : aggregateRecords ? formatCount(aggregateRecords) : "—"}</strong><small>{sourceMode === "api" ? "live database" : sourceMode === "browser" ? "full browser index" : "repository catalog"}</small></div>
-              <div><span>Traditions</span><strong>{traditions.length}</strong><small>registry scope</small></div>
-              <div><span>Visible works</span><strong>{visibleWorks.length}</strong><small>{selectedTraditionName}</small></div>
-              <div><span>Runtime</span><strong>{sourceMode === "api" ? "API" : sourceMode === "browser" ? "FULL" : "CATALOG"}</strong><small>{sourceMode === "browser" ? (health?.contentCount ? formatCount(health.contentCount) + " exact-text lanes" : "full canonical browser records") : sourceMode === "api" ? "canonical records" : "canonical catalog · no invented text"}</small></div>
-            </div>
-
-            <div className="corpus-surface-grid" aria-label="Indexed research surfaces">
-              <div><span>DATASETS</span><strong>{formatCount(health?.datasetCount ?? traditions.reduce((sum, tradition) => sum + (tradition.datasetCount ?? 0), 0))}</strong><small>declared corpus packages</small></div>
-              <div><span>PASSAGES</span><strong>{formatCount(health?.passageCount)}</strong><small>canonical textual units</small></div>
-              <div><span>CONTENT</span><strong>{formatCount(health?.contentCount)}</strong><small>exact searchable lanes</small></div>
-              <div><span>EVIDENCE</span><strong>{formatCount(health?.evidenceCount)}</strong><small>explicit target records</small></div>
-              <div><span>RELATIONS</span><strong>{formatCount(health?.relationCount)}</strong><small>alignment / variant graph</small></div>
-              <div><span>ASSERTIONS</span><strong>{formatCount(health?.assertionCount)}</strong><small>scoped claim records</small></div>
-            </div>
-
-            <div className="atlas-layout">
-              <aside className="tradition-panel" aria-label="Tradition filters">
-                <div className="panel-title"><span>TRADITIONS /</span><button type="button" onClick={() => { setSelectedTradition(""); updateQuery({ tradition: undefined }) }}>RESET</button></div>
-                {traditions.map((tradition) => (
-                  <button
-                    key={tradition.id}
-                    type="button"
-                    className={selectedTradition === tradition.id ? "tradition-row active" : "tradition-row"}
-                    onClick={() => { setSelectedTradition(tradition.id); updateQuery({ tradition: tradition.id }) }}
+            <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+              <Card className="h-fit gap-0 py-0">
+                <CardHeader className="flex-row items-center justify-between py-3">
+                  <CardTitle className="text-xs tracking-wider text-muted-foreground uppercase">Traditions</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTradition("")
+                      updateQuery({ tradition: undefined })
+                    }}
                   >
-                    <span><strong>{tradition.name}</strong><small>{tradition.primaryLanguage ?? "und"} · {(tradition.scripts ?? []).join(", ") || "script metadata"}</small></span>
-                    <b>{formatCount(tradition.totalRecords)}</b>
-                  </button>
-                ))}
-              </aside>
+                    Reset
+                  </Button>
+                </CardHeader>
+                <Separator />
+                <ScrollArea className="h-[420px]">
+                  <div className="space-y-1 p-2">
+                    {traditions.map((tradition) => (
+                      <button
+                        key={tradition.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTradition(tradition.id)
+                          updateQuery({ tradition: tradition.id })
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+                          selectedTradition === tradition.id && "bg-accent",
+                        )}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">{tradition.name}</span>
+                          <span className="block truncate text-[11px] text-muted-foreground">
+                            {tradition.primaryLanguage ?? "und"} · {(tradition.scripts ?? []).join(", ") || "script metadata"}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                          {formatCount(tradition.totalRecords)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </Card>
 
-              <div className="works-panel">
-                <div className="panel-title"><span>CANONICAL WORK INDEX</span><b>{visibleWorks.length.toString().padStart(2, "0")}</b></div>
-                <div className="work-grid">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium tracking-wider text-muted-foreground uppercase">Canonical work index</h3>
+                  <span className="text-xs tabular-nums text-muted-foreground">{visibleWorks.length}</span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {visibleWorks.map((work) => (
-                    <button type="button" className={selectedWork?.id === work.id ? "work-card selected" : "work-card"} key={work.id} onClick={() => chooseWork(work)}>
-                      <div className="work-card-top"><Badge variant={selectedWork?.id === work.id ? "verified" : "neutral"}>{work.tradition}</Badge><span>{work.language ?? "mul"}</span></div>
-                      <h3>{work.title}</h3>
-                      <code>{work.id}</code>
-                      <p>{work.description ?? "Canonical textual.work metadata."}</p>
-                      <small>TRACE HIERARCHY →</small>
+                    <button
+                      key={work.id}
+                      type="button"
+                      onClick={() => chooseWork(work)}
+                      className="text-left"
+                      aria-pressed={selectedWork?.id === work.id}
+                    >
+                      <Card
+                        className={cn(
+                          "h-full gap-3 py-4 transition-colors hover:border-ring",
+                          selectedWork?.id === work.id && "ring-2 ring-ring",
+                        )}
+                      >
+                        <CardContent className="px-4">
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge variant={selectedWork?.id === work.id ? "default" : "secondary"} className="text-[10px]">
+                              {work.tradition}
+                            </Badge>
+                            <span className="text-[11px] font-mono uppercase text-muted-foreground">{work.language ?? "mul"}</span>
+                          </div>
+                          <h4 className="mt-2 text-sm font-semibold break-words">{work.title}</h4>
+                          <IdCode id={work.id} className="mt-1" />
+                          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                            {work.description ?? "Canonical textual.work metadata."}
+                          </p>
+                          <p className="mt-3 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <BookOpen className="size-3" aria-hidden="true" /> Trace hierarchy
+                          </p>
+                        </CardContent>
+                      </Card>
                     </button>
                   ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section id="passage" className="content-section passage-section">
-            <div className="section-heading">
-              <div>
-                <p className="section-kicker">02 / CANONICAL TEXT TRACE</p>
-                <h2>{selectedWork?.title ?? "Select a canonical work"}</h2>
-              </div>
-              <p>Work, expression, edition and source artifact remain separate identities. Passage content is displayed only when supplied by the live corpus runtime or generated canonical catalog.</p>
-            </div>
-
-            <TextualHierarchyTrace
-              items={hierarchyItems}
-              title="Canonical textual hierarchy"
-              description="WORK → EXPRESSION → EDITION → ARTIFACT → PASSAGE → CONTENT. Every identity remains distinct."
-            />
-
-            <SourceRightsSummary
-              records={sourceRightsRecords}
-              title="Source, integrity & rights"
-              description="Revision, checksum, license, rights and availability are rendered only from canonical dataset/artifact metadata."
-            />
-
-            <div className="passage-layout">
-              <div className="passage-list">
-                <div className="panel-title"><span>PASSAGES /</span><b>{typeof passageTotal === "number" ? passageTotal : passages.length}</b></div>
-                {loadingPassages ? <p className="empty-note">Loading canonical passage index…</p> : passages.length ? passages.map((passage) => (
-                  <button type="button" key={passage.id} className={selectedPassage?.id === passage.id ? "passage-row active" : "passage-row"} onClick={() => choosePassage(passage)}>
-                    <span>{passage.locator}</span><small>{passage.contents?.length ? `${passage.contents.length} lanes` : passage.language ?? "meta"}</small>
-                  </button>
-                )) : <p className="empty-note">No passage page was returned for this work.</p>}
-                <div className="pager passage-pager">
-                  <Button variant="secondary" disabled={passageOffset === 0 || loadingPassages} onClick={() => void movePassagePage(passageOffset - 12)}>Previous</Button>
-                  <span>{passageOffset + 1}–{passageOffset + passages.length}</span>
-                  <Button variant="secondary" disabled={!passageHasMore || loadingPassages} onClick={() => void movePassagePage(passageOffset + 12)}>Next</Button>
-                </div>
-              </div>
-
-              <article className="passage-detail">
-                {selectedPassage ? (
-                  <>
-                    <div className="detail-topline"><Badge variant="verified">CANONICAL PASSAGE</Badge><span>{trace?.contents.length ?? selectedPassage.contents?.length ?? 0} CONTENT LANES</span></div>
-                    <h3>{selectedPassage.label}</h3>
-                    <code>{selectedPassage.id}</code>
-
-                    <ParallelTextLanes
-                      lanes={trace?.contents ?? selectedPassage.contents ?? []}
-                      title="Parallel exact-text lanes"
-                      description="Source, translation, transliteration and normalized content remain separate canonical records. Missing text is never synthesized."
-                    />
-
-                    <div className="source-grid">
-                      <div><span>SOURCE</span><strong>{trace?.contents[0]?.artifact ?? selectedPassage.source}</strong></div>
-                      <div><span>LOCATOR</span><strong>{selectedPassage.locator}</strong></div>
-                      <div><span>DATASET</span><strong>{trace?.dataset?.id ?? hierarchy?.dataset?.id ?? "not available"}</strong></div>
-                      <div><span>RELATIONS</span><strong>{trace?.relations.length ?? 0}</strong></div>
-                      <div className="wide"><span>PROVENANCE</span><strong>{trace?.provenanceRecords[0]?.id ?? selectedPassage.provenance}</strong></div>
+                  {!visibleWorks.length ? (
+                    <div className="sm:col-span-2 xl:col-span-3">
+                      <EmptyState icon={Library} title="No work in the current tradition filter" />
                     </div>
-                  </>
-                ) : (
-                  <div className="empty-state">
-                    <MoonWitnessAssetImage pack="state-illustrations" file="svg/empty-search.svg" alt="" aria-hidden="true" />
-                    <p>Select a canonical passage to inspect its generated or live trace.</p>
-                  </div>
-                )}
-              </article>
-            </div>
-
-            <TextualRelationTrace
-              relations={textualRelations}
-              title="Alignments, variants & explicit textual relations"
-              description="Correspondence, variation and other relationships are visualized with their recorded method; no identity or theological equivalence is inferred."
-            />
-          </section>
-
-          <section id="evidence" className="content-section">
-            <div className="section-heading">
-              <div><p className="section-kicker">03 / ASSERTION × EVIDENCE</p><h2>Actual evidence stays distinct from semantic guardrails.</h2></div>
-              <p>The live evidence list below comes from corpus records targeting the selected passage/content. The matrix is explicitly a contract summary, not fabricated evidence counts.</p>
-            </div>
-
-            <div className="evidence-live">
-              <div className="panel-title"><span>SELECTED PASSAGE EVIDENCE /</span><b>{trace?.evidence.length ?? 0}</b></div>
-              {trace?.evidence.length ? trace.evidence.map((item) => (
-                <article key={item.id}>
-                  <div><Badge variant="verified">{item.relation ?? "evidence"}</Badge><span>{compactId(item.target)}</span></div>
-                  <code>{item.id}</code>
-                  <p>{item.provenance ? `Provenance · ${item.provenance}` : "No provenance pointer was returned on this evidence record."}</p>
-                </article>
-              )) : <p className="empty-note">No evidence record directly targets this passage/content page.</p>}
-            </div>
-
-            <div className="contract-matrix">
-              <div className="panel-title"><span>STATIC SEMANTIC GUARDRAILS /</span><b>CONTRACT</b></div>
-              <EvidenceMatrix rows={semanticRows} caption="RGBL semantic guardrails — machine-readable contract summary, not live evidence counts" />
-            </div>
-
-            <form className="assertion-trace" onSubmit={traceAssertion}>
-              <div><p className="section-kicker">ASSERTION TRACE</p><h3>Resolve explicit evidence references by canonical assertion ID.</h3></div>
-              <div className="assertion-controls">
-                <label className="sr-only" htmlFor="assertion-id">Canonical assertion ID</label>
-                <input id="assertion-id" value={assertionId} onChange={(event) => setAssertionId(event.target.value)} placeholder="mw:assertion:…" />
-                <Button type="submit" loading={assertionLoading}>Trace</Button>
-              </div>
-              {assertionNotice ? <p className="empty-note">{assertionNotice}</p> : null}
-              {assertionTrace ? (
-                <div className="assertion-result">
-                  <article><span>ASSERTION</span><code>{String(assertionTrace.assertion.id ?? assertionId)}</code><p>{String(assertionTrace.assertion.assertion_class ?? "scoped assertion")}</p></article>
-                  <article><span>EVIDENCE</span><strong>{assertionTrace.evidence.length}</strong><p>{assertionTrace.evidence.map((item) => item.id).join(" · ") || "No explicit evidence IDs"}</p></article>
-                  <article><span>TARGETS</span><strong>{assertionTrace.targets.length}</strong><p>{assertionTrace.targets.map((item) => String(item.id ?? "unknown")).join(" · ") || "No targets resolved"}</p></article>
+                  ) : null}
                 </div>
-              ) : null}
-            </form>
+              </div>
+            </div>
           </section>
 
-          <section id="provenance" className="content-section">
-            <div className="section-heading">
-              <div><p className="section-kicker">04 / PROVENANCE & RIGHTS</p><h2>Every displayed text should be traceable to a pinned source.</h2></div>
-              <p>Artifact revision, checksum, rights and acquisition activity are shown only when supplied by the selected canonical records.</p>
-            </div>
+          <Separator />
 
-            <ProvenanceRail
-              nodes={provenanceNodes}
-              description={trace?.provenanceRecords.length ? "Live provenance records resolved from the selected exact content lane." : "No live provenance record is available; the canonical passage identity remains visible without inventing source history."}
+          <section id="passage" className="scroll-mt-20 space-y-6">
+            <SectionHeading
+              kicker="02 / Canonical text trace"
+              title={selectedWork?.title ?? "Select a canonical work"}
+              description="WORK → EXPRESSION → EDITION → ARTIFACT → PASSAGE → CONTENT. Work, expression, edition and source artifact remain separate identities; passage content is displayed only when supplied by the live corpus runtime or the generated canonical catalog."
             />
 
-            {trace?.provenanceRecords.length ? (
-              <div className="provenance-grid">
-                {trace.provenanceRecords.map((record) => (
-                  <article key={record.id}>
-                    <Badge variant="verified">PROVENANCE</Badge>
-                    <h3>{record.source_reference ?? record.source ?? record.id}</h3>
-                    <code>{record.id}</code>
-                    <div className="activity-list">
-                      {(record.activities ?? []).map((activity, index) => (
-                        <div key={`${record.id}-${index}`}><span>{String(activity.type ?? "activity")}</span><p>{String(activity.method ?? "Method not declared")}</p></div>
+            <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+              <Card className="h-fit gap-0 py-0">
+                <CardHeader className="flex-row items-center justify-between py-3">
+                  <CardTitle className="text-xs tracking-wider text-muted-foreground uppercase">Passages</CardTitle>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {typeof passageTotal === "number" ? passageTotal : passages.length}
+                  </span>
+                </CardHeader>
+                <Separator />
+                {loadingPassages ? (
+                  <div className="space-y-2 p-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <Skeleton key={index} className="h-9 w-full" />
+                    ))}
+                  </div>
+                ) : passages.length ? (
+                  <ScrollArea className="h-[440px]">
+                    <div className="space-y-1 p-2">
+                      {passages.map((passage) => (
+                        <button
+                          key={passage.id}
+                          type="button"
+                          onClick={() => choosePassage(passage)}
+                          className={cn(
+                            "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+                            selectedPassage?.id === passage.id && "bg-accent",
+                          )}
+                        >
+                          <span className="truncate text-sm">{passage.locator}</span>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {passage.contents?.length ? `${passage.contents.length} lanes` : passage.language ?? "meta"}
+                          </span>
+                        </button>
                       ))}
                     </div>
-                  </article>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="asset-callout">
-              <div>
-                <p className="section-kicker">ROCKSOUL VISUAL SOURCE</p>
-                <h3>Stable assets. Semantic HTML remains the research truth.</h3>
-                <p>RGBL now uses the stable asset base built into <code>@rocksoul/ui</code> rather than tracking <code>rocksoul-assets/main</code> at runtime.</p>
-                <div className="asset-links">
-                  <a href="https://github.com/bjo163/rocksoul-ui" target="_blank" rel="noreferrer">@rocksoul/ui</a>
-                  <a href="https://github.com/bjo163/rocksoul-assets/releases/tag/v1.3.1" target="_blank" rel="noreferrer">assets v1.3.1</a>
+                  </ScrollArea>
+                ) : (
+                  <div className="p-3">
+                    <EmptyState icon={ScrollText} title="No passage page returned" />
+                  </div>
+                )}
+                <Separator />
+                <div className="flex items-center justify-between gap-2 p-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={passageOffset === 0 || loadingPassages}
+                    onClick={() => void movePassagePage(passageOffset - 12)}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-[11px] text-muted-foreground">
+                    {passageOffset + 1}–{passageOffset + passages.length}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!passageHasMore || loadingPassages}
+                    onClick={() => void movePassagePage(passageOffset + 12)}
+                  >
+                    Next
+                  </Button>
                 </div>
+              </Card>
+
+              <Card className="gap-4">
+                {selectedPassage ? (
+                  <CardContent className="px-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge>Canonical passage</Badge>
+                      <span className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                        {lanes.length} content {lanes.length === 1 ? "lane" : "lanes"}
+                      </span>
+                    </div>
+                    <h3 className="mt-3 text-lg font-semibold break-words">{selectedPassage.label}</h3>
+                    <IdCode id={selectedPassage.id} className="mt-1" />
+
+                    <Tabs defaultValue="lanes" className="mt-5">
+                      <TabsList>
+                        <TabsTrigger value="lanes">Text lanes</TabsTrigger>
+                        <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
+                        <TabsTrigger value="rights">Source & rights</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="lanes" className="pt-2">
+                        <TextLanes lanes={lanes} />
+                      </TabsContent>
+                      <TabsContent value="hierarchy" className="pt-2">
+                        <HierarchyTrace items={hierarchyItems} />
+                      </TabsContent>
+                      <TabsContent value="rights" className="pt-2">
+                        <RightsTable records={rightsRows} />
+                      </TabsContent>
+                    </Tabs>
+
+                    <Separator className="my-5" />
+
+                    <dl className="grid gap-3 sm:grid-cols-2">
+                      <div className="min-w-0">
+                        <dt className="text-[11px] tracking-wider text-muted-foreground uppercase">Source</dt>
+                        <dd className="mt-0.5 truncate text-sm" title={lanes[0]?.artifact ?? selectedPassage.source}>
+                          {lanes[0]?.artifact ?? selectedPassage.source}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[11px] tracking-wider text-muted-foreground uppercase">Locator</dt>
+                        <dd className="mt-0.5 text-sm">{selectedPassage.locator}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[11px] tracking-wider text-muted-foreground uppercase">Dataset</dt>
+                        <dd className="mt-0.5 truncate text-sm" title={trace?.dataset?.id ?? hierarchy?.dataset?.id}>
+                          {trace?.dataset?.id ?? hierarchy?.dataset?.id ?? "not available"}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[11px] tracking-wider text-muted-foreground uppercase">Relations</dt>
+                        <dd className="mt-0.5 text-sm tabular-nums">{trace?.relations.length ?? 0}</dd>
+                      </div>
+                    </dl>
+                  </CardContent>
+                ) : (
+                  <CardContent className="px-5">
+                    <EmptyState icon={BookOpen} title="Select a canonical passage" description="Its generated or live trace appears here." />
+                  </CardContent>
+                )}
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Alignments, variants & explicit textual relations</CardTitle>
+                <CardDescription>
+                  Correspondence and variation are shown with their recorded method. No identity or theological
+                  equivalence is inferred.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-0">
+                <RelationsTable rows={relationRows} />
+              </CardContent>
+            </Card>
+          </section>
+
+          <Separator />
+
+          <section id="evidence" className="scroll-mt-20 space-y-6">
+            <SectionHeading
+              kicker="03 / Assertion × evidence"
+              title="Actual evidence stays distinct from semantic guardrails."
+              description="Evidence below comes from canonical records targeting the selected passage or content. The guardrail matrix is a contract summary, not fabricated evidence counts."
+            />
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Selected passage evidence</CardTitle>
+                  <CardDescription>{trace?.evidence.length ?? 0} explicit target records</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <EvidenceList items={trace?.evidence ?? []} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="inline-flex items-center gap-2 text-base">
+                    <ShieldCheck className="size-4" aria-hidden="true" /> Static semantic guardrails
+                  </CardTitle>
+                  <p className="text-[11px] tracking-wider text-muted-foreground uppercase">
+                    STATIC SEMANTIC GUARDRAILS · CONTRACT
+                  </p>
+                  <CardDescription>Machine-readable contract summary</CardDescription>
+                </CardHeader>
+                <CardContent className="px-0">
+                  <SemanticRulesTable rows={semanticRows} />
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Assertion trace</CardTitle>
+                <CardDescription>Resolve explicit evidence references by canonical assertion ID.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <form className="flex flex-col gap-2 sm:flex-row" onSubmit={traceAssertion}>
+                  <Input
+                    value={assertionId}
+                    onChange={(event) => setAssertionId(event.target.value)}
+                    placeholder="mw:assertion:…"
+                    aria-label="Canonical assertion ID"
+                    className="font-mono text-xs"
+                  />
+                  <Button type="submit" variant="outline" loading={assertionLoading}>
+                    Trace
+                  </Button>
+                </form>
+                {assertionNotice ? <p className="text-xs text-muted-foreground">{assertionNotice}</p> : null}
+                {assertionTrace ? (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border p-3">
+                      <p className="text-[11px] tracking-wider text-muted-foreground uppercase">Assertion</p>
+                      <IdCode id={String(assertionTrace.assertion.id ?? assertionId)} className="mt-1" />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {String(assertionTrace.assertion.assertion_class ?? "scoped assertion")}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-[11px] tracking-wider text-muted-foreground uppercase">Evidence</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums">{assertionTrace.evidence.length}</p>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+                        {assertionTrace.evidence.map((item) => compactId(item.id)).join(" · ") || "No explicit evidence IDs"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-[11px] tracking-wider text-muted-foreground uppercase">Targets</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums">{assertionTrace.targets.length}</p>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+                        {assertionTrace.targets.map((item) => compactId(String(item.id ?? "unknown"))).join(" · ") ||
+                          "No targets resolved"}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </section>
+
+          <Separator />
+
+          <section id="provenance" className="scroll-mt-20 space-y-6">
+            <SectionHeading
+              kicker="04 / Provenance & rights"
+              title="Every displayed text should be traceable to a pinned source."
+              description="Artifact revision, checksum, rights and acquisition activity are shown only when supplied by the selected canonical records."
+            />
+
+            <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Provenance rail</CardTitle>
+                  <CardDescription>
+                    {trace?.provenanceRecords.length
+                      ? "Live provenance records resolved from the selected exact content lane."
+                      : "No live provenance record is available; passage identity stays visible without inventing source history."}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProvenanceTimeline nodes={provenanceNodes} />
+                </CardContent>
+              </Card>
+
+              <div className="space-y-3">
+                {trace?.provenanceRecords.length ? (
+                  trace.provenanceRecords.map((record) => (
+                    <Card key={record.id} className="gap-3 py-4">
+                      <CardContent className="px-4">
+                        <Badge variant="secondary" className="text-[10px]">
+                          provenance
+                        </Badge>
+                        <h3 className="mt-2 text-sm font-semibold break-words">
+                          {record.source_reference ?? record.source ?? record.id}
+                        </h3>
+                        <IdCode id={record.id} className="mt-1" />
+                        {(record.activities ?? []).length ? (
+                          <div className="mt-3 space-y-2">
+                            {(record.activities ?? []).map((activity, index) => (
+                              <div key={`${record.id}-${index}`} className="rounded-md border bg-muted/20 p-2">
+                                <p className="text-[11px] tracking-wider text-muted-foreground uppercase">
+                                  {String(activity.type ?? "activity")}
+                                </p>
+                                <p className="mt-0.5 text-xs">{String(activity.method ?? "Method not declared")}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <EmptyState
+                    icon={ServerCog}
+                    title="No provenance record resolved"
+                    description="Missing provenance is shown as missing rather than backfilled."
+                  />
+                )}
               </div>
-              <MoonWitnessAssetImage pack="application-screens" file="23-ai-workspace.svg" alt="MoonWitness research workspace visual reference" />
             </div>
           </section>
 
-          <section id="principles" className="content-section principles-section">
-            <div className="section-heading">
-              <div><p className="section-kicker">05 / GOLDEN RULES</p><h2>Preserve first. Interpret downstream.</h2></div>
-              <p>These boundaries are enforced in data presentation: missing text is unavailable, not false; source identity and translation identity remain separate.</p>
-            </div>
-            <div className="principles-grid">
+          <Separator />
+
+          <section id="principles" className="scroll-mt-20 space-y-6">
+            <SectionHeading
+              kicker="05 / Golden rules"
+              title="Preserve first. Interpret downstream."
+              description="These boundaries are enforced in data presentation: missing text is unavailable, not false; source identity and translation identity remain separate."
+            />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                ["TEXTUAL PRESENCE", "≠ UNIVERSAL AUTHORITY"],
-                ["TRANSLATION", "≠ SOURCE IDENTITY"],
-                ["SIMILARITY", "≠ EQUIVALENCE"],
-                ["ASSERTION", "≠ GLOBAL FACT"],
-                ["MISSING", "≠ FALSE"],
-                ["PROVENANCE", "IS REQUIRED"],
-              ].map(([left, right]) => <article key={left}><span>{left}</span><strong>{right}</strong></article>)}
+                ["Textual presence", "≠ Universal authority"],
+                ["Translation", "≠ Source identity"],
+                ["Similarity", "≠ Equivalence"],
+                ["Assertion", "≠ Global fact"],
+                ["Missing", "≠ False"],
+                ["Provenance", "is required"],
+              ].map(([left, right]) => (
+                <Card key={left} className="gap-1 py-4">
+                  <CardContent className="px-4">
+                    <p className="text-[11px] tracking-wider text-muted-foreground uppercase">{left}</p>
+                    <p className="mt-1 text-sm font-semibold">{right}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </section>
-        </main>
+        </div>
+      </main>
 
-        <footer className="rgbl-footer">
-          <MoonWitnessBrand ecosystem subtitle="TRACE THE TEXT." />
-          <p>RGBL owns canonical TEXT identity and provenance. Interpretation, event claims, person identity and legal conclusions stay downstream.</p>
-          <div>
-            <a href="https://github.com/bjo163/rocksoul-rgbl" target="_blank" rel="noreferrer">RGBL</a>
-            <a href="https://github.com/bjo163/rocksoul-ui" target="_blank" rel="noreferrer">UI</a>
-            <a href="https://github.com/bjo163/rocksoul-assets" target="_blank" rel="noreferrer">Assets</a>
+      <footer className="border-t bg-muted/30">
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
+                R
+              </span>
+              <div className="leading-tight">
+                <p className="text-sm font-semibold">RGBL</p>
+                <p className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">Trace the text.</p>
+              </div>
+            </div>
+            <nav className="flex items-center gap-4 text-xs text-muted-foreground">
+              <a className="hover:text-foreground" href="https://github.com/bjo163/rocksoul-rgbl" target="_blank" rel="noreferrer">
+                RGBL
+              </a>
+              <a className="hover:text-foreground" href="https://github.com/bjo163/rocksoul-assets" target="_blank" rel="noreferrer">
+                Assets
+              </a>
+            </nav>
           </div>
-        </footer>
-      </div>
-    </MoonWitnessAssetProvider>
+          <p className="mt-4 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            RGBL owns canonical TEXT identity and provenance. Interpretation, event claims, person identity and legal
+            conclusions stay downstream.
+          </p>
+        </div>
+      </footer>
+    </div>
   )
-}
-
-function stringOr(...values: unknown[]) {
-  for (const value of values) if (typeof value === "string" && value.trim()) return value
-  return "—"
 }
 
 createRoot(document.getElementById("root")!).render(
