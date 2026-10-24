@@ -10,6 +10,10 @@ The release workflow must never issue `git push origin HEAD:dev`, `git push orig
 
 Browser database publication is also opt-in: `.github/workflows/publish-browser-db.yml` only verifies and archives a candidate on dispatch, and creates/updates the versioned GitHub Release only when the `publish` input is `true`. `.github/workflows/generate-web-catalog.yml` verifies that the committed catalog is current and never commits or pushes to `main` or `dev`.
 
+## Version policy and changelog
+
+[`docs/RELEASE_VERSION_POLICY.md`](RELEASE_VERSION_POLICY.md) defines the spec/package/dataset/corpus version domains and the change-plan workflow. `CHANGELOG.md` is generated deterministically from `release/changes/` by `pnpm release:changelog`; the release candidate, `build:release`, and `validate:release` fail closed when it is stale via `pnpm release:changelog:check`. Regression coverage for no-op, invalid-plan, duplicate-application, deterministic changelog, read-only release verification and opt-in publication lives in `scripts/release-gates.test.ts`.
+
 ## Rollback
 
 - Published tags (`corpus-v*`, `browser-db-*`) are immutable; never retarget or force-update them.
