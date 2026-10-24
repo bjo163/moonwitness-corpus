@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import type { CanonicalId } from '@moonwitness/corpus-core'
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { SRGBL_LEVELS } from '@moonwitness/srgbl'
 import { adaptPassageSources, type CorpusPassageDetail } from '@moonwitness/srgbl/sources'
 
@@ -16,19 +18,44 @@ function sourceRefs(record: unknown): { artifact?: string; provenance?: string }
   }
 }
 
+type ReviewedPublicIndex = {
+  schema: 'srgbl-v8-reviewed-derived-v1'
+  corpusHash: string
+  methodVersion: string
+  publicSummaries: Array<{id:string;passageId:string;method:string;status:'reviewed'}>
+}
+async function readReviewedIndex(): Promise<ReviewedPublicIndex|null> {
+  const filename=resolve(process.env.SRGBL_REVIEWED_PATH || 'dist/srgbl/reviewed.json')
+  let raw:unknown
+  try { raw=JSON.parse(await readFile(filename,'utf8')) } catch(e) {
+    if((e as NodeJS.ErrnoException).code==='ENOENT') return null
+    throw e
+  }
+  const index=raw as Partial<ReviewedPublicIndex>
+  if(index.schema!=='srgbl-v8-reviewed-derived-v1' || typeof index.corpusHash!=='string' ||
+     !index.corpusHash || typeof index.methodVersion!=='string' || !Array.isArray(index.publicSummaries) ||
+     index.publicSummaries.some(s=>!s || typeof s.id!=='string' || typeof s.passageId!=='string' ||
+        typeof s.method!=='string' || s.status!=='reviewed')) throw new Error('Invalid SRGBL reviewed-derived snapshot')
+  return index as ReviewedPublicIndex
+}
+
 /** Read-only S1 research trace: NEVER calculates theological truth or leaks texts
  * with unknown licensing. Actual SRGBL derived scores require reviewed materialization. */
 export const srgblResearchRoutes: FastifyPluginAsync = async app => {
   app.get('/research/srgbl/manifest', {
     schema: { tags: ['Research: SRGBL v8'], summary: 'SRGBL v8 research implementation status' }
-  }, async () => ({
-    success: true,
-    model: 'SRGBL', methodVersion: 'v8-research-proposal',
-    levelNames: SRGBL_LEVELS,
-    publicGlobalScriptureScoring: false,
-    researchStatus: 'source-trace-only',
-    reviewedAnalysisMaterialized: false
-  }))
+  }, async () => {
+    const reviewed=await readReviewedIndex()
+    return {
+      success: true,
+      model: 'SRGBL', methodVersion: 'v8-research-proposal',
+      levelNames: SRGBL_LEVELS,
+      publicGlobalScriptureScoring: false,
+      researchStatus: reviewed ? 'reviewed-derived-available' : 'source-trace-only',
+      reviewedAnalysisMaterialized: Boolean(reviewed),
+      corpusHash: reviewed?.corpusHash ?? null
+    }
+  })
 
   app.get('/research/srgbl/passages/:id/source-trace', {
     schema: {
@@ -79,8 +106,20 @@ export const srgblResearchRoutes: FastifyPluginAsync = async app => {
       summary: 'Get reviewed SRGBL analysis (not materialized yet)',
       params: {type:'object',required:['id'],properties:{id:{type:'string',minLength:1}}}
     }
-  }, async (_request, reply) => reply.code(404).send({
-    success:false,error:'reviewed_analysis_not_materialized',
-    note:'No reviewed SRGBL derived analysis index exists; this endpoint never fabricates a five-level reading.'
-  }))
+  }, async (request, reply) => {
+    const {id} = request.params as {id:string}
+    if(!id.startsWith('mw:passage:') || id.length > 255) return reply.code(400).send({success:false,error:'invalid_passage_id'})
+    const index=await readReviewedIndex()
+    if(!index) return reply.code(404).send({
+      success:false,error:'reviewed_analysis_not_materialized',
+      note:'No reviewed SRGBL derived analysis index exists; this endpoint never fabricates a five-level reading.'
+    })
+    const records=index.publicSummaries.filter(item=>item.passageId===id)
+    if(!records.length) return reply.code(404).send({
+      success:false,error:'no_reviewed_analysis_for_passage',passageId:id
+    })
+    // Public projection excludes all scalar research scores and source text.
+    return {success:true,passageId:id,corpusHash:index.corpusHash,
+      methodVersion:index.methodVersion,analyses:records}
+  })
 }
