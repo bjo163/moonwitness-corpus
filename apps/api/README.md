@@ -15,7 +15,7 @@ Modular, ultra-high-throughput Fastify 5 REST API Microservice for the **MoonWit
 - **Sub-Millisecond Queries**: Sub-millisecond FTS5 search across **537,512+ sacred records**.
 - **Full OpenTelemetry (OTel)**: Automatic W3C `traceparent` context propagation, `x-trace-id`, and Prometheus metrics exporter on `GET /metrics`.
 - **Dynamic Traditions**: Zero static limit — dynamically aggregates all active world religious traditions from SQLite and upstream registry.
-- **Interactive Swagger UI**: Interactive API documentation at `http://localhost:3000/docs`.
+- **Interactive Swagger UI**: Interactive API documentation at `http://localhost:4310/docs`.
 
 ---
 
@@ -29,7 +29,7 @@ pnpm serve
 pnpm api:dev
 ```
 
-Server runs by default on `http://0.0.0.0:3000`.
+Server runs by default on `http://0.0.0.0:4310`. Override with `PORT`; point `CORPUS_DB_PATH` at a database other than the repository's `dist/corpus.sqlite`.
 
 ---
 

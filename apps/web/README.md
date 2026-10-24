@@ -104,6 +104,14 @@ For Vite development against an existing generated/public data plane:
 npm run dev
 ```
 
+Or run the API and this frontend together from the repository root:
+
+```bash
+pnpm dev
+```
+
+The frontend runs on `http://localhost:5174` and, in development mode, connects to the REST API at `http://localhost:4310` (see `.env.development`).
+
 Optionally connect the REST service:
 
 ```bash
