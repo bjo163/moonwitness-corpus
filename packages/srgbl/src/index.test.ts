@@ -18,6 +18,7 @@ test('maturity uses supported contiguous prefix and triangular scoring', () => {
   assert.deepEqual([scoreMaturity(all).score,scoreMaturity(all).verifiedLevel], [15,'L5'])
   assert.deepEqual([scoreMaturity({S1:'supported',G3:'supported',B4:'supported'}).score,
     scoreMaturity({S1:'supported',G3:'supported',B4:'supported'}).verifiedLevel], [1,'S1'])
+  assert.deepEqual(scoreMaturity({S1:'supported',G3:'supported',B4:'supported'}).pending, ['R2','G3','B4','L5'])
   assert.equal(scoreMaturity({ S1:'partial', R2:'supported' }).score, 0)
   assert.equal(scoreMaturity({S1:'supported',R2:'unknown',G3:'supported'}).score,1)
   assert.throws(() => scoreMaturity({ S1:'fake' as never }),RangeError)
