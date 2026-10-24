@@ -1,5 +1,5 @@
 import {
-  scoreWitnessCandidate, validateScopedRelation, type ScopedTextRelation,
+  WITNESS_COMPONENT_MAX, scoreWitnessCandidate, validateScopedRelation, type ScopedTextRelation,
   type WitnessComponents, type SwingCandidate
 } from './index.js'
 import type { ReviewStatus } from './analysis.js'
@@ -89,4 +89,175 @@ export function validateMiracleAttribution(item:MiracleAttribution):string[] {
   if(item.empiricallyVerified!==false) errors.push('empirical certification is prohibited')
   if(item.reviewStatus==='reviewed' && (!nonblank(item.reviewer) || !item.evidenceIds.length)) errors.push('reviewed miracle claim requires reviewer and source evidence')
   return errors
+}
+
+/**
+ * Canonical text form of a candidate ledger. The document is a record of
+ * research state, never a ranking: it round-trips only what a reviewer wrote.
+ */
+export const CANDIDATE_LEDGER_SCHEMA = 'mw-candidate-ledger-v1' as const
+/** Read-only view of a deserialized ledger; nothing here can be mutated in place. */
+export interface CandidateLedger {
+  readonly schema: typeof CANDIDATE_LEDGER_SCHEMA
+  readonly candidates: readonly ReviewedCandidate[]
+}
+const CANDIDATE_FIELDS = ['id','origin','relation','supportingEvidenceIds','contradictingEvidenceIds',
+  'independentSourceIds','reviewStatus','reviewer','components'] as const
+const ORIGIN_FIELDS = ['signature','operator','subject','relation','object','depth','state',
+  'evidenceStatus','inheritedScore'] as const
+const RELATION_FIELDS = ['leftPassageId','rightPassageId','relation','method','frame','evidenceIds',
+  'reviewer','reviewStatus'] as const
+const COMPONENT_FIELDS = Object.keys(WITNESS_COMPONENT_MAX) as (keyof WitnessComponents)[]
+
+const sortedIds = (ids: readonly string[]): string[] => [...ids].sort()
+const isRecord = (x: unknown): x is Record<string, unknown> =>
+  typeof x === 'object' && x !== null && !Array.isArray(x)
+const unknownFields = (record: Record<string, unknown>, allowed: readonly string[]): string[] =>
+  Object.keys(record).filter(key => !allowed.includes(key)).sort()
+const byId = (a: {id: string}, b: {id: string}): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+
+/**
+ * One record in a fixed field order with every ID set sorted, so two ledgers of
+ * the same candidates serialize to the same bytes whatever order they arrived in.
+ */
+function canonicalCandidate(c: ReviewedCandidate) {
+  const { origin, relation } = c
+  return {
+    id: c.id,
+    origin: {
+      signature: origin.signature, operator: origin.operator, subject: origin.subject,
+      relation: origin.relation, object: origin.object, depth: origin.depth,
+      state: origin.state, evidenceStatus: origin.evidenceStatus, inheritedScore: origin.inheritedScore
+    },
+    relation: {
+      leftPassageId: relation.leftPassageId, rightPassageId: relation.rightPassageId,
+      relation: relation.relation, method: relation.method, frame: relation.frame,
+      evidenceIds: sortedIds(relation.evidenceIds), reviewStatus: relation.reviewStatus,
+      ...(nonblank(relation.reviewer) ? { reviewer: relation.reviewer } : {})
+    },
+    supportingEvidenceIds: sortedIds(c.supportingEvidenceIds),
+    contradictingEvidenceIds: sortedIds(c.contradictingEvidenceIds),
+    independentSourceIds: sortedIds(c.independentSourceIds),
+    reviewStatus: c.reviewStatus,
+    ...(nonblank(c.reviewer) ? { reviewer: c.reviewer } : {}),
+    /** null is the recorded "not independently assessed", never a padded 0/100. */
+    components: c.components ? COMPONENT_FIELDS.reduce<Record<string, number>>(
+      (bundle, key) => ({ ...bundle, [key]: c.components![key] }), {}) : null
+  }
+}
+
+/** Refuses to serialize a record a reviewer could not defend, including extra truth fields. */
+export function serializeCandidateLedger(candidates: readonly ReviewedCandidate[]): string {
+  if (!Array.isArray(candidates)) throw new TypeError('candidate ledger must be an array of candidates')
+  const seen = new Set<string>()
+  const canonical = candidates.map((candidate, index) => {
+    const raw: unknown = candidate
+    if (!isRecord(raw)) throw new TypeError('candidate at index ' + index + ' must be an object')
+    const extra = unknownFields(raw, CANDIDATE_FIELDS)
+    if (extra.length) throw new TypeError('candidate at index ' + index + ' has unknown field(s): ' + extra.join(', '))
+    const errors = validateReviewedCandidate(candidate)
+    if (errors.length) throw new TypeError('candidate at index ' + index + ' cannot be serialized: ' + errors.join('; '))
+    if (seen.has(candidate.id)) throw new RangeError('duplicate candidate id ' + candidate.id)
+    seen.add(candidate.id)
+    return canonicalCandidate(candidate)
+  })
+  return JSON.stringify({ schema: CANDIDATE_LEDGER_SCHEMA, candidates: canonical.sort(byId) }, null, 2) + '\n'
+}
+
+/** Requires the key to exist: a dropped contradiction list is not an empty search. */
+function requiredKeys(record: Record<string, unknown>, names: readonly string[], label: string): void {
+  const missing = names.filter(name => !(name in record))
+  if (missing.length) throw new TypeError(label + ' is missing ' + missing.join(', ') + ' (use [] or null, never omit it)')
+}
+function nested(record: Record<string, unknown>, name: string, allowed: readonly string[], label: string): Record<string, unknown> {
+  const value = record[name]
+  if (!isRecord(value)) throw new TypeError(label + ' ' + name + ' must be an object')
+  const extra = unknownFields(value, allowed)
+  if (extra.length) throw new TypeError(label + ' ' + name + ' has unknown field(s): ' + extra.join(', '))
+  return value
+}
+
+/** Rebuilds one typed record from parsed text, rejecting anything a reviewer did not write. */
+function reviveCandidate(raw: unknown, index: number): ReviewedCandidate {
+  const label = 'candidate at index ' + index
+  if (!isRecord(raw)) throw new TypeError(label + ' must be an object')
+  const extra = unknownFields(raw, CANDIDATE_FIELDS)
+  if (extra.length) throw new TypeError(label + ' has unknown field(s): ' + extra.join(', '))
+  requiredKeys(raw, CANDIDATE_FIELDS.filter(name => name !== 'reviewer'), label)
+  const origin = nested(raw, 'origin', ORIGIN_FIELDS, label)
+  requiredKeys(origin, ORIGIN_FIELDS, label + ' origin')
+  const relation = nested(raw, 'relation', RELATION_FIELDS, label)
+  requiredKeys(relation, RELATION_FIELDS.filter(name => name !== 'reviewer'), label + ' relation')
+  const components = raw.components
+  if (components !== null) {
+    if (!isRecord(components)) throw new TypeError(label + ' components must be an object or null')
+    const componentExtra = unknownFields(components, COMPONENT_FIELDS)
+    if (componentExtra.length) throw new TypeError(label + ' components has unknown field(s): ' + componentExtra.join(', '))
+    requiredKeys(components, COMPONENT_FIELDS, label + ' components')
+  }
+  const candidate = {
+    id: raw.id, origin, relation,
+    supportingEvidenceIds: raw.supportingEvidenceIds, contradictingEvidenceIds: raw.contradictingEvidenceIds,
+    independentSourceIds: raw.independentSourceIds, reviewStatus: raw.reviewStatus,
+    reviewer: raw.reviewer, components
+  } as unknown as ReviewedCandidate
+  const errors = validateReviewedCandidate(candidate)
+  if (errors.length) throw new TypeError('candidate ' + String(candidate.id) + ' cannot be deserialized: ' + errors.join('; '))
+  return candidate
+}
+
+const frozenIds = (ids: readonly string[]): string[] => Object.freeze([...ids]) as string[]
+function freezeCandidate(c: ReviewedCandidate): ReviewedCandidate {
+  return Object.freeze({
+    ...c,
+    origin: Object.freeze({ ...c.origin }),
+    relation: Object.freeze({ ...c.relation, evidenceIds: frozenIds(c.relation.evidenceIds) }) as ScopedTextRelation,
+    supportingEvidenceIds: frozenIds(c.supportingEvidenceIds),
+    contradictingEvidenceIds: frozenIds(c.contradictingEvidenceIds),
+    independentSourceIds: frozenIds(c.independentSourceIds),
+    components: c.components ? Object.freeze({ ...c.components }) : null
+  }) as ReviewedCandidate
+}
+
+/** Parses a candidate ledger into an immutable, ID-ordered view. */
+export function deserializeCandidateLedger(text: string): CandidateLedger {
+  if (typeof text !== 'string') throw new TypeError('candidate ledger must be serialized text')
+  let document: unknown
+  try { document = JSON.parse(text) } catch { throw new TypeError('candidate ledger is not valid JSON') }
+  if (!isRecord(document)) throw new TypeError('candidate ledger must be a JSON object')
+  const extra = unknownFields(document, ['schema', 'candidates'])
+  if (extra.length) throw new TypeError('candidate ledger has unknown field(s): ' + extra.join(', '))
+  if (document.schema !== CANDIDATE_LEDGER_SCHEMA) throw new TypeError('candidate ledger schema must be ' + CANDIDATE_LEDGER_SCHEMA)
+  if (!Array.isArray(document.candidates)) throw new TypeError('candidate ledger candidates must be an array')
+  const seen = new Set<string>()
+  const candidates = document.candidates.map((raw, index) => {
+    const candidate = reviveCandidate(raw, index)
+    if (seen.has(candidate.id)) throw new RangeError('duplicate candidate id ' + candidate.id)
+    seen.add(candidate.id)
+    return candidate
+  })
+  return Object.freeze({
+    schema: CANDIDATE_LEDGER_SCHEMA,
+    candidates: Object.freeze(candidates.sort(byId).map(freezeCandidate)) as readonly ReviewedCandidate[]
+  })
+}
+
+/** Counts what the ledger does not know; disputed and unassessed are never hidden. */
+export function summarizeCandidateLedger(ledger: CandidateLedger) {
+  const records = ledger?.candidates || []
+  const count = (predicate: (c: ReviewedCandidate) => boolean): number => records.filter(predicate).length
+  return {
+    schema: ledger?.schema,
+    total: records.length,
+    reviewed: count(c => c.reviewStatus === 'reviewed'),
+    disputed: count(c => c.reviewStatus === 'disputed'),
+    draft: count(c => c.reviewStatus === 'draft'),
+    /** Records whose witness rubric was never independently assessed. */
+    unassessed: count(c => !c.components),
+    withContraryEvidence: count(c => c.contradictingEvidenceIds.length > 0),
+    contrarySearchedNoneFound: count(c => c.contradictingEvidenceIds.length === 0),
+    frames: [...new Set(records.map(c => c.relation.frame))].sort(),
+    methods: [...new Set(records.map(c => c.relation.method))].sort(),
+    automaticCanonicalApproval: false as const
+  }
 }
