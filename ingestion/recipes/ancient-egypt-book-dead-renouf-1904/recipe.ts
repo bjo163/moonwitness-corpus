@@ -1,71 +1,23 @@
 import type { CorpusRecord } from '@moonwitness/corpus-core'
 import type { RecipeHooks } from '@moonwitness/corpus-ingestion'
+import { assertRenoufSourceIdentity, parseRenoufBookOfTheDead } from '@moonwitness/corpus-ingestion'
 
 const WORK = 'mw:work:ancient-egyptian:book-dead-renouf-1904'
 const EXPRESSION = 'mw:expression:ancient-egyptian:book-dead:renouf-1904'
 const EDITION = 'mw:edition:ancient-egyptian:book-dead:renouf-1904'
 const ARTIFACT = 'mw:artifact:ancient-egyptian:book-dead:renouf-1904'
-const PROVENANCE = 'mw:provenance:ancient-egyptian:book-dead:renouf-1904'
+const PROVENANCE = 'mw:provenance:ancient-egyptian:book-dead-renouf-1904'
 
-export interface ParsedRenouf { chapters: Array<{ number: number; title: string; text: string }> }
-
-const ROMAN: Record<string, number> = {}
-for (let i = 1; i <= 220; i += 1) {
-  let n = i
-  let roman = ''
-  for (const [value, numeral] of [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']] as Array<[number,string]>) {
-    while (n >= value) { roman += numeral; n -= value }
-  }
-  ROMAN[roman] = i
-}
-
-function parseChapters(text: string): ParsedRenouf {
-  const normalized = text.replace(/^.*?\*\*\* START OF THE PROJECT GUTENBERG EBOOK[^\n]*\n/su, '')
-  const lines = normalized.split(/\r?\n/u)
-  const starts: Array<{ index: number; number: number; title: string }> = []
-  const heading = /^\s*CHAPTER\s+([IVXLCDM]+)\.?\s*$/iu
-  for (let i = 0; i < lines.length; i += 1) {
-    const match = lines[i].match(heading)
-    if (!match) continue
-    const number = ROMAN[match[1].toUpperCase()]
-    if (!number) continue
-    let title = `Chapter ${match[1].toUpperCase()}`
-    for (let j = i + 1; j < Math.min(lines.length, i + 5); j += 1) {
-      const candidate = lines[j].trim()
-      if (candidate && !candidate.startsWith('PLATE ') && !candidate.startsWith('Notes')) {
-        title = candidate.replace(/[._]+$/gu, '')
-        break
-      }
-    }
-    starts.push({ index: i, number, title })
-  }
-  const seenChapters = new Set<number>()
-  for (const chapter of starts) {
-    if (seenChapters.has(chapter.number)) throw new Error(`Ambiguous repeated Renouf chapter ${chapter.number}; witness review required`)
-    seenChapters.add(chapter.number)
-  }
-  if (starts.length < 100) throw new Error(`Expected at least 100 printed chapters, found ${starts.length}`)
-  return {
-    chapters: starts.map((item, index) => {
-      const end = starts[index + 1]?.index ?? lines.length
-      const body = lines.slice(item.index + 1, end).join('\n').replace(/\n{3,}/gu, '\n\n').trim()
-      if (!body) throw new Error(`Empty chapter ${item.number}`)
-      return { number: item.number, title: item.title, text: body }
-    })
-  }
-}
+export type ParsedRenouf = ReturnType<typeof parseRenoufBookOfTheDead>
 
 export const hooks: RecipeHooks<ParsedRenouf, ParsedRenouf> = {
   parse(bytes) {
     const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-    if (!text.includes('PROJECT GUTENBERG EBOOK 69566')) throw new Error('Unexpected Gutenberg payload')
-    if (/<(?:html|body|form|script)[\s>]/iu.test(text)) throw new Error('HTML/challenge payload rejected')
-    if (!text.includes('P. LE PAGE RENOUF') || !text.includes('E. NAVILLE')) throw new Error('Unexpected translator identity')
-    if (!text.includes('SOCIETY OF BIBLICAL ARCHAEOLOGY') || !text.includes('1904')) throw new Error('Unexpected edition identity')
-    return parseChapters(text)
+    assertRenoufSourceIdentity(text)
+    return parseRenoufBookOfTheDead(text)
   },
   normalize(parsed) {
-    return { chapters: parsed.chapters.map(chapter => ({ ...chapter, text: chapter.text.replace(/\n{3,}/gu, '\n\n').trim() })) }
+    return parsed
   },
   map(parsed, context) {
     const records: CorpusRecord[] = [
@@ -73,12 +25,12 @@ export const hooks: RecipeHooks<ParsedRenouf, ParsedRenouf> = {
       { id: EXPRESSION, record_type: 'resource', kind: 'textual.expression', description: 'Translation and commentary by P. Le Page Renouf, continued and completed by Edouard Naville; 1904 edition.', extensions: { textual: { work: WORK, language: 'en', script: 'Latn' } } },
       { id: EDITION, record_type: 'resource', kind: 'textual.edition', extensions: { textual: { expressions: [EXPRESSION], edition_statement: 'The Egyptian Book of the Dead — Renouf / Naville, 1904' } } },
       { id: ARTIFACT, record_type: 'resource', kind: 'textual.artifact', labels: [{ value: 'Project Gutenberg #69566', role: 'preferred', language: 'en' }], extensions: { textual: { represents: EDITION, representation_kind: 'plain_text', media_type: 'text/plain' }, source: { title: 'The Egyptian Book of the dead', canonical_url: 'https://www.gutenberg.org/ebooks/69566', identifiers: [{ scheme: 'gutenberg', value: '69566', uri: 'https://www.gutenberg.org/ebooks/69566' }], language: 'en', revision: 'eBook #69566', descriptor: { availability: 'external', locations: ['https://www.gutenberg.org/cache/epub/69566/pg69566.txt'], media_type: 'text/plain', byte_size: context.acquisition.source.byte_size, sha256: context.acquisition.sha256 }, rights: { status: 'public_domain', redistribution: 'unknown', attribution: 'P. Le Page Renouf / Edouard Naville / Project Gutenberg', rights_uri: 'https://www.gutenberg.org/ebooks/69566', note: 'Project Gutenberg identifies this edition as public domain in the USA; redistribution status outside the USA requires separate verification.' } } } },
-      { id: PROVENANCE, record_type: 'provenance', source: ARTIFACT, source_reference: 'Project Gutenberg eBook #69566; Renouf/Naville 1904 edition', activities: [{ type: 'acquisition', method: 'HTTP download of pinned plain-text edition with source identity and payload checks', software: { name: 'mw:recipe:ancient-egyptian:book-dead-renouf-1904', version: '1' } }, { type: 'parsing', method: 'Parse numbered CHAPTER headings and preserve chapter bodies', software: { name: 'mw:recipe:ancient-egyptian:book-dead-renouf-1904', version: '1' } }] }
+      { id: PROVENANCE, record_type: 'provenance', source: ARTIFACT, source_reference: `Project Gutenberg eBook #69566; source SHA-256 ${parsed.sourceSha256}`, activities: [{ type: 'acquisition', method: 'HTTP download of pinned plain-text edition with source identity and payload checks', software: { name: 'mw:recipe:ancient-egyptian:book-dead-renouf-1904', version: '2' } }, { type: 'parsing', method: `Parse centered printed CHAPTER/CHAPTERS headings, exclude ${parsed.captionCount} structural plate/illustration captions, merge page-continued sections, and preserve chapter bodies`, software: { name: 'mw:recipe:ancient-egyptian:book-dead-renouf-1904', version: '2' } }] }
     ]
     for (const chapter of parsed.chapters) {
-      const passage = `mw:passage:ancient-egyptian:book-dead-renouf:${chapter.number}`
-      const content = `mw:content:ancient-egyptian:book-dead-renouf:${chapter.number}:en`
-      records.push({ id: passage, record_type: 'resource', kind: 'textual.passage', labels: [{ value: chapter.title, role: 'preferred', language: 'en', script: 'Latn' }], extensions: { textual: { container: EXPRESSION, unit: 'chapter', sequence: chapter.number, local_id: String(chapter.number) } } } as CorpusRecord)
+      const passage = `mw:passage:ancient-egyptian:book-dead-renouf:${chapter.localId}`
+      const content = `mw:content:ancient-egyptian:book-dead-renouf:${chapter.localId}:en`
+      records.push({ id: passage, record_type: 'resource', kind: 'textual.passage', labels: [{ value: chapter.title, role: 'preferred', language: 'en', script: 'Latn' }], extensions: { textual: { container: EXPRESSION, unit: 'chapter', sequence: chapter.sequence, local_id: chapter.localId } } } as CorpusRecord)
       records.push({ id: content, record_type: 'resource', kind: 'textual.content', extensions: { textual: { target: passage, language: 'en', script: 'Latn', representation: 'source', text: chapter.text }, source: { artifact: ARTIFACT, provenance: PROVENANCE } } } as CorpusRecord)
     }
     return records
@@ -90,6 +42,8 @@ export const hooks: RecipeHooks<ParsedRenouf, ParsedRenouf> = {
     if (passages.length < 100) findings.push(`Expected at least 100 chapters, received ${passages.length}`)
     if (contents.length !== passages.length) findings.push('Chapter/content cardinality mismatch')
     if (new Set(records.map(record => record.id)).size !== records.length) findings.push('Duplicate record IDs')
+    const localIds = passages.map(record => (record.extensions?.textual as Record<string, unknown> | undefined)?.local_id)
+    if (new Set(localIds).size !== localIds.length) findings.push('Duplicate chapter local identifiers')
     return findings
   }
 }

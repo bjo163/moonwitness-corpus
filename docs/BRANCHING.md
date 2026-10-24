@@ -26,6 +26,36 @@ A canonical branch is not the same as the only permitted remote branch.
 
 Permanent deletion requires a **separate, explicitly reviewed process**, including current PR-state checks, a merged/unmerged history check against canonical refs, no open review or research retention obligation, audit evidence, and an accountable human approval. A failed/ambiguous check means **retain the branch**.
 
+## Repository rulesets (FIX-006 / #398)
+
+Repository rulesets were applied on 2026-10-24:
+
+- `canonical-branch-protection` (id `25772824`, active) targets `main` and `dev`.
+  It blocks deletion and force pushes, requires a pull request, requires review
+  conversations to be resolved, and requires the exact-head checks `check` and
+  `web`. Required approvals are `0` because the repository currently has a
+  single admin; raise this to at least `1` as soon as a second reviewer exists.
+- `immutable-release-tags` (id `25772825`, active) targets `corpus-v*` and
+  `browser-db-*`, blocking tag updates, retagging and deletion.
+
+The classic branch-protection API still reports `Branch not protected`; the
+rulesets endpoint is the authoritative enforcement source. Verify with:
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  https://api.github.com/repos/bjo163/moonwitness-corpus/rulesets
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  https://api.github.com/repos/bjo163/moonwitness-corpus/rules/branches/dev
+```
+
+A canonical branch is fully protected only when the second call lists `deletion`,
+`non_fast_forward`, `pull_request` and `required_status_checks`, and a pull
+request targeting it is blocked by a red exact-head check.
+
+`todo-issues-sync.yml` still commits `TODO.md` to the default branch. Before
+requiring pull requests on `main`, either allowlist that bot identity or convert
+the sync to a reviewed pull request; do not add a broad bypass.
+
 ## Release & protection dependencies
 
 - [FIX-003 / #396](https://github.com/bjo163/moonwitness-corpus/issues/396): branch-safety remediation.
