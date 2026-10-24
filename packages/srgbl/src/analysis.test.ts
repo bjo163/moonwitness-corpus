@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { validateAnalysisRun, diagnoseOffside, type AnalysisRun, type ResearchFrame } from './analysis.js'
 import { evaluateFramedKeys, validateKeyMessage, type FramedKeyAssessment } from './keys.js'
-import { adaptPassageSources } from './sources.js'
+import { adaptPassageSources, resolveSourceReference, type SourceCatalog } from './sources.js'
 import { validateReviewedCandidate, validateMiracleAttribution, summarizeCandidate } from './research-ledger.js'
 import { proposeSwing, type ScopedTextRelation } from './index.js'
 
@@ -70,15 +70,46 @@ test('source adapter preserves exact distinction and never exposes uncleared tex
     edition_id:'mw:edition:test',source_id:'mw:source:test',
     extensions:{source:{artifact:'mw:artifact:test',provenance:'mw:provenance:test'}}
   }],artifacts:[{id:'mw:artifact:test'}],provenance:[{id:'mw:provenance:test'}],evidence:[{id:'mw:evidence:test'}]}
-  const no=adaptPassageSources(sample)
+  const catalog:SourceCatalog={sources:[{id:'mw:source:test'}],editions:[{id:'mw:edition:test',sourceId:'mw:source:test'}]}
+  const no=adaptPassageSources(sample,{},catalog)
   assert.equal(no.sources[0].rights,'unknown')
   assert.equal(no.sources[0].representation,'translation')
   assert.equal(no.sources[0].text,undefined)
   assert.equal(no.defaultLevelStatus,'pending')
   assert.ok(no.gaps.some(g=>g.includes('rights_not_cleared')))
-  const yes=adaptPassageSources(sample,{'mw:content:test:a':'cleared'})
+  const yes=adaptPassageSources(sample,{'mw:content:test:a':'cleared'},catalog)
   assert.equal(yes.sources[0].text,'DO NOT PUBLISH AS SCRIPTURE')
   assert.deepEqual(yes.gaps,[])
+})
+test('source pointers resolve against canonical records, never from nonblank IDs',()=>{
+  const catalog:SourceCatalog={sources:[{id:'mw:source:test'},{id:'mw:source:other'}],
+    editions:[{id:'mw:edition:test',sourceId:'mw:source:test'}]}
+  assert.deepEqual(resolveSourceReference('mw:source:test','mw:edition:test',catalog),{resolved:true,gap:null})
+  const unknown=resolveSourceReference('mw:source:does-not-exist','mw:edition:test',catalog)
+  assert.deepEqual(unknown,{resolved:false,gap:'source_unresolved'})
+  assert.deepEqual(resolveSourceReference('mw:source:test','mw:edition:does-not-exist',catalog),
+    {resolved:false,gap:'edition_unresolved'})
+  assert.deepEqual(resolveSourceReference('mw:source:other','mw:edition:test',catalog),
+    {resolved:false,gap:'edition_source_mismatch'})
+  // Without a catalog nothing is proven: nonblank strings stay unresolved.
+  assert.deepEqual(resolveSourceReference('mw:source:test','mw:edition:test'),
+    {resolved:false,gap:'source_resolution_unavailable'})
+})
+test('unresolved source or wrong edition blocks S1 review through the adapter',()=>{
+  const base={passage:{id:'mw:passage:test:a'},contents:[{
+    id:'mw:content:test:a',text:'LICENSED',language:'en',representation:'source_text',
+    edition_id:'mw:edition:test',source_id:'mw:source:does-not-exist',
+    extensions:{source:{artifact:'mw:artifact:test',provenance:'mw:provenance:test'}}
+  }],artifacts:[{id:'mw:artifact:test'}],provenance:[{id:'mw:provenance:test'}],evidence:[{id:'mw:evidence:test'}]}
+  const catalog:SourceCatalog={sources:[{id:'mw:source:test'}],editions:[{id:'mw:edition:test',sourceId:'mw:source:test'}]}
+  const unresolved=adaptPassageSources(base,{'mw:content:test:a':'cleared'},catalog)
+  assert.ok(unresolved.gaps.includes('mw:content:test:a:source_unresolved'))
+  assert.equal(unresolved.defaultLevelStatus,'pending')
+  const wrongEdition=adaptPassageSources({...base,contents:[{...base.contents[0],source_id:'mw:source:test'}],
+    artifacts:[{id:'mw:artifact:test'}]},{'mw:content:test:a':'cleared'},{sources:[{id:'mw:source:test'}],editions:[]})
+  assert.ok(wrongEdition.gaps.includes('mw:content:test:a:edition_unresolved'))
+  const noCatalog=adaptPassageSources({...base,contents:[{...base.contents[0],source_id:'mw:source:test'}]},{'mw:content:test:a':'cleared'})
+  assert.ok(noCatalog.gaps.includes('mw:content:test:a:source_resolution_unavailable'))
 })
 function key():FramedKeyAssessment {
   return {id:'mw:assessment:test:1',passageId:'mw:passage:test:a',contentId:'mw:content:test:a',

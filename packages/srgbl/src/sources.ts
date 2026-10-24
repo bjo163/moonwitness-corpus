@@ -27,6 +27,50 @@ export interface AdaptedPassage {
   defaultLevelStatus: 'pending'
 }
 
+/**
+ * Read-only view of the canonical source/edition registry (config/sources.json
+ * and config/editions.json). The caller supplies already-loaded records; this
+ * module never creates a second database layer and never infers existence from
+ * a nonblank identifier.
+ */
+export interface CanonicalSourceRecord { id: string }
+export interface CanonicalEditionRecord { id: string; sourceId?: string; source?: string }
+export interface SourceCatalog {
+  sources: readonly CanonicalSourceRecord[]
+  editions: readonly CanonicalEditionRecord[]
+}
+
+export type SourceResolutionGap =
+  | 'source_unresolved'
+  | 'edition_unresolved'
+  | 'edition_source_mismatch'
+  | 'source_resolution_unavailable'
+
+export interface SourceResolution {
+  resolved: boolean
+  /** null only when a real lookup proved source and edition exist and agree. */
+  gap: SourceResolutionGap | null
+}
+
+/**
+ * Resolves a content pointer pair against canonical records. Failure is an
+ * explicit gap, never a silent success; without a catalog nothing is proven.
+ */
+export function resolveSourceReference(sourceId: string, editionId: string,
+  catalog?: SourceCatalog | null): SourceResolution {
+  if (!catalog || !Array.isArray(catalog.sources) || !Array.isArray(catalog.editions)) {
+    return { resolved: false, gap: 'source_resolution_unavailable' }
+  }
+  const source = catalog.sources.find(item => item?.id === sourceId)
+  if (!source) return { resolved: false, gap: 'source_unresolved' }
+  if (!editionId.trim()) return { resolved: true, gap: null }
+  const edition = catalog.editions.find(item => item?.id === editionId)
+  if (!edition) return { resolved: false, gap: 'edition_unresolved' }
+  const owner = text(edition.sourceId) || text(edition.source)
+  if (owner && owner !== sourceId) return { resolved: false, gap: 'edition_source_mismatch' }
+  return { resolved: true, gap: null }
+}
+
 const text = (v: unknown): string => typeof v === 'string' ? v : ''
 function ref(source: CorpusRecordLike, kind: string): string {
   const root=source.extensions
@@ -48,7 +92,8 @@ function kindOf(s: CorpusRecordLike): WitnessSource['representation'] {
  * This adapter never guesses license from religion/age/dataset name.
  */
 export function adaptPassageSources(detail: CorpusPassageDetail,
-  rightsByContentId: Readonly<Record<string, RightsStatus>> = {}): AdaptedPassage {
+  rightsByContentId: Readonly<Record<string, RightsStatus>> = {},
+  catalog?: SourceCatalog | null): AdaptedPassage {
   if (!detail?.passage?.id || !Array.isArray(detail.contents) ||
     !Array.isArray(detail.artifacts) || !Array.isArray(detail.provenance) ||
     !Array.isArray(detail.evidence)) throw new TypeError('Passage detail requires canonical passage and trace arrays')
@@ -65,6 +110,11 @@ export function adaptPassageSources(detail: CorpusPassageDetail,
     if(!sourceId) gaps.push(c.id+':source_unknown')
     if(!artifactId || !artifacts.has(artifactId)) gaps.push(c.id+':artifact_unresolved')
     if(!provenanceId || !provenance.has(provenanceId)) gaps.push(c.id+':provenance_unresolved')
+    // A nonblank pointer is not proof: require a canonical lookup result.
+    if(sourceId || editionId){
+      const resolution = resolveSourceReference(sourceId, editionId, catalog)
+      if(!resolution.resolved && resolution.gap) gaps.push(c.id+':'+resolution.gap)
+    }
     if(rights!=='cleared') gaps.push(c.id+':rights_not_cleared')
     return {
       id:'srgbl:source:'+c.id, passageId:detail.passage.id, contentId:c.id,
