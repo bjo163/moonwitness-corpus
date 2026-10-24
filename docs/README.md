@@ -16,6 +16,9 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 
 - [**Cerita Produk (final)**](./PRODUCT-STORY.md) — narasi kanonik brand dan produk: masalah, lima babak pembaca, titik tengah, suara, dan batas klaim.
 - [**Product Blueprint (final)**](./PRODUCT-BLUEPRINT.md) — arsitektur, UX, data, editorial, pengukuran, roadmap, dan work breakdown Key Witness.
+- [**SRGBL v8 Master RFC (research extension)**](./SRGBL-V8-MASTER-RFC.md) — S1–L5, scoring 15/40/100, Key, Swing, Positive Correction, research-only guardrails.
+- [**SRGBL Historical Concept Crosswalk**](./SRGBL-V8-CONCEPT-CROSSWALK.md) — sejarah WITNESS, Swing, Middle Point, Offside dan beda score.
+- [**P18/P19 Progress**](../TODO.md) — issue-synchronized tasks, dependencies, and implementation evidence. Pure SRGBL primitives exist; full application integration is pending.
 
 ---
 
