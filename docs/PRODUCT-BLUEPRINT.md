@@ -771,4 +771,4 @@ Canonical TEXT (unchanged)
 
 **Distinct interpretive lenses:** `comparative-neutral` and `islamic-quran-anchored` are different methodologies. Positive Correction cannot be applied as a global universal fact; claim of miracle remains attributed rather than algorithmically detected. `OFFSIDE` is an actor/frame diagnostic and historic creative metaphor; not a literal scriptural term.
 
-See [SRGBL v8 RFC](./SRGBL-V8-MASTER-RFC.md), [historical concept crosswalk](./SRGBL-V8-CONCEPT-CROSSWALK.md) and [P19 TODO](../TODO.md).
+See [SRGBL v8 publication integrity runbook](./SRGBL-V8-PUBLICATION-RUNBOOK.md), [SRGBL v8 RFC](./SRGBL-V8-MASTER-RFC.md), [historical concept crosswalk](./SRGBL-V8-CONCEPT-CROSSWALK.md) and [P19 TODO](../TODO.md).
