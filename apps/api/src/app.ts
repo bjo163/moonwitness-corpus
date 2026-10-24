@@ -15,6 +15,7 @@ import { searchRoutes } from './routes/search.js'
 import { devotionalsRoutes } from './routes/devotionals.js'
 import { compareRoutes } from './routes/compare.js'
 import { recordsRoutes } from './routes/records.js'
+import { srgblResearchRoutes } from './routes/srgbl.js'
 
 const DEFAULT_DB_PATH = fileURLToPath(new URL('../../../dist/corpus.sqlite', import.meta.url))
 
@@ -75,6 +76,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     await v1.register(devotionalsRoutes)
     await v1.register(compareRoutes)
     await v1.register(recordsRoutes)
+    await v1.register(srgblResearchRoutes)
   }, { prefix: '/v1' })
 
   // Root redirect to docs
