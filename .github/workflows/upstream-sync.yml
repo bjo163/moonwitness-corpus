@@ -1,60 +1,67 @@
-name: Upstream Auto-Sync & Health Audit
+name: Upstream Source Audit (No Direct Push)
 
+# Temporary FIX-004 safety gate. Scheduled sync belongs to the default
+# branch after review; this dev workflow is explicit/manual and read-only.
 on:
-# Scheduled workflows are read from the default branch (main), not this dev file.
-# Test dev sync explicitly; define the one production schedule on main only.
   workflow_dispatch:
-
-concurrency:
-  group: upstream-sync-dev
-  cancel-in-progress: true
+    inputs:
+      acquire:
+        description: 'Run remote source acquisition into the ephemeral runner only (no commit/push)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: upstream-audit-dev
+  cancel-in-progress: false
 
 jobs:
-  sync:
-    runs-on: self-hosted
-    timeout-minutes: 45
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@v4
         with:
           ref: dev
-          fetch-depth: 0
-
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - run: corepack enable
-      - run: pnpm install --no-frozen-lockfile
-
-      - name: Audit Upstream API Connectivity & Latency
-        run: pnpm upstream:audit
+          cache: pnpm
+      - name: Install dependencies reproducibly
+        run: pnpm install --frozen-lockfile
+      - name: Validate pinned upstream registries
+        run: pnpm validate:upstream
+      - name: Report source planner without writing back to GitHub
+        run: pnpm upstream:list
+      - name: Optional network-dependent acquisition in disposable checkout
+        if: inputs.acquire == true
         env:
           UMMAH_API_KEY: ${{ secrets.UMMAH_API_KEY }}
-
-      - name: Synchronize All Upstream Sacred Text Sources
-        run: pnpm sync:all
-        env:
-          UMMAH_API_KEY: ${{ secrets.UMMAH_API_KEY }}
-
-      - name: Rebuild & Validate Master Corpus Pipeline
-        run: pnpm check
-
-      - name: Check for upstream updates & commit to dev
+        run: |
+          pnpm upstream:audit
+          pnpm sync:all
+          pnpm check
+      - name: Report only local working-tree change names
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
-          # dist/ is derived and gitignored. Stage only intended corpus inputs.
-          # Check the INDEX after staging, including newly created source files.
-          git add -- ingestion/recipes/ datasets/
-          if git diff --cached --quiet; then
-            echo "No tracked upstream changes to persist."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(upstream): auto-sync latest upstream corpus sources"
-          git push origin HEAD:dev
+          {
+            echo '## Upstream audit: read-only GitHub permissions'
+            echo ''
+            echo 'No git commit, push, release, or remote branch mutation in this workflow.'
+            echo 'Remote acquisition requested: ${{ inputs.acquire }}'
+            echo ''
+            echo 'Changed local paths after inspection (NOT committed):'
+            echo '~~~text'
+            git status --short --untracked-files=normal
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
