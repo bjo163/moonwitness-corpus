@@ -14,6 +14,8 @@ export type ResearchPublication = {
   corpusHash: string
   methodVersion: string
   inputSha256: string
+  /** Checksum of the exact public + research projection, not an author signature. */
+  projectionSha256: string
   records: {
     /** Full assessment details are retained in review-only view. */
     reviewedAnalyses: Array<{id:string;passageId:string;reviewer:string;maturity:number;max:15}>
@@ -21,7 +23,8 @@ export type ResearchPublication = {
     attributedClaims: Array<{id:string;targetPassageId:string;tradition:string;method:string;claimant:string;reviewer:string}>
   }
   /** Public projection deliberately lacks ranking scores, text, and unreviewed claims. */
-  publicSummaries: Array<{id:string;passageId:string;method:string;status:'reviewed'}>
+  publicSummaries: Array<{id:string;passageId:string;method:string;status:'reviewed';
+    levels:Array<{level:string;epistemic:string;claim:string;evidenceIds:string[];sourceContentIds:string[];boundaryNote?:string}>}>
 }
 
 /** Stable JSON used for reproducible SHA-256. Reject unsupported data structures. */
@@ -42,6 +45,11 @@ export function sha256Json(value:unknown):string {
   return createHash('sha256').update(canonicalJson(value),'utf8').digest('hex')
 }
 
+/** Bind an analysis to its exact source/claim/reviewer bytes, excluding the hash field itself. */
+export function computeAnalysisInputHash(run: Omit<AnalysisRun,'inputHash'>): string {
+  return sha256Json(run)
+}
+
 /** Fail closed on any ineligible records, preserving exact analysis associations. */
 export function createReviewedSnapshot(input:SnapshotInput):ResearchPublication {
   if(!input.corpusHash?.trim() || !input.methodVersion?.trim()) throw new TypeError('corpusHash and methodVersion are required')
@@ -53,10 +61,21 @@ export function createReviewedSnapshot(input:SnapshotInput):ResearchPublication 
   for(const run of input.runs) {
     guard(run.id)
     if(run.corpusHash!==input.corpusHash||run.methodVersion!==input.methodVersion) throw new Error('analysis corpus/method snapshot mismatch')
+    const {inputHash,...hashable}=run
+    if(typeof inputHash !== 'string' || !/^[a-f0-9]{64}$/.test(inputHash) ||
+       inputHash !== computeAnalysisInputHash(hashable)) throw new Error('analysis input hash mismatch')
     const check=validateAnalysisRun(run)
     if(!check.publishable) throw new Error('analysis is not publishable: '+check.errors.join('; '))
     reviewedAnalyses.push({id:run.id,passageId:run.passageId,reviewer:run.reviewer!,maturity:check.maturity.score,max:15})
-    publicSummaries.push({id:run.id,passageId:run.passageId,method:run.method,status:'reviewed'})
+    // Public five-stage trace is explicitly derived/reviewed, NEVER an original scripture lane.
+    // Only a contiguous verified prefix can appear; no speculative later-stage promotion.
+    const stages=['S1','R2','G3','B4','L5'].slice(0,
+      check.maturity.verifiedLevel ? ['S1','R2','G3','B4','L5'].indexOf(check.maturity.verifiedLevel)+1 : 0)
+    const levels=run.claims.filter(c=>c.status==='supported' && stages.includes(c.level))
+      .map(c=>({level:c.level,epistemic:c.epistemic,claim:c.claim,
+        evidenceIds:[...c.evidenceIds],sourceContentIds:[...c.sourceContentIds],
+        ...(c.boundaryNote ? {boundaryNote:c.boundaryNote} : {})}))
+    publicSummaries.push({id:run.id,passageId:run.passageId,method:run.method,status:'reviewed',levels})
   }
   const reviewedRelations=[] as ResearchPublication['records']['reviewedRelations']
   for(const item of input.candidates){
@@ -75,6 +94,8 @@ export function createReviewedSnapshot(input:SnapshotInput):ResearchPublication 
   reviewedRelations.sort((a,b)=>a.id.localeCompare(b.id))
   attributedClaims.sort((a,b)=>a.id.localeCompare(b.id))
   publicSummaries.sort((a,b)=>a.id.localeCompare(b.id))
-  return {schema:'srgbl-v8-reviewed-derived-v1',corpusHash:input.corpusHash,methodVersion:input.methodVersion,
-    inputSha256:sha256Json(input),records:{reviewedAnalyses,reviewedRelations,attributedClaims},publicSummaries}
+  const projection={schema:'srgbl-v8-reviewed-derived-v1' as const,corpusHash:input.corpusHash,
+    methodVersion:input.methodVersion,inputSha256:sha256Json(input),
+    records:{reviewedAnalyses,reviewedRelations,attributedClaims},publicSummaries}
+  return {...projection,projectionSha256:sha256Json(projection)}
 }
