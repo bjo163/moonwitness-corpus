@@ -17,6 +17,25 @@ test('all seven Swing operators remain unverified candidates without inherited s
   }
 })
 
+test('each Swing operator yields a distinct candidate record and signature', () => {
+  const candidates = SWING_OPERATORS.map(operator => proposeSwing({ ...start, operator, depth: 1 }))
+  assert.equal(candidates.length,7)
+  assert.equal(new Set(candidates.map(candidate => candidate.signature)).size,7)
+  assert.equal(new Set(candidates.map(candidate => candidate.relation)).size,7)
+  const triples = candidates.map(candidate => JSON.stringify([candidate.subject,candidate.relation,candidate.object]))
+  assert.equal(new Set(triples).size,7)
+  // A transformation must actually transform; none may echo the origin triple as its own candidate.
+  assert.ok(triples.every(triple => triple !== JSON.stringify([start.subject,start.relation,start.object])))
+  // A reversal is never asserted: no candidate may claim truth, review or an inherited score.
+  for (const candidate of candidates) {
+    assert.equal(candidate.state,'candidate')
+    assert.equal(candidate.evidenceStatus,'unverified')
+    assert.equal(candidate.inheritedScore,null)
+    assert.deepEqual(Object.keys(candidate).sort(),
+      ['depth','evidenceStatus','inheritedScore','object','operator','relation','signature','state','subject'])
+  }
+})
+
 test('Swing chain applies no more than three rotations and tracks each depth', () => {
   const chain = proposeSwingChain(start, ['direction','perspective','temporal'])
   assert.equal(chain.stop,'complete')
