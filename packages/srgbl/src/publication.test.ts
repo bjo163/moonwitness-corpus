@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createReviewedSnapshot, sha256Json } from './derived.js'
+import { createReviewedSnapshot, sha256Json, computeAnalysisInputHash } from './derived.js'
 import { verifyReviewedPublication } from './publication.js'
 import { validateAnalysisRun, type AnalysisRun } from './analysis.js'
 
 const corpusHash='a'.repeat(64)
 function oneStageRun(): AnalysisRun {
-  return {
+  const run:AnalysisRun = {
     id:'run:synthetic:review-1',passageId:'mw:passage:test:one',
     method:'textual-research:v8',methodVersion:'v8-proposal',
     corpusHash,inputHash:'test-only-hash',reviewStatus:'reviewed',reviewer:'mw:reviewer:test',
@@ -25,6 +25,9 @@ function oneStageRun(): AnalysisRun {
     }],
     uncertainty:{unknowns:[],disagreements:[]}
   }
+  const {inputHash:unused, ...payload}=run
+  run.inputHash=computeAnalysisInputHash(payload)
+  return run
 }
 
 test('reviewed source trace is hashed, pinned and can be verified before publication',()=>{
