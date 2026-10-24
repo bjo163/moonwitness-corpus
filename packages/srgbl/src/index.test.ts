@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   SRGBL_LEVELS, QUALITY_DIMENSIONS, scoreMaturity, scoreQuality,
-  scoreDirection, scoreWitnessCandidate, proposeSwing, validateScopedRelation
+  scoreDirection, scoreWitnessCandidate, proposeSwing, validateScopedRelation,
+  type LevelStatus, type LevelStates
 } from './index.js'
 
 test('v8 has five levels, S1 first and L5 last', () => {
@@ -22,6 +23,28 @@ test('maturity uses supported contiguous prefix and triangular scoring', () => {
   assert.equal(scoreMaturity({ S1:'partial', R2:'supported' }).score, 0)
   assert.equal(scoreMaturity({S1:'supported',R2:'unknown',G3:'supported'}).score,1)
   assert.throws(() => scoreMaturity({ S1:'fake' as never }),RangeError)
+})
+test('every contiguous maturity gate 0..15 is earned by triangular prefix, never by later levels', () => {
+  const prefix = (m: number): LevelStates =>
+    Object.fromEntries(SRGBL_LEVELS.slice(0, m).map(level => [level, 'supported'])) as LevelStates
+  const triangular = [0, 1, 3, 6, 10, 15]
+  for (let m = 0; m <= 5; m++) {
+    const result = scoreMaturity(prefix(m))
+    assert.deepEqual(
+      [result.score, result.verifiedLevel, result.nextLevel, result.max, result.normalized],
+      [triangular[m], m ? SRGBL_LEVELS[m - 1] : null, m === 5 ? null : SRGBL_LEVELS[m], 15, triangular[m] / 15]
+    )
+    assert.deepEqual(result.pending, [...SRGBL_LEVELS.slice(m)])
+    assert.equal(result.score, m * (m + 1) / 2)
+  }
+  // Any unsatisfied level ends the accumulation, whatever is claimed above it.
+  for (const status of ['partial', 'pending', 'unsupported', 'unknown'] as LevelStatus[]) {
+    const stopped = scoreMaturity({ ...prefix(1), R2: status, G3: 'supported', B4: 'supported', L5: 'supported' })
+    assert.equal(stopped.score, 1, status)
+    assert.deepEqual([stopped.verifiedLevel, stopped.nextLevel], ['S1', 'R2'], status)
+  }
+  // An absent level is the same gate failure as an explicitly unsatisfied one.
+  assert.equal(scoreMaturity({ S1:'supported', G3:'supported', B4:'supported', L5:'supported' }).score, 1)
 })
 test('quality rubric has exactly 10 bounded integer dimensions', () => {
   assert.equal(QUALITY_DIMENSIONS.length, 10)
