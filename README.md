@@ -2,11 +2,11 @@
 
 <img src="https://raw.githubusercontent.com/bjo163/rocksoul-assets/main/moonwitness/brand/logo-horizontal.svg" alt="MoonWitness" width="380" />
 
-# RGBL
+# MOONWITNESS CORPUS
 
 ## SCRIPTURE & REVELATION REFERENCE INTELLIGENCE
 
-### **TRACE THE TEXT.**
+### **TRACE THE TEXT. EXAMINE THE WITNESS. PRESERVE THE DIFFERENCE.**
 
 #### SOURCE · PASSAGE · ASSERTION · EVIDENCE · PROVENANCE
 
@@ -16,7 +16,7 @@ A provenance-first **multi-tradition text, scripture, sacred-literature, and evi
 
 <br/>
 
-[![CI](https://github.com/bjo163/rocksoul-rgbl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bjo163/rocksoul-rgbl/actions/workflows/ci.yml)
+[![CI](https://github.com/bjo163/moonwitness-corpus/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bjo163/moonwitness-corpus/actions/workflows/ci.yml)
 ![Branches](https://img.shields.io/badge/branches-main%20%2B%20dev-111111)
 ![Domain](https://img.shields.io/badge/domain-TEXT-6F6F6F)
 ![Corpus](https://img.shields.io/badge/corpus-provenance--first-B43A32)
@@ -29,6 +29,20 @@ A provenance-first **multi-tradition text, scripture, sacred-literature, and evi
 [Architecture](#text-intelligence-graph) · [Corpus contract](#canonical-corpus-contract) · [Coverage](#multi-tradition-coverage) · [Documentation](#documentation) · [Assets](https://github.com/bjo163/rocksoul-assets) · [Console](https://github.com/bjo163/rocksoul-crayon)
 
 </div>
+
+
+## MoonWitness Witness Intelligence — current scope
+
+**Current public product:** provenance-first TEXT observatory (technical alias: **RGBL**). Its exact text, source/edition, rights, evidence, and provenance remain canonical and unchanged.
+
+- **P18 Key Witness:** semantic middle layer, framed keys, direction, message, disagreement — specifications and TODO/pilot in progress.
+- **P19 SRGBL v8 research extension:** S1 Source & Sense → R2 Reality → G3 Governing Order → B4 Being → L5 Light. Experimental pure scoring/candidate primitives are in `packages/srgbl`; source adapters, full analysis, validated pilot, derived API and UI **are not shipped**.
+- **Swing Swing Key:** bounded evidence-seeking candidate transformations, never truth by inversion.
+- **Positive Correction:** a perspective-scoped Quran-anchored interpretive method; miracle claims must be source-attributed and reviewed.
+
+**Four different research numbers:** level maturity **0–15**, analysis quality **0–40**, candidate witness support **0–100**, key direction **−2..+2**. All are method/version-bound, *not* intrinsic ratings of verses, religions, miracle truth or faith.
+
+[Product Story](docs/PRODUCT-STORY.md) · [Product Blueprint](docs/PRODUCT-BLUEPRINT.md) · [Key Witness v0](docs/KEY-WITNESS-V0.md) · [SRGBL v8 RFC](docs/SRGBL-V8-MASTER-RFC.md) · [Concept crosswalk](docs/SRGBL-V8-CONCEPT-CROSSWALK.md) · [P18/P19 TODO](TODO.md)
 
 
 ---
