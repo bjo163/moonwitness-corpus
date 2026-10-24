@@ -14,6 +14,8 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 
 ## Product Narrative & Blueprint
 
+**START HERE — MASTER GRANDPLAN:** [**MOONWITNESS SRGBL v8 × Key Witness × Swing Swing Key × Positive Correction**](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md) — complete 346-line grandplan, module ownership, milestones M0–M5, P18/P19 dependencies, verified PRs and remaining research gates. This is the execution index, not an assertion that the empirical project has been completed.
+
 - [**Cerita Produk (final)**](./PRODUCT-STORY.md) — narasi kanonik brand dan produk: masalah, lima babak pembaca, titik tengah, suara, dan batas klaim.
 - [**Product Blueprint (final)**](./PRODUCT-BLUEPRINT.md) — arsitektur, UX, data, editorial, pengukuran, roadmap, dan work breakdown Key Witness.
 - [**SRGBL v8 Master RFC (research extension)**](./SRGBL-V8-MASTER-RFC.md) — S1–L5, scoring 15/40/100, Key, Swing, Positive Correction, research-only guardrails.
