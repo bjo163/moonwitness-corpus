@@ -6,6 +6,11 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/reconcile-preflight.yml'
+      - '.github/workflows/upstream-sync.yml'
+      - 'apps/api/src/api.test.ts'
+      - 'datasets/registry.json'
+      - 'docs/ROCKSOUL_INTEROP.md'
+      - 'package.json'
   workflow_dispatch:
 
 permissions:
