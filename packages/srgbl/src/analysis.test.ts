@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { validateAnalysisRun, diagnoseOffside, type AnalysisRun, type ResearchFrame } from './analysis.js'
+import { validateAnalysisRun, validateResearchFrame, diagnoseOffside, type AnalysisRun, type ResearchFrame } from './analysis.js'
 import { evaluateFramedKeys, validateKeyAssessment, validateKeyMessage, validateKeyToken, type FramedKeyAssessment } from './keys.js'
 import { adaptPassageSources, resolveSourceReference, type SourceCatalog } from './sources.js'
 import { validateReviewedCandidate, validateMiracleAttribution, summarizeCandidate } from './research-ledger.js'
@@ -57,6 +57,19 @@ test('missing reviewer, uncertain/dissent or circular refs cannot be promoted',(
   assert.ok(v.errors.some(x=>x.includes('dependency cycle')))
   assert.ok(v.errors.some(x=>x.includes('reviewer')))
   assert.equal(v.publishable,false)
+})
+test('blank or malformed research frames name the failing field and never mutate the caller',()=>{
+  assert.deepEqual(validateResearchFrame(frame),[])
+  assert.deepEqual(validateResearchFrame({...frame,recipient:'  '}),['frame.recipient is missing'])
+  assert.deepEqual(validateResearchFrame({...frame,genre:''}),['frame.genre is missing'])
+  const blank={...frame,recipient:'  '}
+  const snapshot=JSON.stringify(blank)
+  validateResearchFrame(blank)
+  assert.equal(JSON.stringify(blank),snapshot)
+  // Unknown/null input is a controlled diagnostic, never a crash.
+  assert.deepEqual(validateResearchFrame(null as unknown as ResearchFrame),['frame is missing'])
+  assert.deepEqual(validateResearchFrame(undefined as unknown as ResearchFrame),['frame is missing'])
+  assert.deepEqual(validateResearchFrame('narrative' as unknown as ResearchFrame),['frame is missing'])
 })
 test('OFFSIDE is a candidate frame mismatch, not theological verdict',()=>{
   const o=diagnoseOffside(frame,{recipient:'individual'})
