@@ -1,0 +1,75 @@
+name: Main Dev Merge Preflight (Read Only)
+
+# Exact, zero-push Git merge-tree dry run; no promotion or ref mutation.
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/reconcile-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reconcile-preflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  merge-conflict-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify branch heads and shared ancestor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/dev:refs/remotes/origin/dev'
+          main_sha="$(git rev-parse --verify origin/main)"
+          dev_sha="$(git rev-parse --verify origin/dev)"
+          merge_base="$(git merge-base origin/main origin/dev)"
+          divergence="$(git rev-list --left-right --count origin/main...origin/dev)"
+          {
+            echo '## Main and dev merge preflight (read-only)'
+            echo ''
+            echo "- Main: $main_sha"
+            echo "- Dev: $dev_sha"
+            echo "- Merge base: $merge_base"
+            echo "- Divergence (main-only / dev-only commits): $divergence"
+            echo ''
+          } >> "$GITHUB_STEP_SUMMARY"
+          git merge-base --is-ancestor "$merge_base" "$main_sha"
+          git merge-base --is-ancestor "$merge_base" "$dev_sha"
+      - name: Preview actual three-way merge (no refs updated)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          output="$(git merge-tree --write-tree --name-only origin/dev origin/main 2>&1)"
+          result="$?"
+          set -e
+          {
+            echo '### Git merge-tree preview'
+            echo ''
+            echo 'This computes a disposable merge tree; never checks out, commits, pushes or moves refs.'
+            echo 'Exit 0: Git tree merge clean, but data/API/web contract not yet verified.'
+            echo 'Exit 1: actual Git conflicts require explicit review.'
+            echo ''
+            echo "Git merge-tree exit code: $result"
+            echo '~~~text'
+            printf '%s\n' "$output" | head -150
+            echo '~~~'
+            echo ''
+            echo 'No remote ref or source data was modified.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$result" -ne 0 ]]; then
+            echo "::error::main/dev cannot be auto-merged safely; see report and #399"
+            exit "$result"
+          fi
