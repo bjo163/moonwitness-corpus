@@ -43,6 +43,10 @@ jobs:
             '+refs/heads/dev:refs/remotes/origin/dev'
           echo "Main SHA: $(git rev-parse origin/main)"
           echo "Dev SHA: $(git rev-parse origin/dev)"
+          # Git requires an identity to prepare a merge even with --no-commit.
+          # This config exists only inside the disposable runner checkout.
+          git config user.name 'moonwitness-integration-preflight'
+          git config user.email 'preflight@users.noreply.github.com'
           set +e
           git merge --no-commit --no-ff origin/main
           merge_code="$?"
