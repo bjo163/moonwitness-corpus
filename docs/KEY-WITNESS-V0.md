@@ -3,6 +3,7 @@
 Status: draft produk & data untuk review, 2026-10-24.
 Scope: konsep, model data, kosakata, UI, editorial, pilot, dan kandidat task.
 Dokumen ini belum mengubah schema atau data kanonik.
+Narasi final: [Cerita Produk](./PRODUCT-STORY.md) · Blueprint: [Product Blueprint](./PRODUCT-BLUEPRINT.md).
 
 ---
 
@@ -394,7 +395,7 @@ WITNESS
 KEY
   comfort   expresses  frame: individual → self, devotional, prayer   +2
   trust     expresses  frame: individual → self, devotional, prayer   +2
-  fear      acknowledges frame: individual → self, devotional, prayer -1
+  fear      expresses   frame: individual → self, devotional, prayer -1
 
 MESSAGE (derived)
   "Dalam situasi berbahaya, penutur menyaksikan kepercayaan pada bimbingan."
@@ -405,7 +406,7 @@ CONTEXT COVERAGE
   9/9
 
 BALANCE
-  comfort 4 · trust 3 · fear 2 · guidance 3
+  comfort 4 · trust 3 · fear 2
 ```
 
 ### 6.2 QS 1:2 (ilustrasi struktur)
@@ -629,7 +630,7 @@ KW-001 → KW-002 → KW-003 → KW-005 → KW-006 → KW-007
 
 ## 12. Keputusan yang dibutuhkan
 
-1. Nama publik: MoonWitness vs RGBL.
+1. Nama publik: **final — MoonWitness (publik), RGBL (nama teknis).** Lihat [Cerita Produk](./PRODUCT-STORY.md).
 2. Tiga tradisi pilot.
 3. Cakupan key v0: 20 key di atas atau lebih kecil.
 4. Apakah score ditampilkan publik atau research-only.

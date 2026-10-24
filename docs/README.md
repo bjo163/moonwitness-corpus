@@ -12,6 +12,13 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 
 ---
 
+## Product Narrative & Blueprint
+
+- [**Cerita Produk (final)**](./PRODUCT-STORY.md) — narasi kanonik brand dan produk: masalah, lima babak pembaca, titik tengah, suara, dan batas klaim.
+- [**Product Blueprint (final)**](./PRODUCT-BLUEPRINT.md) — arsitektur, UX, data, editorial, pengukuran, roadmap, dan work breakdown Key Witness.
+
+---
+
 ## 🗺️ Index & Navigation
 
 ### 1. 🌐 Upstream Ingestion & Data Architecture
