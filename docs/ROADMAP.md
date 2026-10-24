@@ -2,6 +2,8 @@
 
 Status: working roadmap for the v0.x development line.
 
+The fine-grained engineering handoff is [38 Local-AI Microtasks](./MOONWITNESS-P19-MICROTASKS.md), implemented on existing dev only; [P19 Blueprint](./MOONWITNESS-SRGBL-V8-BLUEPRINT.md) describes their scope. The micro issues are child packets, not replacements for the stable TODO IDs.
+
 The short checkbox list lives in [`../TODO.md`](../TODO.md). This document explains **why the order matters, what each phase must produce, what is intentionally deferred, and how the public corpus repository eventually connects to MoonWitness**.
 
 ---
