@@ -20,31 +20,36 @@ export function verifyReviewedPublication(value: unknown, expectedCorpusHash: st
   const records = o.records as Record<string, unknown>
   if (!Array.isArray(records.reviewedAnalyses) || !Array.isArray(records.reviewedRelations) ||
       !Array.isArray(records.attributedClaims) || !Array.isArray(o.publicSummaries)) fail('reviewed arrays missing')
-  if (o.publicSummaries.length > 10000 || records.reviewedAnalyses.length > 10000) fail('too many records')
+  const reviewedAnalyses = records.reviewedAnalyses as unknown[]
+  const publicSummaries = o.publicSummaries as unknown[]
+  if (publicSummaries.length > 10000 || reviewedAnalyses.length > 10000) fail('too many records')
   const text = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0
   const analyses = new Map<string, {passageId:string; maturity:number}>()
-  for (const raw of records.reviewedAnalyses) {
+  for (const raw of reviewedAnalyses) {
     if (!raw || typeof raw !== 'object') fail('invalid reviewed analysis')
     const a = raw as Record<string, unknown>
     if (!text(a.id) || !text(a.passageId) || !text(a.reviewer) ||
        !Number.isInteger(a.maturity) || ![1,3,6,10,15].includes(a.maturity as number) ||
-       a.max !== 15 || analyses.has(a.id)) fail('bad or duplicate reviewed analysis')
-    analyses.set(a.id, {passageId:a.passageId as string,maturity:a.maturity as number})
+       a.max !== 15 || analyses.has(a.id as string)) fail('bad or duplicate reviewed analysis')
+    analyses.set(a.id as string, {passageId:a.passageId as string,maturity:a.maturity as number})
   }
   const seen = new Set<string>()
-  for (const raw of o.publicSummaries) {
+  for (const raw of publicSummaries) {
     if (!raw || typeof raw !== 'object') fail('invalid public summary')
     const s = raw as Record<string, unknown>
     if (!text(s.id) || seen.has(s.id) || !text(s.passageId) ||
         !(s.passageId as string).startsWith('mw:passage:') ||
         !text(s.method) || s.status !== 'reviewed' || !Array.isArray(s.levels)) fail('bad public summary')
-    seen.add(s.id)
-    const a = analyses.get(s.id)
-    if (!a || a.passageId !== s.passageId) fail('orphan public summary')
-    const stageCount = {1:1,3:2,6:3,10:4,15:5}[a.maturity as 1|3|6|10|15]
+    const summaryId = s.id as string
+    const passageId = s.passageId as string
+    seen.add(summaryId)
+    const a = analyses.get(summaryId)
+    if (a === undefined || a.passageId !== passageId) fail('orphan public summary')
+    const analysis = a as {passageId:string;maturity:number}
+    const stageCount = {1:1,3:2,6:3,10:4,15:5}[analysis.maturity as 1|3|6|10|15]
     if (!stageCount) fail('invalid level count')
     const represented = new Set<string>()
-    for (const rawClaim of s.levels) {
+    for (const rawClaim of s.levels as unknown[]) {
       if (!rawClaim || typeof rawClaim !== 'object') fail('bad level claim')
       const c = rawClaim as Record<string, unknown>
       if (!SRGBL_LEVELS.slice(0,stageCount).includes(c.level as typeof SRGBL_LEVELS[number]) ||

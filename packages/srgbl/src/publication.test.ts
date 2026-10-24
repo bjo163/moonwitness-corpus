@@ -52,6 +52,8 @@ test('reviewed export rejects a modified analysis even if status is still review
 test('missing verified S1 stage cannot be published even if reviewer exists',()=>{
   const run=oneStageRun()
   run.claims=[]
+  const {inputHash:unused,...payload}=run
+  run.inputHash=computeAnalysisInputHash(payload)
   const result=validateAnalysisRun(run)
   assert.equal(result.maturity.score,0)
   assert.equal(result.publishable,false)

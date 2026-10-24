@@ -100,7 +100,7 @@ export default function SRGBLResearchPage(){
         </article>)}
       </div>}
       {active!=="S1"&&currentClaims.length===0&&<p className="mt-5 text-sm">UNKNOWN / not materialized. This stage requires source-linked claims, an accountable method, independent review and explicit limitations. No synthetic interpretation is generated.</p>}
-      {trace&&<p className="mt-4 text-xs text-muted-foreground" role="status">{reviewNote}</p>
+      {trace&&<p className="mt-4 text-xs text-muted-foreground" role="status">{reviewNote}</p>}
     </section>
     <footer className="text-xs text-muted-foreground">Maturity /15 · Quality /40 · Witness /100 · Direction −2..+2 are separate research metrics, withheld until a valid reviewed analysis exists. <a href="https://github.com/bjo163/moonwitness-corpus/blob/dev/docs/SRGBL-V8-MASTER-RFC.md" className="underline">Read the methodology</a>.</footer>
   </main>
