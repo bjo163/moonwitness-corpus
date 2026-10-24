@@ -1,4 +1,4 @@
-name: Research Branch Policy
+name: Research Branch Policy (Audit Only)
 
 on:
   create:
@@ -9,44 +9,47 @@ on:
       - 'docs/BRANCHING.md'
   workflow_dispatch:
 
+# No action in this workflow may delete or rewrite refs.
 permissions:
-  contents: write
+  contents: read
+  pull-requests: read
 
 concurrency:
   group: research-branch-policy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  enforce:
+  inventory:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Keep only main and dev
+      - name: Inventory remote branches and active pull request heads
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git fetch origin --prune
-          mapfile -t branches < <(
-            git ls-remote --heads origin               | awk '{sub("refs/heads/", "", $2); print $2}'               | sort
-          )
-          for branch in "${branches[@]}"; do
-            case "$branch" in
-              main|dev) ;;
-              *)
-                echo "Deleting noncanonical remote branch: $branch"
-                git push origin --delete "$branch"
-                ;;
-            esac
-          done
+          : "${GITHUB_REPOSITORY:?missing repository}"
 
-          mapfile -t remaining < <(
-            git ls-remote --heads origin               | awk '{sub("refs/heads/", "", $2); print $2}'               | sort
-          )
-          printf 'Remaining branches:\n%s\n' "${remaining[*]}"
-          test "${#remaining[@]}" -eq 2
-          test "${remaining[0]}" = "dev"
-          test "${remaining[1]}" = "main"
+          # On API or authentication error this fails without performing any write.
+          branches="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/branches?per_page=100" --jq '.[].name' | sort)"
+          open_prs="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" --jq '.[] | "#\(.number) \(.head.repo.full_name // "unknown"):\(.head.ref) (draft=\(.draft))"')"
+
+          {
+            echo '## Branch policy: read-only retention audit'
+            echo ''
+            echo 'Canonical long-lived branches: main, dev.'
+            echo 'Temporary review and research branches are retained, including open/draft PR heads.'
+            echo 'No branch is deleted or force-updated by this workflow.'
+            echo ''
+            echo '### Remote branch inventory'
+            echo '~~~text'
+            printf '%s\n' "$branches"
+            echo '~~~'
+            echo '### Open PR source branches'
+            echo '~~~text'
+            printf '%s\n' "${open_prs:-No open PRs reported}"
+            echo '~~~'
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+
+          echo '::notice::Audit-only branch policy: 0 deletions, 0 pushes, 0 ref updates.'
