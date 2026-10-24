@@ -7,6 +7,7 @@ const ci = read('.github/workflows/ci.yml');
 const release = read('.github/workflows/release.yml');
 const upstream = read('.github/workflows/upstream-sync.yml');
 const branches = read('.github/workflows/branch-policy.yml');
+const todoSync = read('.github/workflows/todo-issues-sync.yml');
 const workflows = new Map(
   readdirSync(new URL('../.github/workflows/', import.meta.url))
     .filter((file) => file.endsWith('.yml'))
@@ -17,10 +18,18 @@ function noMutatingGitOperations(content) {
   assert.doesNotMatch(content, /^\s*(?:git\s+(?:push|tag|reset|branch\s+-[dD])|gh\s+release\s+create)\b/m);
 }
 test('all safety workflows retain read-only contents permissions', () => {
-  for (const workflow of [ci, release, upstream, branches]) {
+  for (const workflow of [ci, release, upstream, branches, todoSync]) {
     assert.match(workflow, /permissions:\s*\n\s+contents: read/);
     assert.doesNotMatch(workflow, /contents:\s*write/);
   }
+});
+test('TODO sync never pushes to a protected branch', () => {
+  assert.match(todoSync, /permissions:\s*\n\s+contents: read/);
+  assert.doesNotMatch(todoSync, /contents:\s*write/);
+  assert.doesNotMatch(todoSync, /git\s+(?:add|commit|push)\b/);
+  assert.match(todoSync, /persist-credentials: false/);
+  assert.match(todoSync, /TODO_SYNC_NO_WRITE: '1'/);
+  assert.match(todoSync, /reconcile-issue-status\.ts --check/);
 });
 test('upstream audit is a read-only weekly default-branch schedule with gated acquisition', () => {
   assert.match(upstream, /schedule:[\s\S]*?cron:/);
@@ -54,6 +63,13 @@ test('workflows avoid unmanaged runners and unlocked dependency installs', () =>
   for (const [file, content] of workflows) {
     assert.doesNotMatch(content, /runs-on:\s*self-hosted/, `${file} must run on a hosted runner`);
     assert.doesNotMatch(content, /--no-frozen-lockfile/, `${file} must install frozen dependencies`);
+  }
+});
+test('workflow actions are pinned to immutable commit SHAs', () => {
+  for (const [file, content] of workflows) {
+    for (const line of content.split('\n').filter((candidate) => candidate.trim().startsWith('uses:'))) {
+      assert.match(line, /@[0-9a-f]{40}(?:\s+#|$)/, `${file} must pin ${line.trim()}`);
+    }
   }
 });
 test('manual materialization audits are hosted, pinned, locked and non-mutating', () => {

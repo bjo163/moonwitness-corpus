@@ -52,9 +52,10 @@ A canonical branch is fully protected only when the second call lists `deletion`
 `non_fast_forward`, `pull_request` and `required_status_checks`, and a pull
 request targeting it is blocked by a red exact-head check.
 
-`todo-issues-sync.yml` still commits `TODO.md` to the default branch. Before
-requiring pull requests on `main`, either allowlist that bot identity or convert
-the sync to a reviewed pull request; do not add a broad bypass.
+`todo-issues-sync.yml` never writes or pushes to a protected branch. Issues → TODO
+runs in `--check` mode, reports drift, and fails the run so a pull request can
+update `TODO.md`; TODO → Issues fails closed with `TODO_SYNC_NO_WRITE=1` when
+markers are missing. Do not add a broad bypass to restore bot pushes.
 
 ## Release & protection dependencies
 

@@ -50,8 +50,7 @@ GitHub applies secondary limits to rapid content creation. The synchronizer ther
 
 - successful POST/PATCH mutations are spaced by a configurable delay (`TODO_SYNC_MUTATION_DELAY_MS`, default 2200 ms);
 - HTTP 403/429 rate-limit responses use bounded retry/backoff and honor `Retry-After` when GitHub supplies it;
-- task markers are written to `TODO.md` **before** issue mutations begin;
-- the workflow commits marker/status changes with `if: always()`, so a temporary GitHub API failure does not discard stable identities;
+- task markers are written to `TODO.md` **before** issue mutations begin in local runs; protected-branch CI sets `TODO_SYNC_NO_WRITE=1` and fails closed instead, requiring a pull request;
 - a later run scans existing issue markers before creating anything, so it safely resumes instead of duplicating issues.
 
 The sync is intentionally idempotent: the same `TODO.md` plus the same existing issue set converges to the same task/issue mapping.
@@ -62,15 +61,15 @@ When a managed issue is closed or reopened:
 
 1. the workflow reads its `mw-todo` marker;
 2. locates the matching checkbox in `TODO.md`;
-3. closing the issue checks the task;
-4. reopening the issue unchecks the task;
-5. the bot commits only the resulting `TODO.md` status/marker change.
+3. compares the expected checkbox state with the repository file;
+4. writes a report and fails the run when the file has drifted;
+5. a human opens a pull request that updates the checkbox.
 
-Issues without an `mw-todo` marker are ignored.
+Issues without an `mw-todo` marker are ignored. The CI workflow never writes `TODO.md` or pushes to a protected branch; `--check` mode only reports the required change.
 
 ## Loop prevention
 
-The workflow uses the repository `GITHUB_TOKEN`. GitHub does not normally create a new workflow run for events caused by that token, which prevents the bot commit/issue update from recursively triggering itself.
+Because the workflow no longer writes to `TODO.md`, bot commits cannot recursively trigger the workflow at all.
 
 The workflow additionally uses one concurrency group so TODO/issue changes are serialized rather than racing each other.
 
@@ -94,6 +93,9 @@ pnpm todo:sync
 
 # Validate that all currently tracked roadmap tasks have stable markers
 pnpm todo:check
+
+# Report TODO.md drift against live issue state without writing
+pnpm exec tsx scripts/reconcile-issue-status.ts --check
 ```
 
 `pnpm todo:sync:issue` is intended for the GitHub `issues` event because it reads `GITHUB_EVENT_PATH`.
@@ -106,13 +108,11 @@ The workflow declares only the permissions it needs:
 
 ```yaml
 permissions:
-  contents: write
+  contents: read
   issues: write
 ```
 
-No personal access token is required for the normal repository-local synchronization path.
-
-If branch protection later prevents `github-actions[bot]` from committing checkbox changes to `main`, change the reverse-sync path to create/update a bot PR, or authenticate with a dedicated GitHub App under an explicit governance decision. Do not silently bypass branch protection.
+No personal access token and no branch-protection bypass are required. The workflow never commits or pushes; when TODO state drifts it fails with a report so a pull request can update `TODO.md`.
 
 ## Source files
 
