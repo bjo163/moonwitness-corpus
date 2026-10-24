@@ -48,8 +48,25 @@ export const QUALITY_DIMENSIONS = [
 ] as const
 export type QualityDimension = (typeof QUALITY_DIMENSIONS)[number]
 export type QualityInputs = Record<QualityDimension, number>
+/** A quality score without a caller-declared method/profile is unattributable. */
+export interface QualityLabel {
+  method: string
+  profile: string
+}
+const nonblankText = (x: unknown): x is string => typeof x === 'string' && x.trim().length > 0
 
-export function scoreQuality(input: QualityInputs) {
+/**
+ * The 40-point rubric is only ever computed on a complete, labelled bundle: a
+ * missing dimension is an error, never a padded 0, and 0 is a measured zero.
+ */
+export function scoreQuality(input: QualityInputs, label: QualityLabel) {
+  if (!label || !nonblankText(label.method) || !nonblankText(label.profile)) {
+    throw new TypeError('quality score requires caller-supplied method and profile')
+  }
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('quality bundle must be an object')
+  const declared = QUALITY_DIMENSIONS as readonly string[]
+  const unknown = Object.keys(input).filter(key => !declared.includes(key)).sort()
+  if (unknown.length) throw new TypeError('unknown quality dimension: ' + unknown.join(', '))
   for (const key of QUALITY_DIMENSIONS) {
     const v = input[key]
     if (!Number.isInteger(v) || v < 0 || v > 4) {
@@ -57,7 +74,16 @@ export function scoreQuality(input: QualityInputs) {
     }
   }
   const raw = QUALITY_DIMENSIONS.reduce((sum, key) => sum + input[key], 0)
-  return { rubric: 'srgbl-quality-v8-proposal', raw, max: 40 as const, normalized: raw / 40, dimensions: { ...input } }
+  return {
+    rubric: 'srgbl-quality-v8-proposal',
+    method: label.method,
+    profile: label.profile,
+    raw,
+    max: 40 as const,
+    normalized: raw / 40,
+    dimensions: { ...input },
+    automaticCanonicalApproval: false as const
+  }
 }
 
 export interface FrameDirectionInput {

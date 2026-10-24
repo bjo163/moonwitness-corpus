@@ -6,6 +6,9 @@ import {
   type LevelStatus, type LevelStates
 } from './index.js'
 
+/** Caller-declared attribution for every quality bundle under test. */
+const label = { method: 'test:v8', profile: 'quality:proposal-v8' }
+
 test('v8 has five levels, S1 first and L5 last', () => {
   assert.deepEqual(SRGBL_LEVELS, ['S1','R2','G3','B4','L5'])
 })
@@ -81,9 +84,30 @@ test('quality rubric has exactly 10 bounded integer dimensions', () => {
   assert.equal(QUALITY_DIMENSIONS.length, 10)
   const zero = Object.fromEntries(QUALITY_DIMENSIONS.map(key=>[key,0])) as Parameters<typeof scoreQuality>[0]
   const high = Object.fromEntries(QUALITY_DIMENSIONS.map(key=>[key,4])) as Parameters<typeof scoreQuality>[0]
-  assert.deepEqual([scoreQuality(zero).raw,scoreQuality(high).raw,scoreQuality(high).normalized],[0,40,1])
-  assert.throws(()=> scoreQuality({...high,sGrounding:5}),RangeError)
-  assert.throws(()=> scoreQuality({...high,sGrounding:3.5}),RangeError)
+  assert.deepEqual([scoreQuality(zero,label).raw,scoreQuality(high,label).raw,scoreQuality(high,label).normalized],[0,40,1])
+  assert.throws(()=> scoreQuality({...high,sGrounding:5},label),RangeError)
+  assert.throws(()=> scoreQuality({...high,sGrounding:3.5},label),RangeError)
+})
+test('quality max stays 40 only for a complete, caller-labelled bundle', () => {
+  const full = Object.fromEntries(QUALITY_DIMENSIONS.map(key=>[key,4])) as Parameters<typeof scoreQuality>[0]
+  const zero = Object.fromEntries(QUALITY_DIMENSIONS.map(key=>[key,0])) as Parameters<typeof scoreQuality>[0]
+  const scored = scoreQuality(full,label)
+  assert.deepEqual([scored.raw,scored.max,scored.normalized],[40,40,1])
+  assert.deepEqual([scored.method,scored.profile],[label.method,label.profile])
+  assert.equal(scored.automaticCanonicalApproval,false)
+  // A measured 0 is not the same thing as a missing dimension.
+  assert.equal(scoreQuality(zero,label).raw,0)
+  const missing = { ...full } as Record<string, number>
+  delete missing.confidenceCalibration
+  assert.throws(() => scoreQuality(missing as never,label),/quality.confidenceCalibration must be an integer from 0 to 4/)
+  assert.throws(() => scoreQuality({ ...full, confidenceCalibration: undefined } as never,label),/quality.confidenceCalibration/)
+  assert.throws(() => scoreQuality({ ...full, confidenceCalibration: 4.1 } as never,label),/quality.confidenceCalibration/)
+  // An extra field is not silently echoed as a rubric dimension.
+  assert.throws(() => scoreQuality({ ...full, inventedDimension: 4 } as never,label),/unknown quality dimension: inventedDimension/)
+  // A score must be attributable to a declared method/profile.
+  assert.throws(() => scoreQuality(full,undefined as never),/method and profile/)
+  assert.throws(() => scoreQuality(full,{ method:'  ', profile:'quality:v8' }),/method and profile/)
+  assert.throws(() => scoreQuality(null as never,label),TypeError)
 })
 test('direction stays in -2..2; zero-weight input is UNKNOWN, not neutral', () => {
   const pos=scoreDirection('recipient=believers','devotional:v8',[{id:'a',direction:2,intensity:3,confidence:1,weight:1}])
