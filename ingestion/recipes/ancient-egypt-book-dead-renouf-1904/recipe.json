@@ -5,15 +5,15 @@
   "source": {
     "kind": "http",
     "url": "https://www.gutenberg.org/cache/epub/69566/pg69566.txt",
-    "sha256": "runtime-verified",
+    "sha256": "3ac04b55080286653c66b1f631a5d2ef66b16ea956b51c96d9767cf25f8a98a4",
     "media_type": "text/plain"
   },
   "implementation": {
     "module": "recipe.ts",
-    "parserVersion": "1",
-    "normalizerVersion": "identity-1",
-    "mapperVersion": "1",
-    "validatorVersion": "1"
+    "parserVersion": "2",
+    "normalizerVersion": "identity-2",
+    "mapperVersion": "2",
+    "validatorVersion": "2"
   },
   "output": {
     "path": "../../../dist/ingestion/ancient-egypt-book-dead-renouf-1904.jsonl"

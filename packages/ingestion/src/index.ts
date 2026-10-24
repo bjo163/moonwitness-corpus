@@ -8,6 +8,7 @@ export { AdapterRegistry, defaultAdapterRegistry } from './adapters.js'
 export type { AdapterKind, AdapterContext, UpstreamAdapter as IngestionAdapter } from './adapters.js'
 export * from './connectors/filesystem.js'
 export * from './connectors/http.js'
+export * from './sources/gutenberg-renouf.js'
 
 // Universal Corpus Registry
 export * from './registry/index.js'
