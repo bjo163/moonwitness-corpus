@@ -319,6 +319,43 @@ test('derived message cannot cite a dangling, blank or ambiguous key assessment'
   // Blank evidence entries are not evidence.
   assert.ok(validateKeyMessage({...base,evidenceIds:['  ']},[key()]).includes('message evidence missing'))
 })
+test('reviewed Swing needs independent origins and preserves contrary evidence',()=>{
+  const origin=proposeSwing({operator:'direction',subject:'A',relation:'is-related-to',object:'B',depth:1})
+  const relation:ScopedTextRelation={leftPassageId:'mw:passage:test:a',rightPassageId:'mw:passage:test:b',
+    relation:'PARALLELS',method:'comparative:v8',frame:'comparative-neutral',
+    evidenceIds:['mw:evidence:test'],reviewStatus:'reviewed',reviewer:'mw:agent:reviewer'}
+  const base={id:'candidate:test',origin,relation,supportingEvidenceIds:['mw:evidence:test'],
+    contradictingEvidenceIds:[],independentSourceIds:['mw:source:test'],reviewStatus:'reviewed' as const,
+    reviewer:'mw:agent:reviewer',components:null}
+  assert.deepEqual(validateReviewedCandidate(base),[])
+  // [] is the explicit "searched, found none" record, not a missing search.
+  assert.deepEqual(summarizeCandidate(base).contradictionEvidence,'searched-none-found')
+  assert.deepEqual(summarizeCandidate(base).contradictingEvidenceIds,[])
+  // Contrary evidence found is preserved verbatim, never discarded on the way out.
+  const contrary=summarizeCandidate({...base,contradictingEvidenceIds:['mw:evidence:contrary']})
+  assert.deepEqual([contrary.contradictionEvidence,contrary.contradictingEvidenceIds],['present',['mw:evidence:contrary']])
+  // An unrecorded contradiction list is a defect naming that exact array.
+  const unrecorded=validateReviewedCandidate({...base,contradictingEvidenceIds:undefined as never})
+  assert.ok(unrecorded.some(e=>e==='candidate contradictingEvidenceIds must be an array (use [] when the search found none)'),String(unrecorded))
+  assert.deepEqual(summarizeCandidate({...base,contradictingEvidenceIds:undefined as never}).contradictionEvidence,'unrecorded')
+  // Duplicates and blank IDs are reported per array instead of one vague message.
+  assert.ok(validateReviewedCandidate({...base,supportingEvidenceIds:['mw:evidence:test','mw:evidence:test']})
+    .includes('candidate supportingEvidenceIds must not repeat an ID'))
+  assert.ok(validateReviewedCandidate({...base,independentSourceIds:['mw:source:test','  ']})
+    .includes('candidate independentSourceIds contains a blank ID'))
+  // A source reused as this candidate's own evidence is not an independent origin.
+  assert.ok(validateReviewedCandidate({...base,independentSourceIds:['mw:evidence:test']})
+    .some(e=>e==='independent source mw:evidence:test is also cited as candidate evidence, so it is not independent'))
+  // Inherited score and missing independent sources still block review.
+  assert.ok(validateReviewedCandidate({...base,origin:{...origin,inheritedScore:1 as never}}).some(e=>e.includes('must not inherit score')))
+  assert.ok(validateReviewedCandidate({...base,independentSourceIds:[]}).some(e=>e.includes('independent source')))
+  assert.equal(summarizeCandidate({...base,independentSourceIds:[]}).publishable,false)
+  // Unknown and null records are controlled diagnostics, not crashes.
+  assert.deepEqual(validateReviewedCandidate(null as never),['candidate record is missing'])
+  assert.deepEqual(summarizeCandidate(null as never).reviewErrors,['candidate record is missing'])
+  assert.equal(summarizeCandidate(null as never).publishable,false)
+})
+
 test('Swing candidates and miracle claims cannot be self-approved as truth',()=>{
   const origin=proposeSwing({operator:'direction',subject:'A',relation:'is-related-to',object:'B',depth:1})
   const relation:ScopedTextRelation={leftPassageId:'mw:passage:test:a',rightPassageId:'mw:passage:test:b',
