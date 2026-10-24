@@ -26,39 +26,31 @@ A canonical branch is not the same as the only permitted remote branch.
 
 Permanent deletion requires a **separate, explicitly reviewed process**, including current PR-state checks, a merged/unmerged history check against canonical refs, no open review or research retention obligation, audit evidence, and an accountable human approval. A failed/ambiguous check means **retain the branch**.
 
-## Required repository rulesets (FIX-006 / #398)
+## Repository rulesets (FIX-006 / #398)
 
-As of 2026-10-24 the repository is **not protected**: the public rulesets endpoint
-returns an empty list and reading classic branch protection requires admin
-authentication. CI success is therefore not yet structurally enforced.
+Repository rulesets were applied on 2026-10-24:
 
-A repository admin must create the following in **Settings → Rules → Rulesets**
-(or the equivalent ruleset API) and then verify them:
+- `canonical-branch-protection` (id `25772824`, active) targets `main` and `dev`.
+  It blocks deletion and force pushes, requires a pull request, requires review
+  conversations to be resolved, and requires the exact-head checks `check` and
+  `web`. Required approvals are `0` because the repository currently has a
+  single admin; raise this to at least `1` as soon as a second reviewer exists.
+- `immutable-release-tags` (id `25772825`, active) targets `corpus-v*` and
+  `browser-db-*`, blocking tag updates, retagging and deletion.
 
-1. **Canonical branches (`main`, `dev`)**
-   - Require a pull request before merging; at least one approval; dismiss stale approvals.
-   - Require review conversations to be resolved.
-   - Require status checks `CI / check` and `CI / web` from the exact head SHA.
-   - Block force pushes and branch deletion.
-2. **Release tags (`corpus-v*`, `browser-db-*`)**
-   - Block tag update and deletion; releases are immutable once published.
-3. **Workflow permissions**
-   - Default `GITHUB_TOKEN` read-only in **Settings → Actions → General**.
-   - Write permissions only in manual, opt-in publication jobs (`browser-db` publish job, future release job).
-4. **Bypass list**
-   - Empty, or limited to an explicitly reviewed release identity. No broad PAT/admin bypass.
-
-Verification after configuration (admin token):
+The classic branch-protection API still reports `Branch not protected`; the
+rulesets endpoint is the authoritative enforcement source. Verify with:
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
   https://api.github.com/repos/bjo163/moonwitness-corpus/rulesets
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-  https://api.github.com/repos/bjo163/moonwitness-corpus/branches/main/protection
+  https://api.github.com/repos/bjo163/moonwitness-corpus/rules/branches/dev
 ```
 
-The rules become complete only when both responses show the contract above and a
-pull request targeting a canonical branch is blocked by a red exact-head check.
+A canonical branch is fully protected only when the second call lists `deletion`,
+`non_fast_forward`, `pull_request` and `required_status_checks`, and a pull
+request targeting it is blocked by a red exact-head check.
 
 `todo-issues-sync.yml` still commits `TODO.md` to the default branch. Before
 requiring pull requests on `main`, either allowlist that bot identity or convert
