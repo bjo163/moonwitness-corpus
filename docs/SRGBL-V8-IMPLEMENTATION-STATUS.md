@@ -1,6 +1,6 @@
 # P19 SRGBL v8 — Implementation Status / Outstanding Release Gates
 
-**As of 2026-10-24:** RFC and P19 foundation merged via PRs #445 and #447; further reviewed-publication integrity work proposed on a follow-up PR. This is not a claim that P19 is complete.
+**As of 2026-10-25:** RFC and P19 foundations are merged via PRs #445, #447, and #448. This is not a claim that P19 is complete.
 **Master issue:** [#446](https://github.com/bjo163/moonwitness-corpus/issues/446)
 **Scope:** Additive derived features on top of P17 evidence graph and P18 Key Witness; canonical v0.1 remains unchanged.
 
@@ -15,6 +15,7 @@
 | Swing/correlation | `packages/srgbl/src/index.ts`, `research-ledger.ts` | seven unverified candidate transforms; manual relation and miracle claim validators | reviewed correlation datasets, independent witness evidence, ledger persistence |
 | Deterministic output | `packages/srgbl/src/derived.ts` | stable canonical hashing and fail-closed reviewed projection | real reviewed datasets, deployment consumption and published audit manifest |
 | CLI | `scripts/build-srgbl-reviewed.ts` | explicit JSON input → `dist/srgbl/*.json` output; `--check` mode | stable annotated input pipeline |
+| Static/browser delivery | `packages/srgbl/src/static.ts`, `scripts/export-srgbl-static.ts`, SRGBL research page | corpus-pinned public-only projection export; deterministic `--check`; static UI fallback validates against the deployed corpus catalog | no approved reviewed input is available to publish; browser source metadata still needs the API |
 | Fastify | `apps/api/src/routes/srgbl.ts` | research manifest and passage source-trace; explicit 404 for absent reviewed analysis | data-backed reviewed analysis endpoints |
 | Research UI | `apps/web/src/app/research/srgbl/page.tsx` | five responsive accessible tabs with S1 source gaps; other stages UNKNOWN | real reviewed G3/B4/L5 projections, Swing/correction/reviewer panels |
 | Test cases | `fixtures/srgbl/quran-research-cases.json` | five metadata-only source pointers and rights/review gates | licensed exact source excerpts and validated references |
@@ -28,6 +29,8 @@ pnpm exec tsx scripts/build-srgbl-reviewed.ts \
 pnpm exec tsx scripts/build-srgbl-reviewed.ts \
   --input /secure/reviewed-srgbl-input.json \
   --out dist/srgbl/reviewed.json --check
+pnpm srgbl:export-static --input dist/srgbl/reviewed.json
+pnpm srgbl:export-static --input dist/srgbl/reviewed.json --check
 ```
 
 The input file must explicitly include `corpusHash`, `methodVersion`, `runs`, `candidates`, and `miracleClaims` with proper review/rights provenance. Do **not** check private annotations or unlicensed source text into the public repo.

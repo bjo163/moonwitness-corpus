@@ -7,6 +7,7 @@ type Source = {id:string;contentId:string;editionId:string;sourceId:string;artif
 type Trace = {passageId:string;sources:Source[];evidenceIds:string[];gaps:string[];defaultLevelStatus:"pending"}
 type ReviewedLevel = {level:string;epistemic:string;claim:string;evidenceIds:string[];sourceContentIds:string[];boundaryNote?:string}
 type ReviewedAnalysis = {id:string;passageId:string;method:string;status:"reviewed";levels:ReviewedLevel[]}
+type StaticResearchIndex = {schema:"srgbl-v8-static-public-v1";corpusHash:string;methodVersion:string;analyses:ReviewedAnalysis[]}
 const LEVELS=[
   {id:"S1",name:"Source & Sense",detail:"Identity, edition, artifact, rights and evidence acquisition"},
   {id:"R2",name:"Reality",detail:"What the exact source text states, not what interpreters assert"},
@@ -15,6 +16,27 @@ const LEVELS=[
   {id:"L5",name:"Light",detail:"Bounded responsible synthesis; never an automatic miracle proof"}
 ] as const
 const API=(process.env.NEXT_PUBLIC_RGBL_API_URL||"").replace(/\/+$/,"")
+
+function isReviewedAnalysis(value:unknown):value is ReviewedAnalysis {
+  if(!value||typeof value!=="object") return false
+  const item=value as Record<string,unknown>
+  if(typeof item.id!=="string"||typeof item.passageId!=="string"||!item.passageId.startsWith("mw:passage:")||
+    typeof item.method!=="string"||item.status!=="reviewed"||!Array.isArray(item.levels)) return false
+  const seen=new Set<string>()
+  return item.levels.every((level:unknown)=>{
+    if(!level||typeof level!=="object") return false
+    const claim=level as Record<string,unknown>
+    if(typeof claim.level!=="string"||!["S1","R2","G3","B4","L5"].includes(claim.level)||seen.has(claim.level)||
+      typeof claim.epistemic!=="string"||!["observed","inferred","interpreted"].includes(claim.epistemic)||
+      typeof claim.claim!=="string"||claim.claim.trim().length===0||claim.claim.length>5000||
+      !Array.isArray(claim.evidenceIds)||claim.evidenceIds.length===0||!claim.evidenceIds.every(x=>typeof x==="string"&&x.trim())||
+      !Array.isArray(claim.sourceContentIds)||claim.sourceContentIds.length===0||!claim.sourceContentIds.every(x=>typeof x==="string"&&x.trim())||
+      (claim.level==="L5"&&(typeof claim.boundaryNote!=="string"||!claim.boundaryNote.trim()))||
+      (claim.boundaryNote!==undefined&&typeof claim.boundaryNote!=="string")) return false
+    seen.add(claim.level)
+    return true
+  })
+}
 
 export default function SRGBLResearchPage(){
   const [id,setId]=useState("mw:passage:hinduism:bhagavad-gita:1:1")
@@ -28,13 +50,38 @@ export default function SRGBLResearchPage(){
     e.preventDefault()
     setTrace(null);setAnalyses([]);setError("")
     setReviewNote("No reviewed analysis is published for this passage.")
-    if(!API){setError("Research trace API is not configured. Set NEXT_PUBLIC_RGBL_API_URL to a trusted MoonWitness Fastify instance.");return}
     if(!id.startsWith("mw:passage:")){setError("Use a canonical mw:passage:* ID.");return}
     setBusy(true)
     try {
       const controller=new AbortController()
       const timeout=setTimeout(()=>controller.abort(),8000)
       try {
+        if(!API){
+          const response=await fetch("/research/srgbl/reviewed.json",{signal:controller.signal,headers:{accept:"application/json"}})
+          if(response.status===404){
+            setReviewNote("No static reviewed analysis is published. A live source trace requires the research API.")
+            return
+          }
+          if(!response.ok) throw new Error("Static reviewed research is unavailable ("+response.status+")")
+          const body=await response.json() as Partial<StaticResearchIndex>
+          if(body.schema!=="srgbl-v8-static-public-v1"||typeof body.corpusHash!=="string"||
+            !/^[a-f0-9]{64}$/.test(body.corpusHash)||typeof body.methodVersion!=="string"||
+            !Array.isArray(body.analyses)||!body.analyses.every(isReviewedAnalysis)) {
+            throw new Error("Static reviewed research failed its data contract")
+          }
+          const catalogResponse=await fetch("/corpus-catalog.json",{signal:controller.signal,headers:{accept:"application/json"}})
+          if(!catalogResponse.ok) throw new Error("Trusted static corpus catalog is unavailable")
+          const catalog=await catalogResponse.json() as {schemaVersion?:unknown;corpusHash?:unknown}
+          if(catalog.schemaVersion!==1||catalog.corpusHash!==body.corpusHash) {
+            throw new Error("Static reviewed research belongs to a different corpus version")
+          }
+          const matches=body.analyses.filter(analysis=>analysis.passageId===id)
+          setAnalyses(matches)
+          setReviewNote(matches.length
+            ? "Showing corpus-pinned reviewed claims from the static index. Live source metadata is unavailable."
+            : "No reviewed analysis is published for this passage in the static index.")
+          return
+        }
         const response=await fetch(API+"/v1/research/srgbl/passages/"+encodeURIComponent(id)+"/source-trace",{signal:controller.signal,headers:{accept:"application/json"}})
         if(!response.ok)throw new Error("Source trace not found or unavailable ("+response.status+")")
         const body=await response.json() as {success:boolean;data:Trace}
@@ -67,7 +114,7 @@ export default function SRGBLResearchPage(){
       <label className="min-w-64 flex-1 text-sm" htmlFor="passage-id">Canonical passage ID
         <input id="passage-id" className="mt-1 w-full rounded-md border bg-background p-2 text-sm" value={id} onChange={e=>setId(e.target.value)} spellCheck={false} />
       </label>
-      <button type="submit" disabled={busy} className="self-end rounded-md border px-4 py-2 text-sm font-semibold disabled:opacity-60">{busy?"Reading…":"Trace source"}</button>
+      <button type="submit" disabled={busy} className="self-end rounded-md border px-4 py-2 text-sm font-semibold disabled:opacity-60">{busy?"Reading…":API?"Trace source":"Load reviewed research"}</button>
     </form>
     {error&&<p role="alert" className="rounded-md border p-3 text-sm">{error}</p>}
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-5" role="tablist" aria-label="SRGBL five layers">
@@ -89,7 +136,7 @@ export default function SRGBLResearchPage(){
         </article>)}</div>
         {trace.gaps.length>0&&<div className="mt-4 rounded-md border p-3"><strong className="text-sm">Unresolved evidence gaps</strong><ul className="mt-1 list-inside list-disc text-xs">{trace.gaps.map(x=><li key={x}>{x}</li>)}</ul></div>}
       </>}
-      {active==="S1"&&!trace&&<p className="text-sm">Enter a passage to inspect provenance; no automatic S1 approval.</p>}
+      {active==="S1"&&!trace&&currentClaims.length===0&&<p className="text-sm">Enter a passage to inspect provenance; no automatic S1 approval.</p>}
       {currentClaims.length>0&&<div className="mt-4 space-y-3" aria-label="Reviewed claims">
         <h3 className="text-sm font-semibold">Reviewed derived claims — not original scripture</h3>
         {currentClaims.map((c,i)=><article key={c.analysisId+"-"+c.level+"-"+i} className="rounded-md border p-3 text-sm">
@@ -100,7 +147,7 @@ export default function SRGBLResearchPage(){
         </article>)}
       </div>}
       {active!=="S1"&&currentClaims.length===0&&<p className="mt-5 text-sm">UNKNOWN / not materialized. This stage requires source-linked claims, an accountable method, independent review and explicit limitations. No synthetic interpretation is generated.</p>}
-      {trace&&<p className="mt-4 text-xs text-muted-foreground" role="status">{reviewNote}</p>}
+      {reviewNote&&<p className="mt-4 text-xs text-muted-foreground" role="status">{reviewNote}</p>}
     </section>
     <footer className="text-xs text-muted-foreground">Maturity /15 · Quality /40 · Witness /100 · Direction −2..+2 are separate research metrics, withheld until a valid reviewed analysis exists. <a href="https://github.com/bjo163/moonwitness-corpus/blob/dev/docs/SRGBL-V8-MASTER-RFC.md" className="underline">Read the methodology</a>.</footer>
   </main>

@@ -10,7 +10,8 @@
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
     "./derived": "./src/derived.ts",
-    "./publication": "./src/publication.ts"
+    "./publication": "./src/publication.ts",
+    "./static": "./src/static.ts"
   },
   "description": "Experimental, pure derived SRGBL v8 research scoring primitives. No corpus mutation or scripture ranking."
 }
