@@ -96,13 +96,29 @@ export function validateKeyMessage(message: KeyMessage, keys: readonly FramedKey
   for (const k of ['id','passageId','method','message','boundaryNote','contextNote'] as const)
     if (!string(message[k])) errors.push('message.'+k+' required')
   if (!Array.isArray(message.sourceKeyAssessmentIds) || !message.sourceKeyAssessmentIds.length) errors.push('message must cite key assessments')
-  if (!Array.isArray(message.evidenceIds)) errors.push('message evidence missing')
-  const index = new Map(keys.map(k=>[k.id,k]))
-  for (const id of message.sourceKeyAssessmentIds || []) {
-    const key = index.get(id)
-    if (!key) errors.push('missing source key '+id)
-    else if (key.passageId !== message.passageId || key.method !== message.method) errors.push('message key mismatch '+id)
+  if (!Array.isArray(message.evidenceIds) || message.evidenceIds.some(x => !string(x))) errors.push('message evidence missing')
+  // A supplied record set with two identical IDs resolves arbitrarily, so the
+  // reference is reported as ambiguous instead of silently picking the last one.
+  const index = new Map<string, FramedKeyAssessment>()
+  const duplicateKeyIds = new Set<string>()
+  for (const record of keys || []) {
+    if (index.has(record.id)) duplicateKeyIds.add(record.id)
+    else index.set(record.id, record)
   }
+  for (const id of duplicateKeyIds) errors.push('duplicate key assessment record id ' + id)
+  const cited = Array.isArray(message.sourceKeyAssessmentIds) ? message.sourceKeyAssessmentIds : []
+  const seenCitations = new Set<string>()
+  cited.forEach((id, position) => {
+    if (!string(id)) { errors.push('message.sourceKeyAssessmentIds[' + position + '] is not a nonblank key id'); return }
+    if (seenCitations.has(id)) { errors.push('duplicate message key reference ' + id); return }
+    seenCitations.add(id)
+    const key = index.get(id)
+    if (!key) { errors.push('missing source key ' + id); return }
+    if (duplicateKeyIds.has(id)) return
+    // Passage and method drift are different defects and must stay separable.
+    if (key.passageId !== message.passageId) errors.push('message key ' + id + ' belongs to passage ' + key.passageId + ', not ' + message.passageId)
+    else if (key.method !== message.method) errors.push('message key ' + id + ' uses method ' + key.method + ', not ' + message.method)
+  })
   if (message.reviewStatus === 'reviewed' && (!string(message.reviewer) || !message.evidenceIds?.length ||
     (message.sourceKeyAssessmentIds || []).some(id=>index.get(id)?.reviewStatus!=='reviewed'))) errors.push('reviewed message needs reviewed keys, evidence and reviewer')
   return errors

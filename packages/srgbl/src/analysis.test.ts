@@ -294,6 +294,31 @@ test('reviewed derived message must keep key and boundary note',()=>{
   assert.deepEqual(validateKeyMessage(message,[key()]),[])
   assert.ok(validateKeyMessage({...message,boundaryNote:''},[key()]).length)
 })
+test('derived message cannot cite a dangling, blank or ambiguous key assessment',()=>{
+  const base={id:'msg:test',passageId:'mw:passage:test:a',method:'test:v8',frame,
+    sourceKeyAssessmentIds:[key().id],message:'Synthetic',boundaryNote:'Not universal',contextNote:'Test only',
+    evidenceIds:['mw:evidence:test'],reviewStatus:'reviewed' as const,reviewer:'mw:agent:reviewer'}
+  assert.deepEqual(validateKeyMessage(base,[key()]),[])
+  // An ID that no supplied assessment resolves to is named, never dropped.
+  const dangling=validateKeyMessage({...base,sourceKeyAssessmentIds:['mw:assessment:ghost']},[key()])
+  assert.ok(dangling.includes('missing source key mw:assessment:ghost'),String(dangling))
+  assert.ok(dangling.some(error=>error.includes('reviewed message needs reviewed keys')))
+  // Blank and repeated citations are separate, positional diagnostics.
+  assert.ok(validateKeyMessage({...base,sourceKeyAssessmentIds:['  ']},[key()])
+    .includes('message.sourceKeyAssessmentIds[0] is not a nonblank key id'))
+  assert.ok(validateKeyMessage({...base,sourceKeyAssessmentIds:[key().id,key().id]},[key()])
+    .includes('duplicate message key reference '+key().id))
+  // Passage drift and method drift must not collapse into one vague message.
+  assert.ok(validateKeyMessage({...base,passageId:'mw:passage:test:b'},[key()])
+    .some(error=>error==='message key '+key().id+' belongs to passage mw:passage:test:a, not mw:passage:test:b'))
+  assert.ok(validateKeyMessage({...base,method:'other:v8'},[key()])
+    .some(error=>error==='message key '+key().id+' uses method test:v8, not other:v8'))
+  // Two supplied records sharing an ID resolve ambiguously: refuse, do not pick the last.
+  const clash=validateKeyMessage(base,[key(),{...key(),passageId:'mw:passage:test:other'}])
+  assert.ok(clash.includes('duplicate key assessment record id '+key().id),String(clash))
+  // Blank evidence entries are not evidence.
+  assert.ok(validateKeyMessage({...base,evidenceIds:['  ']},[key()]).includes('message evidence missing'))
+})
 test('Swing candidates and miracle claims cannot be self-approved as truth',()=>{
   const origin=proposeSwing({operator:'direction',subject:'A',relation:'is-related-to',object:'B',depth:1})
   const relation:ScopedTextRelation={leftPassageId:'mw:passage:test:a',rightPassageId:'mw:passage:test:b',
