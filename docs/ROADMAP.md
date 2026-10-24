@@ -2,6 +2,8 @@
 
 Status: working roadmap for the v0.x development line.
 
+For the consolidated SRGBL/Key Witness programme see [MoonWitness SRGBL v8 Master Grandplan](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md). The Grandplan is an execution index; the detailed TODO markers in [TODO.md](../TODO.md) retain task ownership.
+
 The short checkbox list lives in [`../TODO.md`](../TODO.md). This document explains **why the order matters, what each phase must produce, what is intentionally deferred, and how the public corpus repository eventually connects to MoonWitness**.
 
 ---
