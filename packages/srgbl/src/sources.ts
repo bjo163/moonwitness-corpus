@@ -87,12 +87,44 @@ function kindOf(s: CorpusRecordLike): WitnessSource['representation'] {
   return 'other'
 }
 /**
- * A rights reviewer explicitly sets `rightsByContentId` only after checking
- * a concrete edition and permissions. Default is UNKNOWN (fail closed).
+ * A rights *claim* is not a licence. 'cleared' is only honoured when an
+ * independently verified rights record covers this edition; a bare string or
+ * an unattested claim can never expose licensed text.
+ */
+export interface RightsAttestation {
+  status: RightsStatus
+  /** Identifier of the verified permission record, never free-text approval. */
+  rightsRecordId?: string
+  /** Edition the permission actually covers. */
+  editionId?: string
+}
+export type RightsInput = Readonly<Record<string, RightsStatus | RightsAttestation>>
+
+function resolveRights(entry: RightsStatus | RightsAttestation | undefined,
+  editionId: string, contentId: string, gaps: string[]): RightsStatus {
+  if (!entry) return 'unknown'
+  const status = typeof entry === 'string' ? entry : entry.status
+  if (status === 'restricted') return 'restricted'
+  if (status !== 'cleared') return 'unknown'
+  const attestation = typeof entry === 'string' ? null : entry
+  if (!attestation || !text(attestation.rightsRecordId).trim()) {
+    gaps.push(contentId + ':rights_claim_unattested')
+    return 'unknown'
+  }
+  if (text(attestation.editionId).trim() && attestation.editionId !== editionId) {
+    gaps.push(contentId + ':rights_edition_mismatch')
+    return 'unknown'
+  }
+  return 'cleared'
+}
+
+/**
+ * A rights reviewer supplies a verified attestation only after checking a
+ * concrete edition and permissions. Default is UNKNOWN (fail closed).
  * This adapter never guesses license from religion/age/dataset name.
  */
 export function adaptPassageSources(detail: CorpusPassageDetail,
-  rightsByContentId: Readonly<Record<string, RightsStatus>> = {},
+  rightsByContentId: RightsInput = {},
   catalog?: SourceCatalog | null): AdaptedPassage {
   if (!detail?.passage?.id || !Array.isArray(detail.contents) ||
     !Array.isArray(detail.artifacts) || !Array.isArray(detail.provenance) ||
@@ -105,7 +137,7 @@ export function adaptPassageSources(detail: CorpusPassageDetail,
     const editionId=text(c.edition_id) || ref(c,'edition')
     const artifactId=ref(c,'artifact')
     const provenanceId=ref(c,'provenance')
-    const rights=rightsByContentId[c.id] || 'unknown'
+    const rights=resolveRights(rightsByContentId[c.id], editionId, c.id, gaps)
     if(!editionId) gaps.push(c.id+':edition_unknown')
     if(!sourceId) gaps.push(c.id+':source_unknown')
     if(!artifactId || !artifacts.has(artifactId)) gaps.push(c.id+':artifact_unresolved')

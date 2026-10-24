@@ -90,7 +90,7 @@ test('source adapter preserves exact distinction and never exposes uncleared tex
   assert.equal(no.sources[0].text,undefined)
   assert.equal(no.defaultLevelStatus,'pending')
   assert.ok(no.gaps.some(g=>g.includes('rights_not_cleared')))
-  const yes=adaptPassageSources(sample,{'mw:content:test:a':'cleared'},catalog)
+  const yes=adaptPassageSources(sample,{'mw:content:test:a':{status:'cleared',rightsRecordId:'mw:rights:test',editionId:'mw:edition:test'}},catalog)
   assert.equal(yes.sources[0].text,'DO NOT PUBLISH AS SCRIPTURE')
   assert.deepEqual(yes.gaps,[])
 })
@@ -115,14 +115,41 @@ test('unresolved source or wrong edition blocks S1 review through the adapter',(
     extensions:{source:{artifact:'mw:artifact:test',provenance:'mw:provenance:test'}}
   }],artifacts:[{id:'mw:artifact:test'}],provenance:[{id:'mw:provenance:test'}],evidence:[{id:'mw:evidence:test'}]}
   const catalog:SourceCatalog={sources:[{id:'mw:source:test'}],editions:[{id:'mw:edition:test',sourceId:'mw:source:test'}]}
-  const unresolved=adaptPassageSources(base,{'mw:content:test:a':'cleared'},catalog)
+  const unresolved=adaptPassageSources(base,{'mw:content:test:a':{status:'cleared',rightsRecordId:'mw:rights:test',editionId:'mw:edition:test'}},catalog)
   assert.ok(unresolved.gaps.includes('mw:content:test:a:source_unresolved'))
   assert.equal(unresolved.defaultLevelStatus,'pending')
   const wrongEdition=adaptPassageSources({...base,contents:[{...base.contents[0],source_id:'mw:source:test'}],
-    artifacts:[{id:'mw:artifact:test'}]},{'mw:content:test:a':'cleared'},{sources:[{id:'mw:source:test'}],editions:[]})
+    artifacts:[{id:'mw:artifact:test'}]},{'mw:content:test:a':{status:'cleared',rightsRecordId:'mw:rights:test'}},{sources:[{id:'mw:source:test'}],editions:[]})
   assert.ok(wrongEdition.gaps.includes('mw:content:test:a:edition_unresolved'))
-  const noCatalog=adaptPassageSources({...base,contents:[{...base.contents[0],source_id:'mw:source:test'}]},{'mw:content:test:a':'cleared'})
+  const noCatalog=adaptPassageSources({...base,contents:[{...base.contents[0],source_id:'mw:source:test'}]},{'mw:content:test:a':{status:'cleared',rightsRecordId:'mw:rights:test'}})
   assert.ok(noCatalog.gaps.includes('mw:content:test:a:source_resolution_unavailable'))
+})
+test('uncleared or unattested rights never expose source text',()=>{
+  const sample={passage:{id:'mw:passage:test:a'},contents:[{
+    id:'mw:content:test:a',text:'LICENSED',language:'en',representation:'source_text',
+    edition_id:'mw:edition:test',source_id:'mw:source:test',
+    extensions:{source:{artifact:'mw:artifact:test',provenance:'mw:provenance:test'}}
+  }],artifacts:[{id:'mw:artifact:test'}],provenance:[{id:'mw:provenance:test'}],evidence:[{id:'mw:evidence:test'}]}
+  const catalog:SourceCatalog={sources:[{id:'mw:source:test'}],editions:[{id:'mw:edition:test',sourceId:'mw:source:test'}]}
+  // A bare 'cleared' string is a claim, not a licence.
+  const bare=adaptPassageSources(sample,{'mw:content:test:a':'cleared'},catalog)
+  assert.equal(bare.sources[0].rights,'unknown')
+  assert.equal(bare.sources[0].text,undefined)
+  assert.ok(bare.gaps.includes('mw:content:test:a:rights_claim_unattested'))
+  assert.ok(bare.gaps.includes('mw:content:test:a:rights_not_cleared'))
+  const restricted=adaptPassageSources(sample,{'mw:content:test:a':{status:'restricted',rightsRecordId:'mw:rights:test'}},catalog)
+  assert.equal(restricted.sources[0].rights,'restricted')
+  assert.equal(restricted.sources[0].text,undefined)
+  // Clearance for a different edition does not cover this content.
+  const mismatch=adaptPassageSources(sample,{'mw:content:test:a':{status:'cleared',rightsRecordId:'mw:rights:test',editionId:'mw:edition:other'}},catalog)
+  assert.equal(mismatch.sources[0].rights,'unknown')
+  assert.equal(mismatch.sources[0].text,undefined)
+  assert.ok(mismatch.gaps.includes('mw:content:test:a:rights_edition_mismatch'))
+  // Independently attested clearance for this exact edition may expose the text.
+  const attested=adaptPassageSources(sample,{'mw:content:test:a':{status:'cleared',rightsRecordId:'mw:rights:test',editionId:'mw:edition:test'}},catalog)
+  assert.equal(attested.sources[0].rights,'cleared')
+  assert.equal(attested.sources[0].text,'LICENSED')
+  assert.deepEqual(attested.gaps,[])
 })
 function key():FramedKeyAssessment {
   return {id:'mw:assessment:test:1',passageId:'mw:passage:test:a',contentId:'mw:content:test:a',
