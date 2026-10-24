@@ -396,6 +396,8 @@ Pilot tasks P18-005..P18-008 stay blocked until decisions 2 (pilot traditions), 
 
 ## P19 — SRGBL v8 Witness Intelligence (experimental, additive)
 
+**P19 Master Grandplan:** [MoonWitness SRGBL v8 × Key Witness × Swing](docs/MOONWITNESS-SRGBL-V8-GRANDPLAN.md). This file owns the 28 stable P19 IDs and task completion states; the Grandplan is the narrative/index, not a replacement issue-sync source.
+
 P19 extends the P17 evidence graph and P18 Key Witness with five-layer S1–L5 reasoning, Swing Swing Key, candidate Witness /100, frame-scoped Quran-anchored Positive Correction, and OFFSIDE review diagnostics. RFC: [SRGBL v8](docs/SRGBL-V8-MASTER-RFC.md). Historical crosswalk: [source crosswalk](docs/SRGBL-V8-CONCEPT-CROSSWALK.md). All P19 tasks remain unchecked until their complete acceptance gates, integration and reviews pass; a pure scoring primitive is not proof of the end-to-end capability. Canonical scripture text, IDs and v0.1 schema remain untouched.
 
 Merged PRs #448 and #449 add corpus-pinned reviewed API publication and a verified static/browser projection. Swing now has a bounded chain proposal helper with path duplicate/cycle guards. No approved reviewed input dataset or pilot is available; these engineering slices do not complete any P19 acceptance checkbox by themselves.
