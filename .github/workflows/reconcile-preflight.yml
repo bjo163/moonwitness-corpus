@@ -55,6 +55,8 @@ jobs:
           output="$(git merge-tree --write-tree --name-only origin/dev origin/main 2>&1)"
           result="$?"
           set -e
+          echo 'Read-only merge-tree output (paths and conflict codes):'
+          printf '%s\n' "$output" | head -150
           {
             echo '### Git merge-tree preview'
             echo ''
