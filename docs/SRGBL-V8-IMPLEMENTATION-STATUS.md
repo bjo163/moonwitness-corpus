@@ -2,6 +2,7 @@
 
 **As of 2026-10-25:** RFC and P19 foundations are merged via PRs #445, #447, and #448. This is not a claim that P19 is complete.
 **Master issue:** [#446](https://github.com/bjo163/moonwitness-corpus/issues/446)
+**Current local AI execution (2026-10-25):** [Final Master Grandplan](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md) · [Product Narrative](./MOONWITNESS-P19-PRODUCT-NARRATIVE.md) · [Blueprint](./MOONWITNESS-SRGBL-V8-BLUEPRINT.md) · [38 real micro issues #452–#489](./MOONWITNESS-P19-MICROTASKS.md) · [No-branch handoff](./MOONWITNESS-LOCAL-AI-HANDOFF.md). Small-ticket issuance is COMPLETE; actual 28 larger P19 acceptance and P18 rights/annotator pilot remain OPEN.
 **Scope:** Additive derived features on top of P17 evidence graph and P18 Key Witness; canonical v0.1 remains unchanged.
 
 ## Implemented technical primitives
