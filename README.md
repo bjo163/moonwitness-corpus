@@ -42,6 +42,8 @@ A provenance-first **multi-tradition text, scripture, sacred-literature, and evi
 
 **Four different research numbers:** level maturity **0–15**, analysis quality **0–40**, candidate witness support **0–100**, key direction **−2..+2**. All are method/version-bound, *not* intrinsic ratings of verses, religions, miracle truth or faith.
 
+**MASTER GRANDPLAN:** [MoonWitness SRGBL v8 × Key Witness × Swing Swing Key × Positive Correction](docs/MOONWITNESS-SRGBL-V8-GRANDPLAN.md) — one central execution map for P18/P19 (roadmap, data/UX, scoring, publication gates and verified progress).
+
 [Product Story](docs/PRODUCT-STORY.md) · [Product Blueprint](docs/PRODUCT-BLUEPRINT.md) · [Key Witness v0](docs/KEY-WITNESS-V0.md) · [SRGBL v8 RFC](docs/SRGBL-V8-MASTER-RFC.md) · [Concept crosswalk](docs/SRGBL-V8-CONCEPT-CROSSWALK.md) · [Implementation status](docs/SRGBL-V8-IMPLEMENTATION-STATUS.md) · [Reviewed publication runbook](docs/SRGBL-V8-PUBLICATION-RUNBOOK.md) · [Research viewer](/research/srgbl) · [P18/P19 TODO](TODO.md)
 
 
