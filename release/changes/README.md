@@ -29,3 +29,12 @@ pnpm release:version release/changes/<plan>.json
 The command updates only the package versions named by the plan and/or
 `release/corpus-release.json`, then moves the consumed plan into `release/changes/applied/`.
 Spec changes remain owned by `spec/`; dataset versions remain owned by dataset manifests.
+
+Regenerate the human-readable changelog after adding or applying a plan:
+
+```bash
+pnpm release:changelog
+pnpm release:changelog:check
+```
+
+The full version policy is documented in [`docs/RELEASE_VERSION_POLICY.md`](../../docs/RELEASE_VERSION_POLICY.md).
