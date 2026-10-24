@@ -36,13 +36,13 @@ A provenance-first **multi-tradition text, scripture, sacred-literature, and evi
 **Current public product:** provenance-first TEXT observatory (technical alias: **RGBL**). Its exact text, source/edition, rights, evidence, and provenance remain canonical and unchanged.
 
 - **P18 Key Witness:** semantic middle layer, framed keys, direction, message, disagreement — specifications and TODO/pilot in progress.
-- **P19 SRGBL v8 research extension:** S1 Source & Sense → R2 Reality → G3 Governing Order → B4 Being → L5 Light. Experimental pure scoring/candidate primitives are in `packages/srgbl`; source adapters, full analysis, validated pilot, derived API and UI **are not shipped**.
+- **P19 SRGBL v8 research extension:** S1 Source & Sense → R2 Reality → G3 Governing Order → B4 Being → L5 Light. Experimental scoring, validated analysis contracts, rights-gated source adapters and a read-only research source-trace API are implemented; a five-layer UI preview exists, while reviewed source datasets, full analysis projections, annotator pilot and production UI **are not shipped**.
 - **Swing Swing Key:** bounded evidence-seeking candidate transformations, never truth by inversion.
 - **Positive Correction:** a perspective-scoped Quran-anchored interpretive method; miracle claims must be source-attributed and reviewed.
 
 **Four different research numbers:** level maturity **0–15**, analysis quality **0–40**, candidate witness support **0–100**, key direction **−2..+2**. All are method/version-bound, *not* intrinsic ratings of verses, religions, miracle truth or faith.
 
-[Product Story](docs/PRODUCT-STORY.md) · [Product Blueprint](docs/PRODUCT-BLUEPRINT.md) · [Key Witness v0](docs/KEY-WITNESS-V0.md) · [SRGBL v8 RFC](docs/SRGBL-V8-MASTER-RFC.md) · [Concept crosswalk](docs/SRGBL-V8-CONCEPT-CROSSWALK.md) · [P18/P19 TODO](TODO.md)
+[Product Story](docs/PRODUCT-STORY.md) · [Product Blueprint](docs/PRODUCT-BLUEPRINT.md) · [Key Witness v0](docs/KEY-WITNESS-V0.md) · [SRGBL v8 RFC](docs/SRGBL-V8-MASTER-RFC.md) · [Concept crosswalk](docs/SRGBL-V8-CONCEPT-CROSSWALK.md) · [Implementation status](docs/SRGBL-V8-IMPLEMENTATION-STATUS.md) · [Research viewer](/research/srgbl) · [P18/P19 TODO](TODO.md)
 
 
 ---
