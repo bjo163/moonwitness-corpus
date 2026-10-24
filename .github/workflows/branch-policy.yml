@@ -1,14 +1,6 @@
 name: Research Branch Policy (Audit Only)
 
 on:
-  create:
-  push:
-    branches: [main, dev]
-    paths:
-      - '.github/workflows/branch-policy.yml'
-      - 'docs/BRANCHING.md'
-      - 'scripts/branch-retention-policy.mjs'
-      - 'scripts/branch-retention-policy.test.mjs'
   workflow_dispatch:
 
 permissions:

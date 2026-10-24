@@ -316,7 +316,7 @@ rocksoul-rgbl/
 ├── packages/        engine, SDK, API and supporting packages
 ├── schemas/         machine-valid corpus contracts
 ├── scripts/         ingestion, validation and audits
-└── .github/         CI, release and synchronization workflows
+└── .github/         manual-only CI, release and synchronization workflows
 ```
 
 ## Documentation

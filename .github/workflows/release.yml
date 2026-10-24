@@ -4,18 +4,6 @@ name: Release Candidate Verification (No Promotion)
 # No scheduled version bumps, publication, direct main pushes, or ref mutation.
 on:
   workflow_dispatch:
-  push:
-    branches: [dev]
-    paths:
-      - '.github/workflows/release.yml'
-      - 'release/**'
-      - 'CHANGELOG.md'
-      - 'scripts/render-release-changelog.ts'
-      - 'scripts/release-changelog.ts'
-      - 'scripts/build-release.ts'
-      - 'scripts/verify-release.ts'
-      - 'scripts/build-consumer-release.ts'
-      - 'scripts/validate-consumer-release.ts'
 
 permissions:
   contents: read

@@ -73,10 +73,10 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 - [**P5 Universality Review**](./reviews/P5-universality-review.md) — Tinjauan universalitas teks lintas tradisi awal.
 - [**P16-P17 Multi-Tradition Review**](./reviews/P16-P17-multi-tradition-review.md) — Tinjauan hak cipta dan integritas 12 tradisi dunia.
 
-### 6. 🤖 Automation, CI/CD & Auto-Sync
-- [**Continuous Integration (`ci.yml`)**](../.github/workflows/ci.yml) — Validasi, pengujian unit, dan *smoke test* Fastify API runtime.
-- [**Upstream Auto-Sync Cron (`upstream-sync.yml`)**](../.github/workflows/upstream-sync.yml) — Sinkronisasi mingguan data hulu otomatis.
-- [**TODO & Issues Sync (`todo-issues-sync.yml`)**](../.github/workflows/todo-issues-sync.yml) — Sinkronisasi dwiarah TODO.md dengan GitHub Issues.
+### 6. 🤖 Automation (manual-only)
+- [**Continuous Integration (`ci.yml`)**](../.github/workflows/ci.yml) — Validasi, pengujian unit, dan *smoke test* Fastify API runtime; dijalankan lewat dispatch.
+- [**Upstream Audit (`upstream-sync.yml`)**](../.github/workflows/upstream-sync.yml) — Audit hulu read-only lewat dispatch; tidak ada jadwal otomatis.
+- [**TODO & Issues Sync (`todo-issues-sync.yml`)**](../.github/workflows/todo-issues-sync.yml) — Sinkronisasi dwiarah TODO.md dengan GitHub Issues lewat dispatch.
 
 ---
 
