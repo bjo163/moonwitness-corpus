@@ -58,7 +58,13 @@ writeFileSync('package.json', JSON.stringify(devPkg, null, 2) + '\n');
 // deliberate to avoid duplicate TypeScript import declarations.
 writeFileSync('apps/api/src/api.main-history.test.ts',
   show('origin/main', 'apps/api/src/api.test.ts') + '\n');
-git('add', '--', ...expected, 'apps/api/src/api.main-history.test.ts');
+// Main's web API source has a known extra empty line at EOF; normalize only
+// this non-semantic whitespace in the ephemeral candidate before diff --check.
+const webApiPath = 'apps/web/src/api.ts';
+const webApi = readFileSync(webApiPath, 'utf8');
+if (!webApi.endsWith('\n\n')) throw new Error('Web API whitespace state changed; review instead of blindly rewriting');
+writeFileSync(webApiPath, webApi.replace(/\n+$/u, '\n'));
+git('add', '--', ...expected, 'apps/api/src/api.main-history.test.ts', webApiPath);
 const unresolved = git('diff', '--name-only', '--diff-filter=U').trim();
 assert.equal(unresolved, '', 'Unresolved Git conflicts still present');
 console.log('Five explicit semantic conflict decisions staged locally in temporary runner.');
