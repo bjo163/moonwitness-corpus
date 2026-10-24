@@ -1,9 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify'
 import type { CanonicalId } from '@moonwitness/corpus-core'
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { SRGBL_LEVELS } from '@moonwitness/srgbl'
 import { adaptPassageSources, type CorpusPassageDetail } from '@moonwitness/srgbl/sources'
+import { verifyReviewedPublication } from '@moonwitness/srgbl/publication'
+import type { ResearchPublication } from '@moonwitness/srgbl/derived'
 
 function sourceRefs(record: unknown): { artifact?: string; provenance?: string } {
   if (!record || typeof record !== 'object') return {}
@@ -18,25 +20,32 @@ function sourceRefs(record: unknown): { artifact?: string; provenance?: string }
   }
 }
 
-type ReviewedPublicIndex = {
-  schema: 'srgbl-v8-reviewed-derived-v1'
-  corpusHash: string
-  methodVersion: string
-  publicSummaries: Array<{id:string;passageId:string;method:string;status:'reviewed'}>
-}
-async function readReviewedIndex(): Promise<ReviewedPublicIndex|null> {
+/** No review index is trusted without the independently generated local corpus catalog.
+ * Filesystem write permissions and editorial review remain the actual trust boundary:
+ * a SHA-256 checksum detects drift but does NOT authenticate a reviewer. */
+async function readReviewedIndex(): Promise<ResearchPublication | null> {
   const filename=resolve(process.env.SRGBL_REVIEWED_PATH || 'dist/srgbl/reviewed.json')
-  let raw:unknown
-  try { raw=JSON.parse(await readFile(filename,'utf8')) } catch(e) {
+  let raw: string
+  try {
+    const info=await stat(filename)
+    if(!info.isFile() || info.size > 5 * 1024 * 1024) throw new Error('Reviewed SRGBL snapshot exceeds configured limit')
+    raw=await readFile(filename,'utf8')
+  } catch(e) {
     if((e as NodeJS.ErrnoException).code==='ENOENT') return null
     throw e
   }
-  const index=raw as Partial<ReviewedPublicIndex>
-  if(index.schema!=='srgbl-v8-reviewed-derived-v1' || typeof index.corpusHash!=='string' ||
-     !index.corpusHash || typeof index.methodVersion!=='string' || !Array.isArray(index.publicSummaries) ||
-     index.publicSummaries.some(s=>!s || typeof s.id!=='string' || typeof s.passageId!=='string' ||
-        typeof s.method!=='string' || s.status!=='reviewed')) throw new Error('Invalid SRGBL reviewed-derived snapshot')
-  return index as ReviewedPublicIndex
+  const catalogPath=resolve(process.env.SRGBL_CORPUS_CATALOG_PATH || 'apps/web/public/corpus-catalog.json')
+  const catalog=JSON.parse(await readFile(catalogPath,'utf8')) as {schemaVersion?: unknown;corpusHash?: unknown}
+  if(catalog.schemaVersion !== 1 || typeof catalog.corpusHash !== 'string') {
+    throw new Error('Trusted corpus catalog is unavailable')
+  }
+  return verifyReviewedPublication(JSON.parse(raw),catalog.corpusHash)
+}
+
+/** Invalid or stale reviewed snapshot is an explicit 503, never a published claim. */
+async function safeReviewedIndex() {
+  try { return {index:await readReviewedIndex(),error:false} }
+  catch { return {index:null,error:true} }
 }
 
 /** Read-only S1 research trace: NEVER calculates theological truth or leaks texts
@@ -45,14 +54,18 @@ export const srgblResearchRoutes: FastifyPluginAsync = async app => {
   app.get('/research/srgbl/manifest', {
     schema: { tags: ['Research: SRGBL v8'], summary: 'SRGBL v8 research implementation status' }
   }, async () => {
-    const reviewed=await readReviewedIndex()
+    const {index:reviewed,error}=await safeReviewedIndex()
+    if(error) return {
+      success:false,model:'SRGBL',researchStatus:'reviewed-publication-invalid',
+      reviewedAnalysisMaterialized:false,publicGlobalScriptureScoring:false
+    }
     return {
       success: true,
       model: 'SRGBL', methodVersion: 'v8-research-proposal',
       levelNames: SRGBL_LEVELS,
       publicGlobalScriptureScoring: false,
       researchStatus: reviewed ? 'reviewed-derived-available' : 'source-trace-only',
-      reviewedAnalysisMaterialized: Boolean(reviewed),
+      reviewedAnalysisMaterialized: Boolean(reviewed?.publicSummaries.length),
       corpusHash: reviewed?.corpusHash ?? null
     }
   })
@@ -109,7 +122,10 @@ export const srgblResearchRoutes: FastifyPluginAsync = async app => {
   }, async (request, reply) => {
     const {id} = request.params as {id:string}
     if(!id.startsWith('mw:passage:') || id.length > 255) return reply.code(400).send({success:false,error:'invalid_passage_id'})
-    const index=await readReviewedIndex()
+    const {index,error}=await safeReviewedIndex()
+    if(error) return reply.code(503).send({
+      success:false,error:'reviewed_publication_integrity_failure'
+    })
     if(!index) return reply.code(404).send({
       success:false,error:'reviewed_analysis_not_materialized',
       note:'No reviewed SRGBL derived analysis index exists; this endpoint never fabricates a five-level reading.'
