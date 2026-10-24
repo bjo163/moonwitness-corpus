@@ -12,6 +12,15 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 
 ---
 
+## START HERE — SRGBL V8 GRANDPLAN / LOCAL AI EXECUTION
+
+- **[MASTER GRANDPLAN — SRGBL v8 × Key Witness × Swing](./MOONWITNESS-SRGBL-V8-GRANDPLAN.md)** — one current programme map, source-integrity boundaries, milestone M0–M5, evidence and release gates.
+- **[Product Narrative — Witness → Message](./MOONWITNESS-P19-PRODUCT-NARRATIVE.md)** — preserve the original public story and explain Quran-anchored/neutral research lenses without conflating claims with scripture.
+- **[SRGBL v8 Implementation & UX Blueprint](./MOONWITNESS-SRGBL-V8-BLUEPRINT.md)** — record contracts, UI architecture, API/static ingestion, review and release stages.
+- **[38 Atomic Local-AI Issues / Microtask Register](./MOONWITNESS-P19-MICROTASKS.md)** — real GitHub Issues #452–#489, parent-task crosswalk and dependency order.
+- **[Local AI Handoff — NO NEW BRANCHES](./MOONWITNESS-LOCAL-AI-HANDOFF.md)** — exact Node/pnpm/test commands, one issue at a time, direct dev only.
+- [Machine-readable Microtask Manifest](./MOONWITNESS-P19-MICROTASKS.json) — source of small-issue file scope, tests and GitHub issue IDs.
+
 ## Product Narrative & Blueprint
 
 - [**Cerita Produk (final)**](./PRODUCT-STORY.md) — narasi kanonik brand dan produk: masalah, lima babak pembaca, titik tengah, suara, dan batas klaim.
