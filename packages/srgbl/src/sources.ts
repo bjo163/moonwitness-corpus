@@ -87,6 +87,70 @@ function kindOf(s: CorpusRecordLike): WitnessSource['representation'] {
   return 'other'
 }
 /**
+ * A selector claims one exact spot inside one exact content witness. Matching
+ * is always by full canonical ID equality; a shared prefix proves nothing.
+ * 'verified' here means structurally verified against an available licensed
+ * witness, never reviewed, and never a reason to expose unlicensed text.
+ */
+export interface SourceSelector {
+  contentId: string
+  passageId: string
+  editionId: string
+  /** W3C-style textual selector as stored on the canonical evidence record. */
+  selector: { type: string; exact?: string; start?: number; end?: number }
+}
+
+export interface SelectorValidation {
+  status: 'verified' | 'mismatch' | 'unverifiable'
+  errors: string[]
+}
+
+/**
+ * Missing resolver information is reported as unverifiable, never as success.
+ */
+export function validateSourceSelector(candidate: SourceSelector,
+  witnesses: readonly WitnessSource[], catalog?: SourceCatalog | null): SelectorValidation {
+  const contentId = text(candidate?.contentId)
+  const passageId = text(candidate?.passageId)
+  const editionId = text(candidate?.editionId)
+  if (!contentId.trim() || !passageId.trim() || !editionId.trim()) {
+    return { status: 'unverifiable', errors: ['selector_identity_incomplete'] }
+  }
+  const witness = witnesses.find(item => item.contentId === contentId)
+  if (!witness) return { status: 'unverifiable', errors: ['selector_witness_unresolved'] }
+  if (passageId !== witness.passageId) return { status: 'mismatch', errors: ['selector_passage_mismatch'] }
+  if (editionId !== witness.editionId) return { status: 'mismatch', errors: ['selector_edition_mismatch'] }
+  const resolution = resolveSourceReference(witness.sourceId, witness.editionId, catalog)
+  if (!resolution.resolved) {
+    return { status: 'unverifiable', errors: ['selector_' + (resolution.gap ?? 'source_unresolved')] }
+  }
+  const kind = text(candidate.selector?.type)
+  if (kind === 'TextQuoteSelector') {
+    const exact = text(candidate.selector?.exact)
+    if (!exact.trim()) return { status: 'unverifiable', errors: ['selector_quote_missing'] }
+    if (typeof witness.text !== 'string') {
+      return { status: 'unverifiable', errors: ['selector_text_unavailable'] }
+    }
+    return witness.text.includes(exact)
+      ? { status: 'verified', errors: [] }
+      : { status: 'mismatch', errors: ['selector_text_mismatch'] }
+  }
+  if (kind === 'TextPositionSelector') {
+    const { start, end } = candidate.selector || {}
+    if (!Number.isInteger(start) || !Number.isInteger(end) || (end as number) < (start as number)) {
+      return { status: 'unverifiable', errors: ['selector_position_invalid'] }
+    }
+    if (typeof witness.text !== 'string') {
+      return { status: 'unverifiable', errors: ['selector_text_unavailable'] }
+    }
+    return (start as number) < 0 || (end as number) > witness.text.length
+      ? { status: 'mismatch', errors: ['selector_position_out_of_range'] }
+      : { status: 'verified', errors: [] }
+  }
+  return { status: 'unverifiable', errors: ['selector_type_unsupported'] }
+}
+
+/**
  * A rights *claim* is not a licence. 'cleared' is only honoured when an
  * independently verified rights record covers this edition; a bare string or
  * an unattested claim can never expose licensed text.
