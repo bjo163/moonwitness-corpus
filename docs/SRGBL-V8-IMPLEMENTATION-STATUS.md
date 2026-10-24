@@ -1,6 +1,6 @@
 # P19 SRGBL v8 — Implementation Status / Outstanding Release Gates
 
-**As of 2026-10-24:** experimental code on PR #447, not a claim that P19 is complete.
+**As of 2026-10-24:** RFC and P19 foundation merged via PRs #445 and #447; further reviewed-publication integrity work proposed on a follow-up PR. This is not a claim that P19 is complete.
 **Master issue:** [#446](https://github.com/bjo163/moonwitness-corpus/issues/446)
 **Scope:** Additive derived features on top of P17 evidence graph and P18 Key Witness; canonical v0.1 remains unchanged.
 
@@ -51,3 +51,12 @@ A primitive function and a passing CI suite do not satisfy the complete P19 chil
 No automatic scripture ranking, miracle validation or new-revelation synthesis; no change to original canonical text; no default rights clearance; no interpretation masquerading as literal source text. The 0–15 / 0–40 / 0–100 and -2..+2 numbers never become the same measure. An absent derived analysis returns an explicit non-success response.
 
 Read: [Master RFC](./SRGBL-V8-MASTER-RFC.md), [Key Witness](./KEY-WITNESS-V0.md), [Product Blueprint](./PRODUCT-BLUEPRINT.md), [TODO](../TODO.md).
+
+
+## Next security and publication hardening (follow-up)
+
+- Validate reviewed projection checksum and stage-by-stage source/evidence references against the corpus-pinned catalog before serving any review claim.
+- Seal individual analysis inputs with stable SHA-256; do not interpret a checksum as a human signature or proof of source rights.
+- Display reviewed S1–L5 claims only when the review projection is present and passes the integrity gate; otherwise UNKNOWN.
+- On missing/stale index, return explicit 404/503 instead of fabricated results.
+- See [Reviewed Publication Runbook](./SRGBL-V8-PUBLICATION-RUNBOOK.md). The repository has **manual-only GitHub Actions**; trigger CI on the exact candidate branch before merging this follow-up PR.
