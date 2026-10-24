@@ -2,11 +2,6 @@ name: Main Dev Integration Rehearsal (Read Only)
 
 # Disposable integration test. This NEVER commits, pushes, or creates a PR.
 on:
-  push:
-    branches: [dev]
-    paths:
-      - '.github/workflows/integration-rehearsal.yml'
-      - 'scripts/reconcile-integration-dry-run.mjs'
   workflow_dispatch:
 
 permissions:

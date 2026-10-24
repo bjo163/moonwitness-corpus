@@ -1,12 +1,6 @@
 name: TODO ↔ Issues Sync
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - TODO.md
-  issues:
-    types: [closed, reopened]
   workflow_dispatch:
 
 permissions:

@@ -31,8 +31,8 @@ test('TODO sync never pushes to a protected branch', () => {
   assert.match(todoSync, /TODO_SYNC_NO_WRITE: '1'/);
   assert.match(todoSync, /reconcile-issue-status\.ts --check/);
 });
-test('upstream audit is a read-only weekly default-branch schedule with gated acquisition', () => {
-  assert.match(upstream, /schedule:[\s\S]*?cron:/);
+test('upstream audit is manual-only, read-only and gated', () => {
+  assert.doesNotMatch(upstream, /^\s{2}(?:schedule|push|pull_request):/m);
   assert.match(upstream, /workflow_dispatch:/);
   assert.match(upstream, /persist-credentials: false/);
   assert.match(upstream, /pnpm install --frozen-lockfile/);

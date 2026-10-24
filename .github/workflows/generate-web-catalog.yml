@@ -3,20 +3,6 @@ name: Verify Web Corpus Catalog
 # Verification only: the catalog is a reviewed source artifact, so this
 # workflow never commits or pushes to a canonical branch.
 on:
-  push:
-    branches: [main, dev]
-    paths:
-      - "datasets/**"
-      - "config/upstream-registry.json"
-      - "config/textual-semantic-rules.json"
-      - "scripts/export-web-catalog.mjs"
-  pull_request:
-    branches: [main, dev]
-    paths:
-      - "datasets/**"
-      - "config/upstream-registry.json"
-      - "config/textual-semantic-rules.json"
-      - "scripts/export-web-catalog.mjs"
   workflow_dispatch:
 
 permissions:

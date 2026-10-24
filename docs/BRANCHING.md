@@ -43,6 +43,11 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 `.github/workflows/branch-policy.yml` is **read-only and audit-only**: it reports
 branch state and makes zero branch deletions or pushes.
 
+As of 2026-10-24, every workflow is **manual-only** (`workflow_dispatch`).
+There is no push/PR CI, no scheduled upstream sync, no TODO sync trigger, and
+Dependabot is disabled. Run checks locally with `pnpm check`; dispatch a
+workflow only when a specific audit or release step is needed.
+
 ## Release & protection dependencies
 
 - [FIX-003 / #396](https://github.com/bjo163/moonwitness-corpus/issues/396): branch-safety remediation.

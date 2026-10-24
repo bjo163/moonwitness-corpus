@@ -4,7 +4,7 @@
 
 ## Current temporary gate
 
-The `dev` workflow `.github/workflows/release.yml` has been changed from "Aggressive Release" to **Release Candidate Verification (No Promotion)**. It runs on explicit dispatch or limited release-file changes and may only create **unpublished, temporary CI artifacts**. It uses `contents: read`, checks out the candidate commit without persistent credentials, installs using `pnpm install --frozen-lockfile`, runs `pnpm build:release` and checks release determinism via `pnpm release:verify`.
+The `dev` workflow `.github/workflows/release.yml` has been changed from "Aggressive Release" to **Release Candidate Verification (No Promotion)**. It runs only on explicit dispatch and may only create **unpublished, temporary CI artifacts**. It uses `contents: read`, checks out the candidate commit without persistent credentials, installs using `pnpm install --frozen-lockfile`, runs `pnpm build:release` and checks release determinism via `pnpm release:verify`.
 
 The release workflow must never issue `git push origin HEAD:dev`, `git push origin ...:main`, `git push --force`, `git tag`, an npm publish, or GitHub Release creation while this interim gate is in force.
 

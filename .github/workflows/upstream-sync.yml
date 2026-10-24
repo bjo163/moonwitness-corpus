@@ -1,15 +1,8 @@
 name: Upstream Source Audit (No Direct Push)
 
-# Scheduled audits run from the default branch (main) and are read-only.
-# GitHub never schedules this workflow on dev; dev uses manual dispatch to
-# rehearse the same audit. Network acquisition is opt-in and disposable.
+# Manual-only to avoid scheduled runner cost. Audits are read-only and
+# network acquisition is opt-in and disposable.
 on:
-  schedule:
-    # Weekly read-only registry/planner audit; no acquisition by default.
-    - cron: '0 0 * * 0'
-  push:
-    branches: [dev]
-    paths: ['.github/workflows/upstream-sync.yml', 'scripts/workflow-safety.test.mjs']
   workflow_dispatch:
     inputs:
       acquire:
