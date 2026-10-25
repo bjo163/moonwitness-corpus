@@ -159,3 +159,68 @@ export function evaluateFramedKeys(bundle: FramedDirectionBundle) {
     direction,coverage,n:bundle.assessments.length,uniqueKeyCount:uniqueKeys.size,
     agreement:bundle.agreement,reviewerCount:bundle.reviewerCount,errors}
 }
+
+/**
+ * Annotation intake for a paired sample. Two independent submissions for one
+ * passage are retained as separate entries: nothing here ranks, merges or
+ * adjudicates them, and one assessor can never be counted as two raters.
+ */
+export type KeyAnnotationSubmission = {
+  id: string
+  passageId: string
+  assessor: string
+  scheme: string
+  key: string
+  method: string
+  justification: string
+  evidenceIds: string[]
+  frame: ResearchFrame
+  status: 'submitted' | 'withdrawn'
+}
+
+export type RetainedAnnotationEntry = {
+  id: string
+  assessor: string
+  scheme: string
+  key: string
+  justification: string
+  evidenceIds: string[]
+  status: 'submitted' | 'withdrawn'
+}
+
+export function validateAnnotationSubmission(record: KeyAnnotationSubmission): string[] {
+  const errors = validateResearchFrame(record?.frame)
+  for (const k of ['id', 'passageId', 'assessor', 'method', 'justification'] as const)
+    if (!string(record?.[k])) errors.push('annotation.' + k + ' required')
+  if (string(record?.passageId) && !record.passageId.startsWith('mw:passage:')) errors.push('annotation.passageId must be canonical')
+  errors.push(...validateKeyToken(record?.scheme ?? '', record?.key ?? ''))
+  if (record?.status !== 'submitted' && record?.status !== 'withdrawn') errors.push('annotation.status must be submitted or withdrawn')
+  if (!Array.isArray(record?.evidenceIds) || record.evidenceIds.length === 0 || record.evidenceIds.some(x => !string(x)))
+    errors.push('annotation evidence required')
+  // A verdict belongs to a human adjudication record, never to the input.
+  for (const forbidden of ['verdict', 'adjudicated', 'consensus', 'agreed']) {
+    if (record && Object.prototype.hasOwnProperty.call(record, forbidden)) errors.push('annotation must not carry ' + forbidden)
+  }
+  return errors
+}
+
+export function collectAnnotationPair(first: KeyAnnotationSubmission, second: KeyAnnotationSubmission) {
+  const errors = [
+    ...validateAnnotationSubmission(first).map(e => 'A: ' + e),
+    ...validateAnnotationSubmission(second).map(e => 'B: ' + e)
+  ]
+  if (string(first?.passageId) && first.passageId !== second?.passageId)
+    errors.push('paired annotations must address the same passage')
+  if (string(first?.assessor) && first.assessor.trim().toLowerCase() === (second?.assessor ?? '').trim().toLowerCase())
+    errors.push('a single assessor cannot stand in for two independent raters')
+  if (string(first?.id) && first.id === second?.id)
+    errors.push('paired annotations need two distinct submission ids')
+  if (string(first?.scheme) && first.scheme !== second?.scheme)
+    errors.push('paired annotations must share one scheme version')
+  const entries: RetainedAnnotationEntry[] = [first, second].map(x => ({
+    id: x?.id, assessor: x?.assessor, scheme: x?.scheme, key: x?.key,
+    justification: x?.justification, evidenceIds: [...(x?.evidenceIds ?? [])], status: x?.status
+  }))
+  // Both submissions survive validation verbatim: differing keys stay separate entries.
+  return {ok: errors.length === 0, errors, entries, retained: 2, adjudicated: false as const}
+}
