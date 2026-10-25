@@ -75,7 +75,7 @@ Do not execute pnpm todo:sync indiscriminately: the repository issue-sync contra
 
 ## 2.1 Measured command matrix (baseline P19-L01 / #452)
 
-Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`; re-measured at `dev` HEAD `169cd33` after the P19-L01..L20 wave. Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
+Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`; re-measured at `dev` HEAD `be1120d` after the P19-L01..L24 wave. Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
 
 **Root workspace (`pnpm`, monorepo gate):**
 
@@ -83,15 +83,15 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 |---|---|---|---|
 | `pnpm install --frozen-lockfile` | exit 0 | `node_modules/` only (ignored) | Reports ignored build scripts for `esbuild`, `protobufjs`; do not run `pnpm approve-builds` casually |
 | `pnpm typecheck` | exit 0 (`tsc --noEmit`, no output) | none | Root `tsconfig.json` only; `apps/web` is not covered |
-| `pnpm test` | exit 0, 330 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
-| `pnpm exec tsx --test packages/srgbl/src/index.test.ts` | exit 0, 12 tests pass, 0 fail | none | SRGBL core: maturity, quality rubric, direction, Witness /100, Swing candidate, cross-text relation |
-| `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 20 tests pass, 0 fail | none | Default focused command for SRGBL analysis tasks |
+| `pnpm test` | exit 0, 333 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
+| `pnpm exec tsx --test packages/srgbl/src/index.test.ts` | exit 0, 14 tests pass, 0 fail | none | SRGBL core: maturity, quality rubric, direction, Witness /100, Swing candidate, cross-text relation, lens selection, correction counterreadings |
+| `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 22 tests pass, 0 fail | none | Default focused command for SRGBL analysis tasks, and the owner of the Quran research-case fixture regression |
 | `pnpm exec tsx --test packages/srgbl/src/research-ledger.test.ts` | exit 0, 5 tests pass, 0 fail | none | Candidate-ledger serialization tasks (P19-L19 / #470) |
 | `pnpm exec tsx --test packages/srgbl/src/sources.test.ts` | exit 0, 4 tests pass, 0 fail | none | Selector/rights-scope file introduced by P19-L05 / #456 |
 | `pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts` | exit 0, 8 tests pass, 0 fail | none | Swing candidate/chain tasks |
 | `pnpm exec tsx --test scripts/ensure-web-deps.test.ts` | exit 0, 5 tests pass, 0 fail | none | Dev-bootstrap guard: complete install, fresh clone, interrupted `npm ci`, missing `next` package, wrong cwd |
 | `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 13 tests pass, 0 fail | none | Run whenever `packages/srgbl` changes reach the Fastify adapter |
-| `pnpm check` | **not run locally in this session**; passed inside CI runs 40144490214 and 40144755987 | SQLite database build output and repository build artifacts (ignored) | Release-grade gate; deliberately not run per micro issue on the laptop because it builds and validates the whole corpus, so it is delegated to the `check` job |
+| `pnpm check` | **not run locally in this session**; passed inside every CI run listed below | SQLite database build output and repository build artifacts (ignored) | Release-grade gate; deliberately not run per micro issue on the laptop because it builds and validates the whole corpus, so it is delegated to the `check` job |
 | `pnpm todo:check` | **not run in this session** | none | Read-only audit; see the warning above |
 
 **Independent web app (`apps/web`, npm, separate install tree):**
@@ -103,7 +103,20 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 | `npm test` | exit 0 (`RGBL web contract smoke: OK`) | none | Contract smoke test, not the application build |
 | `npm run build` | **not run in this session** | `apps/web/.next/`, `apps/web/public/corpus-catalog.json` (tracked!), `apps/web/public/corpus-db/`, `apps/web/public/vendor/sqlite-httpvfs/` | Fetches the catalog from GitHub raw when missing, so it needs network and can modify a tracked file |
 
-**Manual CI:** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only. Its `check` job runs install, `node --test scripts/workflow-safety.test.mjs`, `pnpm check` and a Fastify smoke (`/v1/health`, `/metrics`, `/v1/traditions`, `/v1/search`); its `web` job runs `node scripts/export-web-catalog.mjs --check`, web `npm ci` / `typecheck` / `test`, the browser-search-DB build and `npm run build`. **Three dispatches were executed and all three concluded `success`:** [run 40144091349](https://github.com/bjo163/moonwitness-corpus/actions/runs/40144091349) on `cf313c6`, [run 40144490214](https://github.com/bjo163/moonwitness-corpus/actions/runs/40144490214) on `0ea9659`, and [run 40144755987](https://github.com/bjo163/moonwitness-corpus/actions/runs/40144755987) on `169cd33` (the HEAD this matrix was measured at). Only those three SHAs are CI-verified: a green run is **not** evidence for any other commit, and every earlier micro-issue comment that says "no CI run" was written before these dispatches existed. Any commit after `169cd33` in this document is documentation-only and carries no CI run. `gh` 2.103.2 is installed at `C:\Program Files\GitHub CLI\` and authenticated as `bjo163` (keyring, scopes `repo`, `workflow`, `read:org`, `gist`); the machine-wide PATH entry only reaches terminals started after the install, so an already-open shell must call the absolute path.
+**Manual CI:** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only, and uses `concurrency` with `cancel-in-progress: true` - **dispatching a new run cancels the run in flight for the same ref**, which happened once here and is recorded rather than hidden. Its `check` job runs install, `node --test scripts/workflow-safety.test.mjs`, `pnpm check` and a Fastify smoke (`/v1/health`, `/metrics`, `/v1/traditions`, `/v1/search`); its `web` job runs `node scripts/export-web-catalog.mjs --check`, web `npm ci` / `typecheck` / `test`, the browser-search-DB build and `npm run build`.
+
+| Run | SHA | Commit | Conclusion |
+|---|---|---|---|
+| [40144091349](https://github.com/bjo163/moonwitness-corpus/actions/runs/40144091349) | `cf313c6` | P19-L17 wave | `success` |
+| [40144490214](https://github.com/bjo163/moonwitness-corpus/actions/runs/40144490214) | `0ea9659` | #470 candidate ledger | `success` |
+| [40144755987](https://github.com/bjo163/moonwitness-corpus/actions/runs/40144755987) | `169cd33` | #471 relation sources | `success` |
+| [40145370729](https://github.com/bjo163/moonwitness-corpus/actions/runs/40145370729) | `e8fbfcf` | #472 lens selector | `success` |
+| [40145630278](https://github.com/bjo163/moonwitness-corpus/actions/runs/40145630278) | `843d817` | `pnpm dev` self-heal | `success` |
+| [40145863686](https://github.com/bjo163/moonwitness-corpus/actions/runs/40145863686) | `9f5014b` | #473 corrections | `cancelled` by the next dispatch |
+| [40146001337](https://github.com/bjo163/moonwitness-corpus/actions/runs/40146001337) | `b0448f2` | #474 miracle attribution | `success` |
+| [40146199184](https://github.com/bjo163/moonwitness-corpus/actions/runs/40146199184) | `be1120d` | #475 rights-safe fixture | `success` |
+
+A green run is evidence only for its own `headSha`; `9f5014b` has no successful run of its own, and is covered only indirectly by the two later green runs that carry it as an ancestor. Any commit after `be1120d` in this document is documentation-only and carries no CI run. `gh` 2.103.2 is installed at `C:\Program Files\GitHub CLI\` and authenticated as `bjo163` (keyring, scopes `repo`, `workflow`, `read:org`, `gist`); the machine-wide PATH entry only reaches terminals started after the install, so an already-open shell must call the absolute path.
 
 **Worktree policy for these commands:**
 
