@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./analysis": "./src/analysis.ts",
     "./keys": "./src/keys.ts",
+    "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
     "./derived": "./src/derived.ts",
