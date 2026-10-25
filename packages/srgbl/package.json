@@ -10,6 +10,7 @@
     "./key-registry": "./src/key-registry.ts",
     "./vocabulary": "./src/vocabulary.ts",
     "./assessment-extension": "./src/assessment-extension.ts",
+    "./message": "./src/message.ts",
     "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
