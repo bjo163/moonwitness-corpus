@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, type KeyboardEvent } from "react"
 
 type Source = {id:string;contentId:string;editionId:string;sourceId:string;artifactId:string;provenanceId:string;
   language:string;representation:string;rights:"cleared"|"restricted"|"unknown";text?:string}
@@ -153,6 +153,17 @@ export default function SRGBLResearchPage(){
     } catch(ex){setError(ex instanceof Error?ex.message:"Source lookup failed")} finally {setBusy(false)}
   }
   const reviewedLevels=new Set(analyses.flatMap(a=>a.levels.map(c=>c.level)))
+  // Roving tab stop plus arrow/Home/End keys, so the five tabs never require a pointer.
+  const moveTab=(event:KeyboardEvent<HTMLDivElement>)=>{
+    const index=LEVELS.findIndex(x=>x.id===active)
+    const next=event.key==="ArrowRight"||event.key==="ArrowDown"?LEVELS[(index+1)%LEVELS.length].id
+      :event.key==="ArrowLeft"||event.key==="ArrowUp"?LEVELS[(index+LEVELS.length-1)%LEVELS.length].id
+      :event.key==="Home"?LEVELS[0].id
+      :event.key==="End"?LEVELS[LEVELS.length-1].id:null
+    if(!next) return
+    event.preventDefault()
+    setActive(next)
+  }
   // Per-stage status: a source trace is not a reviewed claim, and nothing is invented.
   const stageStatus=(level:string)=>{
     if(reviewedLevels.has(level)) return "reviewed"
@@ -192,14 +203,16 @@ export default function SRGBLResearchPage(){
       <button type="submit" disabled={busy} className="self-end rounded-md border px-4 py-2 text-sm font-semibold disabled:opacity-60">{busy?"Reading…":API?"Trace source":"Load reviewed research"}</button>
     </form>
     {error&&<p role="alert" className="rounded-md border p-3 text-sm">{error}</p>}
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-5" role="tablist" aria-label="SRGBL five layers">
-      {LEVELS.map(x=><button key={x.id} type="button" role="tab" aria-selected={active===x.id} onClick={()=>setActive(x.id)}
-       className={"rounded-lg border p-3 text-left "+(active===x.id?"bg-muted":"bg-background")}>
+    <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-5" role="tablist" aria-label="SRGBL five layers" onKeyDown={moveTab}>
+      {LEVELS.map(x=><button key={x.id} id={"stage-tab-"+x.id} type="button" role="tab" aria-selected={active===x.id}
+       aria-controls="stage-panel" tabIndex={active===x.id?0:-1} onClick={()=>setActive(x.id)}
+       className={"min-w-0 rounded-lg border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-safe:transition-colors "+(active===x.id?"bg-muted":"bg-background")}>
          <span className="block text-lg font-semibold">{x.id}</span><span className="text-xs">{x.name}</span>
          <span data-stage-status={x.id} className="mt-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{stageStatus(x.id)}</span>
        </button>)}
     </div>
-    <section role="tabpanel" aria-live="polite" className="min-h-56 rounded-lg border p-5">
+    <section id="stage-panel" role="tabpanel" aria-labelledby={"stage-tab-"+active} aria-live="polite" tabIndex={0}
+      className="min-h-56 max-w-full overflow-x-auto rounded-lg border p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
       <h2 className="text-xl font-semibold">{LEVELS.find(x=>x.id===active)?.name}</h2>
       <p className="my-2 text-sm text-muted-foreground">{LEVELS.find(x=>x.id===active)?.detail}</p>
       {active==="S1"&&trace&&<>
