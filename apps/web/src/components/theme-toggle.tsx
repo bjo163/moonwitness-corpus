@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 
 type Theme = "light" | "dark"
 
+// Legacy key name kept on purpose: renaming it would silently reset every reader's theme.
 const STORAGE_KEY = "rgbl-theme"
 
 function applyTheme(theme: Theme) {

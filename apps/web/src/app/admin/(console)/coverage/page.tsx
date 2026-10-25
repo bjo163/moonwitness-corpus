@@ -21,7 +21,11 @@ export default function CoveragePage() {
     const measured = measureCitationCoverage(citation)
     return {measured, profile: scoreReadiness(citation, measured)}
   }), [feed.citations])
-  const computable = readiness.filter(entry => entry.profile.status === "computed").length
+  // The export publishes none of the three formula inputs, so a count of computable
+  // profiles could only ever be zero; the honest figure is what is missing.
+  const missingInputs = readiness.length
+    ? Math.min(...readiness.map(entry => entry.profile.missingInputs.length))
+    : 0
 
   const gapEntries = CONTEXT_FIELDS.filter(field => (summary.gaps[field] ?? 0) > 0)
 
@@ -52,7 +56,7 @@ export default function CoveragePage() {
           {label: "passages", value: String(summary.measured.length), hint: "with a record"},
           {label: "complete", value: String(summary.complete), hint: "9/9 fields"},
           {label: "average", value: (summary.average * CONTEXT_FIELDS.length).toFixed(1) + "/9", hint: "not a grade"},
-          {label: "profile v0", value: String(computable), hint: "computable here"},
+          {label: "profile v0", value: String(missingInputs), hint: "inputs missing"},
         ].map(item => <div key={item.label}>
           <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{item.label}</dt>
           <dd className="mt-1 font-mono text-2xl tabular-nums">{item.value}</dd>

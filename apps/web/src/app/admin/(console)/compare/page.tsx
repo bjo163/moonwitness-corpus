@@ -88,6 +88,9 @@ export default function ComparePage() {
       <div className="grid gap-3 md:grid-cols-2">
         {comparison.sides.map(side => <section key={side.passageId} className="rounded-sm border p-3">
           <p className="break-all font-mono text-xs">{side.passageId}</p>
+          {side.assessorCount > 1 && <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+            {side.assessorCount} assessors recorded this key · showing the first by assessor id
+          </p>}
           <dl className="mt-2 space-y-1">
             {[
               ["assessor", side.assessor],

@@ -136,6 +136,14 @@ export default function LedgerPage() {
         <h2 id="ledger-parquet" className="text-sm font-medium">Parquet</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">{manifest.parquetGap}</p>
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Deployment corpus {deployed.slice(0, 12)} · manifest bound</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          The download is the same bytes the manifest hashes describe. Re-hash the saved file and compare it with
+          <span className="px-1 font-mono">jsonl sha256</span> before citing anything from it.
+        </p>
+        <a href={API + "/v1/research/key-witness/export.jsonl"} download="key-witness-export.jsonl"
+          className="inline-flex rounded-sm border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+          Download the JSONL export
+        </a>
       </section>
 
       <section className="space-y-2 rounded-md border p-4" aria-labelledby="ledger-boundary">

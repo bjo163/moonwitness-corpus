@@ -236,11 +236,21 @@ expect(consoleCompare.includes("Frame boundaries") && consoleCompare.includes("f
 expect(consoleCompare.includes("never subtracts one reading from the other") && consoleCompare.includes("no global score"), "a comparison must not become a delta or a ranking")
 expect(keyWitnessLib.includes("globalScore: null"), "the comparison object must carry a null global score")
 expect(consoleLayout.includes('/admin/coverage') && consoleLayout.includes('/admin/compare'), "the console rail must expose coverage and compare")
+expect(consoleCompare.includes("assessors recorded this key"), "a hidden choice between assessors must be disclosed")
+expect(consoleCoverage.includes("inputs missing"), "the profile figure must count missing inputs, not a computable profile that cannot exist")
+
+// Shell assets and typography.
+// The document icon stays pinned to the Rocksoul asset release by an existing
+// assertion above; making it local is a contract change, not a cleanup.
+expect(styles.includes('font-feature-settings: "kern"') && !styles.includes("cv02"), "the font stack must be stated, not a Geist-only feature list that does nothing")
+expect(consoleLedger.includes('download="key-witness-export.jsonl"') && consoleLedger.includes("Re-hash the saved file"), "the ledger must offer the export it hashes")
+expect(exportHook.includes("const cache = new Map") && exportHook.includes("resetExportCache"), "one reader must share a single request per API base")
+expect(exportHook.includes("EXPORT_PATH") && exportHook.includes("export function loadKeyWitnessExport"), "the loader must be importable so its dedupe is testable")
 
 if (failures.length) {
-  console.error("RGBL web contract smoke failed:")
+  console.error("MoonWitness web contract smoke failed:")
   for (const failure of failures) console.error(`- ${failure}`)
   process.exit(1)
 }
 
-console.log("RGBL web contract smoke: OK")
+console.log("MoonWitness web contract smoke: OK")

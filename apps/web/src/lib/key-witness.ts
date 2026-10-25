@@ -460,6 +460,8 @@ export type CompareSide = {
   passageId: string
   keyId: string
   assessor: string
+  /** When more than one assessor recorded this key, the page must say so. */
+  assessorCount: number
   method: string
   scheme: string
   relation: string | null
@@ -487,6 +489,7 @@ const sideOf = (citation: Citation, key: string): CompareSide | null => {
     passageId: citation.passageId,
     keyId: entry.id,
     assessor: entry.assessor,
+    assessorCount: matches.length,
     method: entry.method,
     scheme: entry.scheme,
     relation: entry.relation ?? null,
