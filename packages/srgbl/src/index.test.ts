@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   SRGBL_LEVELS, QUALITY_DIMENSIONS, scoreMaturity, scoreQuality,
   scoreDirection, scoreWitnessCandidate, proposeSwing, validateScopedRelation, resolveRelationSources,
+  selectLens, readRelationLens, compareRelationLens, RESEARCH_LENSES,
   type LevelStatus, type LevelStates, type ScopedTextRelation
 } from './index.js'
 
@@ -220,4 +221,42 @@ test('cross-text relation keeps structural validation separate from repository l
   // A draft record is not publishable even when every endpoint resolves.
   assert.equal(resolveRelationSources({...base,reviewStatus:'draft'},
     {hasPassage:()=>true,hasEvidence:()=>true}).publishable,false)
+})
+test('lens is chosen explicitly and a UI filter can never rewrite a stored frame', () => {
+  assert.deepEqual(RESEARCH_LENSES,['neutral','quran-anchored'])
+  const neutral=selectLens('neutral')
+  const anchored=selectLens('quran-anchored')
+  assert.deepEqual([neutral.frame,neutral.method,neutral.allowsCorrection],['comparative-neutral','comparative:v8',false])
+  assert.deepEqual([anchored.frame,anchored.method,anchored.allowsCorrection],['islamic-quran-anchored','quran-anchored:v8',true])
+  assert.deepEqual([neutral.automaticCanonicalApproval,anchored.automaticCanonicalApproval],[false,false])
+  // No silent fallback: an absent or unknown lens is an error, not neutral.
+  assert.throws(()=>selectLens(undefined as never),/Research lens must be one of/)
+  assert.throws(()=>selectLens('comparative' as never),/Research lens must be one of/)
+  // A selection is immutable, so a caller cannot edit the frame it reports.
+  assert.equal(Object.isFrozen(neutral),true)
+  assert.throws(()=>{(neutral as unknown as {frame:string}).frame='islamic-quran-anchored'},TypeError)
+  const stored:ScopedTextRelation={leftPassageId:'mw:passage:quran:5:48',rightPassageId:'mw:passage:example',
+    relation:'PARALLELS',method:'comparative:v8',frame:'comparative-neutral',
+    evidenceIds:['mw:evidence:test'],reviewer:'mw:agent:reviewer',reviewStatus:'reviewed'}
+  // Reading the lens comes from the record, never from the current filter.
+  assert.deepEqual(readRelationLens(stored),{lens:'neutral',frame:'comparative-neutral',method:'comparative:v8'})
+  const mismatch=compareRelationLens(stored,anchored)
+  assert.deepEqual([mismatch.storedLens,mismatch.selectedLens,mismatch.matches],['neutral','quran-anchored',false])
+  assert.equal(mismatch.storedFrame,'comparative-neutral')
+  assert.equal(mismatch.rewritten,false)
+  // The stored record is untouched by selecting another lens or comparing against it.
+  const before=JSON.stringify(stored)
+  compareRelationLens(stored,neutral); readRelationLens(stored)
+  assert.equal(JSON.stringify(stored),before)
+  assert.equal(stored.frame,'comparative-neutral')
+  // Correction is scoped to the non-neutral lens, and still needs the review record.
+  const correction={...stored,method:'quran-anchored:v8',frame:'islamic-quran-anchored',relation:'CORRECTS_WITHIN_FRAME' as const}
+  assert.doesNotThrow(()=>validateScopedRelation(correction))
+  assert.equal(compareRelationLens(correction,anchored).matches,true)
+  assert.equal(resolveRelationSources(correction,{hasPassage:()=>true,hasEvidence:()=>true}).publishable,true)
+  assert.equal(resolveRelationSources({...correction,reviewStatus:'draft'},
+    {hasPassage:()=>true,hasEvidence:()=>true}).publishable,false)
+  // An unrecognised frame is reported as undeclared rather than guessed into a lens.
+  assert.equal(readRelationLens({...stored,frame:'comparative-contextual'}).lens,'undeclared')
+  assert.equal(readRelationLens(undefined as never).lens,'undeclared')
 })

@@ -343,3 +343,58 @@ export function resolveRelationSources(
     automaticCanonicalApproval: false as const
   }
 }
+
+/** The only two research lenses this module can name; anything else is undeclared. */
+export const RESEARCH_LENSES = ['neutral', 'quran-anchored'] as const
+export type ResearchLens = (typeof RESEARCH_LENSES)[number]
+export interface LensSelection {
+  lens: ResearchLens
+  frame: string
+  method: string
+  /** Only a non-neutral lens may scope a doctrinal correction, and only after review. */
+  allowsCorrection: boolean
+  automaticCanonicalApproval: false
+}
+const LENS_TABLE: Record<ResearchLens, { frame: string; method: string; allowsCorrection: boolean }> = {
+  neutral: { frame: 'comparative-neutral', method: 'comparative:v8', allowsCorrection: false },
+  'quran-anchored': { frame: 'islamic-quran-anchored', method: 'quran-anchored:v8', allowsCorrection: true }
+}
+/**
+ * Chooses a lens explicitly and immutably. A missing or unknown lens never
+ * silently falls back to neutral: the frame a reader sees must be one that was
+ * actually chosen.
+ */
+export function selectLens(lens: ResearchLens): LensSelection {
+  if (!(RESEARCH_LENSES as readonly unknown[]).includes(lens)) {
+    throw new TypeError('Research lens must be one of: ' + RESEARCH_LENSES.join(', '))
+  }
+  const entry = LENS_TABLE[lens]
+  return Object.freeze({
+    lens, frame: entry.frame, method: entry.method,
+    allowsCorrection: entry.allowsCorrection, automaticCanonicalApproval: false as const
+  })
+}
+/** Reads the lens a stored record carries; an unrecognised frame is reported, never guessed. */
+export function readRelationLens(record: ScopedTextRelation): {
+  lens: ResearchLens | 'undeclared'
+  frame: string
+  method: string
+} {
+  const frame = typeof record?.frame === 'string' ? record.frame.trim() : ''
+  const method = typeof record?.method === 'string' ? record.method : ''
+  const lens = (RESEARCH_LENSES as readonly string[]).find(name => LENS_TABLE[name as ResearchLens].frame === frame)
+  return { lens: (lens ?? 'undeclared') as ResearchLens | 'undeclared', frame, method }
+}
+/**
+ * Compares a working lens selection with what the record actually stores. A UI
+ * filter can hide or flag a record; it can never rewrite the stored frame.
+ */
+export function compareRelationLens(record: ScopedTextRelation, selection: LensSelection) {
+  const stored = readRelationLens(record)
+  return {
+    storedLens: stored.lens, selectedLens: selection.lens,
+    storedFrame: stored.frame, selectedFrame: selection.frame,
+    matches: stored.frame === selection.frame && stored.method === selection.method,
+    rewritten: false as const
+  }
+}
