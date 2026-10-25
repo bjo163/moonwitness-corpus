@@ -91,6 +91,56 @@ test('a sealed run fails export when its source, reviewer, claim or evidence cha
   forged.projectionSha256=sha256Json(projection)
   assert.throws(()=>verifyReviewedPublication(forged,corpusHash),/not an authenticated signature/)
 })
+test('a stale or malformed projection fails closed even with a recomputed checksum',()=>{
+  const run=oneStageRun()
+  const s=createReviewedSnapshot({corpusHash,methodVersion:run.methodVersion,runs:[run],candidates:[],miracleClaims:[]})
+  // Positive: the unchanged projection still verifies byte for byte.
+  assert.equal(verifyReviewedPublication(structuredClone(s),corpusHash).projectionSha256,s.projectionSha256)
+  const forge=(mutate:(copy:any)=>void):any=>{
+    const copy:any=structuredClone(s)
+    mutate(copy)
+    const {projectionSha256:stale,...projection}=copy
+    copy.projectionSha256=sha256Json(projection)
+    return copy
+  }
+  const cases:Array<{label:string;mutate:(copy:any)=>void;error:RegExp}>=[
+    {label:'blank reviewer',mutate:c=>{c.records.reviewedAnalyses[0].reviewer=''},
+      error:/bad or duplicate reviewed analysis/},
+    {label:'truncated input hash',mutate:c=>{c.inputSha256='abc'},error:/input checksum missing/},
+    {label:'dropped evidence',mutate:c=>{c.publicSummaries[0].levels[0].evidenceIds=[]},
+      error:/unsupported or untraceable public level/},
+    {label:'missing source content',mutate:c=>{delete c.publicSummaries[0].levels[0].sourceContentIds},
+      error:/unsupported or untraceable public level/},
+    {label:'reordered stages',mutate:c=>{
+      c.records.reviewedAnalyses[0].maturity=3
+      const level=c.publicSummaries[0].levels[0]
+      c.publicSummaries[0].levels=[{...level,level:'R2'},{...level,level:'S1'}]
+    },error:/reviewed stages are out of order/},
+    {label:'unsupported relation',mutate:c=>{c.records.reviewedRelations.push(
+      {id:'rel:forged',method:'frame',relation:'PROVES',reviewer:'mw:reviewer:test'})},
+      error:/bad or unsupported reviewed relation/},
+    {label:'blank relation reviewer',mutate:c=>{c.records.reviewedRelations.push(
+      {id:'rel:forged',method:'frame',relation:'AFFIRMS',reviewer:''})},
+      error:/bad or unsupported reviewed relation/},
+    {label:'duplicate derived id',mutate:c=>{c.records.reviewedRelations.push(
+      {id:'run:synthetic:review-1',method:'frame',relation:'AFFIRMS',reviewer:'mw:reviewer:test'})},
+      error:/duplicate derived ID/},
+    {label:'claim without claimant',mutate:c=>{c.records.attributedClaims.push(
+      {id:'miracle:forged',targetPassageId:'mw:passage:test:one',tradition:'islam',method:'frame',
+       claimant:'',reviewer:'mw:reviewer:test'})},error:/bad attributed claim/},
+    {label:'unknown projection field',mutate:c=>{c.reviewerSignature='attested-by-reviewer'},
+      error:/unknown field in reviewed projection: reviewerSignature/},
+    {label:'unknown level field',mutate:c=>{c.publicSummaries[0].levels[0].verdict='true'},
+      error:/unknown field in public level: verdict/}
+  ]
+  for (const {label,mutate,error} of cases) {
+    assert.throws(()=>verifyReviewedPublication(forge(mutate),corpusHash),error,
+      label+' must fail closed even when the checksum is recomputed')
+  }
+  // Negative: no recomputed checksum can revive a projection from another corpus snapshot.
+  assert.throws(()=>verifyReviewedPublication(forge(c=>{c.corpusHash='b'.repeat(64)}),corpusHash),
+    /corpus hash mismatch/)
+})
 test('missing verified S1 stage cannot be published even if reviewer exists',()=>{
   const run=oneStageRun()
   run.claims=[]
