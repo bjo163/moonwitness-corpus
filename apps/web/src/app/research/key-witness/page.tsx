@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import { groupByKey, validateCitation, type Citation } from "@/lib/key-witness"
 
 /**
  * P18-009: the Titik Tengah card. It shows one derived witness reading next to
@@ -8,102 +9,27 @@ import { useState, type FormEvent } from "react"
  * the boundary and what two annotators did not agree on. The card is derived
  * research, so it never presents itself as canonical text, a score or a verdict.
  */
-type Rights = {text:"cleared"|"restricted"|"unknown";annotation:{kind:string;licenseId?:string;attestedBy?:string};publicDomainInference:"prohibited"}
-type CitationKey = {id:string;key:string;scheme:string;method:string;assessor:string;reviewStatus:"draft"|"reviewed"|"disputed"|"deprecated"}
-type CitationMessage = {id:string;message:string;boundaryNote:string;reviewStatus:"reviewed";reviewer:string;sourceKeyAssessmentIds:string[]}
-type Citation = {
-  schema:"mw:citation:v0";passageId:string;editionId:string;artifactId:string;contentId:string|null;
-  text:string|null;textOmissionReason:string|null;keys:CitationKey[];messages:CitationMessage[];rights:Rights;
-  provenance:string[];evidence:string[];methodVersion:string;corpusHash:string;deepLink:string;frameNote:string
-}
 type Card = {passageId:string;corpusHash:string;methodVersion:string;citation:Citation}
 
 const API=(process.env.NEXT_PUBLIC_RGBL_API_URL||"").replace(/\/+$/,"")
-const RIGHTS=["cleared","restricted","unknown"]
-const REVIEW=["draft","reviewed","disputed","deprecated"]
 const nonBlank=(value:unknown):value is string=>typeof value==="string"&&value.trim().length>0
-const strings=(value:unknown):value is string[]=>Array.isArray(value)&&value.every(nonBlank)
 
 /**
- * The card refuses to render a payload it cannot verify. In particular it never
- * prints witness text whose own rights statement is not `cleared`, even if a
- * server sent one: a client that trusts the field name would leak the text.
+ * The citation contract lives in `@/lib/key-witness` so the dashboard counts the
+ * same rules the card renders. This wrapper only adds the envelope bindings: the
+ * card must describe the passage, corpus and method it was requested for.
  */
 function parseCard(body:unknown):Card {
   if(!body||typeof body!=="object") throw new Error("The key layer returned no card")
   const envelope=body as Record<string,unknown>
   if(envelope.success!==true) throw new Error("The key layer did not confirm this card")
-  const c=envelope.citation as Record<string,unknown>|undefined
-  if(!c||typeof c!=="object") throw new Error("The card is missing its citation bundle")
-  if(c.schema!=="mw:citation:v0") throw new Error("Unsupported citation schema: "+String(c.schema))
-  if(!nonBlank(c.passageId)||!c.passageId.startsWith("mw:passage:")) throw new Error("The card's passage id is not canonical")
-  if(c.passageId!==envelope.passageId) throw new Error("The card describes a different passage than the one requested")
-  if(!nonBlank(c.corpusHash)||!/^[a-f0-9]{64}$/.test(c.corpusHash)||c.corpusHash!==envelope.corpusHash)
-    throw new Error("The card is not bound to the corpus version it was served for")
-  if(!nonBlank(c.methodVersion)||c.methodVersion!==envelope.methodVersion) throw new Error("The card's method version is missing or inconsistent")
-  if(!nonBlank(c.editionId)||!nonBlank(c.artifactId)) throw new Error("The card does not name its witness edition and artifact")
-  if(!nonBlank(c.frameNote)) throw new Error("A card without a frame note would read as a claim")
-  if(typeof c.deepLink!=="string"||!/^https?:\/\//.test(c.deepLink)) throw new Error("The card's deep link is not an http(s) address")
-
-  const rights=c.rights as Record<string,unknown>|undefined
-  if(!rights||typeof rights.text!=="string"||!RIGHTS.includes(rights.text))
-    throw new Error("The card's text rights statement is missing")
-  if(rights.publicDomainInference!=="prohibited") throw new Error("The card may not infer public domain")
-  const annotation=rights.annotation as Record<string,unknown>|undefined
-  if(!annotation||!nonBlank(annotation.kind)) throw new Error("The card's annotation licence is missing")
-  if(annotation.kind!=="unlicensed"&&!nonBlank(annotation.attestedBy)) throw new Error("An annotation licence needs an attestation")
-
-  const withheld=rights.text!=="cleared"
-  if(withheld&&c.text!==null&&c.text!==undefined) throw new Error("Withheld witness text arrived from the API and was refused")
-  if(!withheld&&!nonBlank(c.text)) throw new Error("Cleared witness text is missing from the card")
-  if(c.text===null&&!nonBlank(c.textOmissionReason)) throw new Error("Withheld text must state why it is withheld")
-
-  const keys=Array.isArray(c.keys)?c.keys:[]
-  if(keys.length===0) throw new Error("A card without a cited key is not a key witness")
-  for(const raw of keys){
-    const k=raw as Record<string,unknown>
-    if(!nonBlank(k.id)||!k.id.startsWith("mw:")) throw new Error("A cited key id is not canonical")
-    for(const field of ["key","scheme","method"] as const) if(!nonBlank(k[field])) throw new Error("A cited key is missing its "+field)
-    if(!nonBlank(k.assessor)||!k.assessor.startsWith("mw:")) throw new Error("A cited key names no canonical assessor")
-    if(typeof k.reviewStatus!=="string"||!REVIEW.includes(k.reviewStatus)) throw new Error("A cited key has an unknown review status")
-  }
-  const messages=Array.isArray(c.messages)?c.messages:[]
-  for(const raw of messages){
-    const m=raw as Record<string,unknown>
-    if(m.reviewStatus!=="reviewed") throw new Error("A draft message may not be rendered as a card message")
-    if(!nonBlank(m.message)||!nonBlank(m.boundaryNote)||!nonBlank(m.reviewer)) throw new Error("A card message needs text, a boundary and a reviewer")
-    if(!strings(m.sourceKeyAssessmentIds)) throw new Error("A card message must cite the key assessments it came from")
-  }
-  if(!strings(c.provenance)||c.provenance.length===0) throw new Error("The card has no provenance")
-  if(!strings(c.evidence)||c.evidence.length===0) throw new Error("The card has no evidence")
-
-  return {
-    passageId:c.passageId,corpusHash:c.corpusHash,methodVersion:c.methodVersion,
-    citation:{
-      schema:"mw:citation:v0",passageId:c.passageId,editionId:c.editionId,artifactId:c.artifactId,
-      contentId:nonBlank(c.contentId)?c.contentId:null,
-      text:withheld?null:c.text as string,textOmissionReason:nonBlank(c.textOmissionReason)?c.textOmissionReason:null,
-      keys:keys.map(k=>({
-        id:k.id as string,key:k.key as string,scheme:k.scheme as string,method:k.method as string,
-        assessor:k.assessor as string,reviewStatus:k.reviewStatus as CitationKey["reviewStatus"]
-      })),
-      messages:messages.map(m=>({
-        id:m.id as string,message:m.message as string,boundaryNote:m.boundaryNote as string,
-        reviewStatus:"reviewed",reviewer:m.reviewer as string,sourceKeyAssessmentIds:[...(m.sourceKeyAssessmentIds as string[])]
-      })),
-      rights:{text:rights.text as Rights["text"],annotation:{kind:annotation.kind as string,
-        ...(nonBlank(annotation.licenseId)?{licenseId:annotation.licenseId}:{})},publicDomainInference:"prohibited"},
-      provenance:[...(c.provenance as string[])],evidence:[...(c.evidence as string[])],
-      methodVersion:c.methodVersion,corpusHash:c.corpusHash,deepLink:c.deepLink,frameNote:c.frameNote
-    }
-  }
-}
-
-/** How many distinct assessors recorded each key token: a shared view, never a merge. */
-function groupByKey(keys:CitationKey[]){
-  const byKey=new Map<string,CitationKey[]>()
-  for(const key of keys) byKey.set(key.key,[...(byKey.get(key.key)||[]),key])
-  return [...byKey.entries()].sort(([a],[b])=>a.localeCompare(b))
+  const citation=validateCitation(envelope.citation)
+  if(citation.passageId!==envelope.passageId) throw new Error("The card describes a different passage than the one requested")
+  if(citation.corpusHash!==envelope.corpusHash) throw new Error("The card is not bound to the corpus version it was served for")
+  if(citation.methodVersion!==envelope.methodVersion) throw new Error("The card's method version is inconsistent with the envelope")
+  if(!nonBlank(envelope.passageId)||!nonBlank(envelope.corpusHash)||!nonBlank(envelope.methodVersion))
+    throw new Error("The card envelope is missing its passage, corpus or method identity")
+  return {passageId:citation.passageId,corpusHash:citation.corpusHash,methodVersion:citation.methodVersion,citation}
 }
 
 export default function KeyWitnessCardPage(){
