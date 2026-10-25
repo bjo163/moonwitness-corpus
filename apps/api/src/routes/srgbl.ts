@@ -130,6 +130,15 @@ export const srgblResearchRoutes: FastifyPluginAsync = async app => {
       success:false,error:'reviewed_analysis_not_materialized',
       note:'No reviewed SRGBL derived analysis index exists; this endpoint never fabricates a five-level reading.'
     })
+    // An empty reviewed index is not a published analysis and never a five-level reading.
+    if(!index.publicSummaries.length) return reply.code(404).send({
+      success:false,error:'reviewed_analysis_not_materialized',
+      note:'The reviewed SRGBL index is empty; an empty index is not a published analysis.'
+    })
+    // Bind the snapshot to the canonical repository: an orphaned summary is not served.
+    if(!app.repo.getPassageWithContents(id as CanonicalId)) return reply.code(404).send({
+      success:false,error:'passage_not_found',id
+    })
     const records=index.publicSummaries.filter(item=>item.passageId===id)
     if(!records.length) return reply.code(404).send({
       success:false,error:'no_reviewed_analysis_for_passage',passageId:id

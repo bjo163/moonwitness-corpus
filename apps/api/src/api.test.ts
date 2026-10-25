@@ -1,6 +1,40 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { buildApp } from './app.js'
+import { computeAnalysisInputHash, createReviewedSnapshot } from '@moonwitness/srgbl/derived'
+
+const analysisUrl = '/v1/research/srgbl/passages/mw%3Apassage%3Ahinduism%3Abhagavad-gita%3A1%3A1/analysis'
+const catalogPath = 'apps/web/public/corpus-catalog.json'
+const catalogHash = (): string => JSON.parse(readFileSync(catalogPath, 'utf8')).corpusHash as string
+/** Minimal reviewed run, sealed exactly as the builder expects it. */
+function reviewedSnapshot(corpusHash: string, passageId = 'mw:passage:hinduism:bhagavad-gita:1:1') {
+  const run: any = {
+    id: 'run:synthetic:review-1', passageId, method: 'textual-research:v8',
+    methodVersion: 'v8-proposal', corpusHash, inputHash: '', reviewStatus: 'reviewed',
+    reviewer: 'mw:reviewer:test',
+    sourceWitnesses: [{
+      id: 'source:synthetic', passageId, contentId: 'mw:content:test:one', sourceId: 'mw:source:test',
+      editionId: 'mw:edition:test', artifactId: 'mw:artifact:test', provenanceId: 'mw:provenance:test',
+      language: 'en', representation: 'source_text', rights: 'cleared',
+      text: 'SYNTHETIC DATA - NOT SCRIPTURE'
+    }],
+    claims: [{
+      id: 'claim:S1', level: 'S1', status: 'supported', epistemic: 'observed',
+      claim: 'Synthetic source identifier was observed', evidenceIds: ['mw:evidence:test'],
+      dependsOn: [], method: 'textual-research:v8',
+      frame: { agent: 'narrator', recipient: 'individual', domain: 'research', scope: 'test', genre: 'example' },
+      sourceContentIds: ['mw:content:test:one']
+    }],
+    uncertainty: { unknowns: [], disagreements: [] }
+  }
+  const { inputHash: unused, ...payload } = run
+  run.inputHash = computeAnalysisInputHash(payload)
+  return createReviewedSnapshot({ corpusHash, methodVersion: run.methodVersion, runs: [run], candidates: [], miracleClaims: [] })
+}
 
 test('Fastify Corpus API Engine with OpenTelemetry & Dynamic Traditions', async (t) => {
   const app = await buildApp()
@@ -127,6 +161,91 @@ test('Fastify Corpus API Engine with OpenTelemetry & Dynamic Traditions', async 
     const missing = await app.inject({method:'GET',url:'/v1/research/srgbl/passages/mw%3Apassage%3Ahinduism%3Abhagavad-gita%3A1%3A1/analysis'})
     assert.equal(missing.statusCode,404)
     assert.equal(missing.json().error,'reviewed_analysis_not_materialized')
+  })
+
+  await t.test('a verified reviewed snapshot serves the passage and leaks no text or score', async () => {
+    const dir=await mkdtemp(join(tmpdir(),'mw-reviewed-'))
+    const previous={reviewed:process.env.SRGBL_REVIEWED_PATH,catalog:process.env.SRGBL_CORPUS_CATALOG_PATH}
+    try {
+      process.env.SRGBL_CORPUS_CATALOG_PATH=catalogPath
+      const hash=catalogHash()
+      const file=join(dir,'reviewed.json')
+      await writeFile(file,JSON.stringify(reviewedSnapshot(hash)),'utf8')
+      process.env.SRGBL_REVIEWED_PATH=file
+      const res=await app.inject({method:'GET',url:analysisUrl})
+      assert.equal(res.statusCode,200)
+      const json=res.json()
+      assert.equal(json.corpusHash,hash)
+      assert.equal(json.analyses.length,1)
+      assert.equal(json.analyses[0].passageId,'mw:passage:hinduism:bhagavad-gita:1:1')
+      assert.equal(json.analyses[0].status,'reviewed')
+      assert.equal(json.analyses[0].levels[0].level,'S1')
+      // Fail closed on leaks: no source text, no maturity score, no seal internals.
+      assert.equal(res.body.includes('SYNTHETIC DATA'),false)
+      for (const banned of ['"maturity"','"score"','"witnessScore"','sourceWitnesses','inputSha256','projectionSha256']) {
+        assert.equal(res.body.includes(banned),false,banned+' must never be published')
+      }
+    } finally {
+      if (previous.reviewed===undefined) delete process.env.SRGBL_REVIEWED_PATH
+      else process.env.SRGBL_REVIEWED_PATH=previous.reviewed
+      if (previous.catalog===undefined) delete process.env.SRGBL_CORPUS_CATALOG_PATH
+      else process.env.SRGBL_CORPUS_CATALOG_PATH=previous.catalog
+      await rm(dir,{recursive:true,force:true})
+    }
+  })
+
+  await t.test('stale, corrupt, empty or orphaned reviewed snapshots fail closed', async () => {
+    const dir=await mkdtemp(join(tmpdir(),'mw-reviewed-'))
+    const previous={reviewed:process.env.SRGBL_REVIEWED_PATH,catalog:process.env.SRGBL_CORPUS_CATALOG_PATH}
+    try {
+      process.env.SRGBL_CORPUS_CATALOG_PATH=catalogPath
+      const hash=catalogHash()
+      const valid=reviewedSnapshot(hash)
+      // Stale: structurally valid, pinned to another corpus snapshot.
+      const stale=join(dir,'stale.json')
+      await writeFile(stale,JSON.stringify({...structuredClone(valid),corpusHash:'a'.repeat(64)}),'utf8')
+      process.env.SRGBL_REVIEWED_PATH=stale
+      let res=await app.inject({method:'GET',url:analysisUrl})
+      assert.equal(res.statusCode,503)
+      assert.equal(res.json().error,'reviewed_publication_integrity_failure')
+      // Corrupt: unparseable bytes are an integrity failure, never a 404 and never a 200.
+      const corrupt=join(dir,'corrupt.json')
+      await writeFile(corrupt,'{"schema":"srgbl-v8-reviewed-derived-v1", ','utf8')
+      process.env.SRGBL_REVIEWED_PATH=corrupt
+      res=await app.inject({method:'GET',url:analysisUrl})
+      assert.equal(res.statusCode,503)
+      // Tampered: a changed claim without a new checksum is drift.
+      const tampered=structuredClone(valid) as any
+      tampered.publicSummaries[0].levels[0].claim='Injected interpretation'
+      const tamperedFile=join(dir,'tampered.json')
+      await writeFile(tamperedFile,JSON.stringify(tampered),'utf8')
+      process.env.SRGBL_REVIEWED_PATH=tamperedFile
+      res=await app.inject({method:'GET',url:analysisUrl})
+      assert.equal(res.statusCode,503)
+      // Empty index: a valid snapshot with no reviewed analysis is not a published reading.
+      const emptyFile=join(dir,'empty.json')
+      const empty=createReviewedSnapshot({corpusHash:hash,methodVersion:'v8-proposal',runs:[],candidates:[],miracleClaims:[]})
+      await writeFile(emptyFile,JSON.stringify(empty),'utf8')
+      process.env.SRGBL_REVIEWED_PATH=emptyFile
+      res=await app.inject({method:'GET',url:analysisUrl})
+      assert.equal(res.statusCode,404)
+      assert.equal(res.json().error,'reviewed_analysis_not_materialized')
+      // Orphaned: a reviewed summary for a passage the canonical repository does not hold.
+      const orphanId='mw:passage:hinduism:bhagavad-gita:999:999'
+      const orphanFile=join(dir,'orphan.json')
+      await writeFile(orphanFile,JSON.stringify(reviewedSnapshot(hash,orphanId)),'utf8')
+      process.env.SRGBL_REVIEWED_PATH=orphanFile
+      const orphanUrl='/v1/research/srgbl/passages/'+encodeURIComponent(orphanId)+'/analysis'
+      res=await app.inject({method:'GET',url:orphanUrl})
+      assert.equal(res.statusCode,404)
+      assert.equal(res.json().error,'passage_not_found')
+    } finally {
+      if (previous.reviewed===undefined) delete process.env.SRGBL_REVIEWED_PATH
+      else process.env.SRGBL_REVIEWED_PATH=previous.reviewed
+      if (previous.catalog===undefined) delete process.env.SRGBL_CORPUS_CATALOG_PATH
+      else process.env.SRGBL_CORPUS_CATALOG_PATH=previous.catalog
+      await rm(dir,{recursive:true,force:true})
+    }
   })
 
   await app.close()
