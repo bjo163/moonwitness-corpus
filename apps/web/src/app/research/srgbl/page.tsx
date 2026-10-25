@@ -195,6 +195,7 @@ export default function SRGBLResearchPage(){
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">MoonWitness · Research preview · SRGBL v8</p>
       <h1 className="text-3xl font-semibold">Five-Layer Witness</h1>
       <p className="max-w-3xl text-sm text-muted-foreground">Trace source provenance first. Other stages remain UNKNOWN until reviewed, evidence-backed analysis exists. This tool never scores scripture, religious traditions or alleged miracles.</p>
+      <p className="text-xs text-muted-foreground">Looking for the derived key and message for one passage? <a href="/research/key-witness" className="underline">Titik Tengah card</a>.</p>
     </header>
     <form onSubmit={lookup} className="flex flex-wrap gap-2" aria-label="Find a canonical passage source trace">
       <label className="min-w-64 flex-1 text-sm" htmlFor="passage-id">Canonical passage ID

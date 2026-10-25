@@ -5,7 +5,7 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog, srgbl] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog, srgbl, keyWitness] = await Promise.all([
   read("src/data.ts"),
   read("src/corpus-app.tsx"),
   read("src/api.ts"),
@@ -18,6 +18,7 @@ const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, sema
   read("../../config/textual-semantic-rules.json"),
   read("public/corpus-catalog.json"),
   read("src/app/research/srgbl/page.tsx"),
+  read("src/app/research/key-witness/page.tsx"),
 ])
 
 const pkg = JSON.parse(pkgRaw)
@@ -99,6 +100,30 @@ expect(srgbl.includes("data-stage-status"), "each S1-L5 tab must render its own 
 expect(srgbl.includes('if(level==="S1"&&trace) return "source trace"'), "S1 must remain a source trace until a reviewed claim exists")
 expect(srgbl.includes("No synthetic interpretation is generated"), "an empty stage must state that nothing was generated")
 expect(srgbl.includes('UNKNOWN / not materialized'), "SRGBL UI must retain UNKNOWN when no reviewed static or API claim exists")
+expect(srgbl.includes('/research/key-witness'), "the SRGBL view must link to the derived key/message card")
+
+// P18-009 Titik Tengah card: derived, rights-bound and never a verdict.
+expect(keyWitness.includes('c.schema!=="mw:citation:v0"'), "the card must pin the citation schema it renders")
+expect(keyWitness.includes("c.passageId!==envelope.passageId"), "a card must describe the passage that was requested")
+expect(keyWitness.includes("c.corpusHash!==envelope.corpusHash"), "a card must be bound to the corpus version it was served for")
+expect(keyWitness.includes(`rights.publicDomainInference!=="prohibited"`), "a card may not infer public domain")
+expect(keyWitness.includes("Withheld witness text arrived from the API and was refused"), "the card must refuse withheld text even when a server sends it")
+expect(keyWitness.includes('m.reviewStatus!=="reviewed"'), "a draft message must never render as a card message")
+expect(keyWitness.includes("A card message needs text, a boundary and a reviewer"), "a message without a boundary or reviewer must be withheld")
+expect(keyWitness.includes("!strings(c.provenance)"), "a card without provenance must be refused")
+expect(keyWitness.includes("deep link is not an http(s) address"), "a card must refuse a non-http deep link")
+expect(keyWitness.includes("key_witness_not_materialized"), "an unpublished key layer must be shown as unavailable, not drafted")
+expect(keyWitness.includes("key_witness_index_integrity_failure"), "an integrity failure must withhold the card entirely")
+expect(keyWitness.includes("A single record is not an agreement"), "one assessor must never be presented as agreement")
+expect(keyWitness.includes("Nothing here is averaged, adjudicated or ranked"), "the disagreement view must state that it adjudicates nothing")
+expect(keyWitness.includes('dir="auto"'), "card text must keep an automatic writing direction for RTL scripts")
+expect(keyWitness.includes('aria-live="polite"'), "the card status must be announced to assistive technology")
+expect(keyWitness.includes('role="alert"'), "a failed lookup must be announced as an alert")
+expect(keyWitness.includes("motion-safe:"), "transitions must be motion-safe so reduced motion is respected")
+expect(!keyWitness.includes("animate-"), "no decorative animation may gate reading the card")
+expect(!keyWitness.includes('"score"'), "the card must not render a score field")
+expect(!keyWitness.includes("witnessScore"), "the card must not render a witness score")
+expect(keyWitness.includes("NEXT_PUBLIC_RGBL_API_URL"), "the card must read the documented research API base")
 
 if (failures.length) {
   console.error("RGBL web contract smoke failed:")
