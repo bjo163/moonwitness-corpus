@@ -323,6 +323,7 @@ Catatan:
 - Key bukan enum universal di core. Ini kosakata scheme yang versioned.
 - Key boleh ditambah di v1 setelah pilot.
 - Setiap key punya definisi, contoh, exclusion, dan label multibahasa di registry.
+- Registry mesin ada di [`packages/srgbl/src/key-registry.ts`](../packages/srgbl/src/key-registry.ts): 20 entri dengan label `en`/`id`, definisi netral, dua contoh, dua exclusion, dan keluarga. `validateKeyRegistry()` menolak entri yang hilang, duplikat, label kosong, relasi di luar daftar, atau definisi yang membawa bahasa penilaian. Status setiap entri tetap `candidate`, sehingga centang `P18-001` tetap menunggu ratifikasi dan issue-nya belum ditutup.
 
 ### 5.2 Relasi
 
