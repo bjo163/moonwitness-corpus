@@ -1,7 +1,11 @@
 #!/usr/bin/env node
+import { execFile as execFileCallback } from 'node:child_process'
+import { promisify } from 'node:util'
 import { readFile, stat } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+const execFile = promisify(execFileCallback)
 
 /**
  * P8-002..006 preflight: "publish the package" is not one command, and it is not
@@ -19,6 +23,11 @@ export type PackageManifest = Record<string, unknown> & {
 
 export type PackageCheck = {name: string; version: string; dir: string; blockers: string[]; warnings: string[]}
 
+/** What a real tarball would carry, which is not the same question as what the manifest says. */
+export type PackSummary = {fileCount: number; size: number; unpackedSize: number; testFiles: string[]; notDist: string[]}
+
+type PackMeasurement = {ok: true; pkg: PackageManifest; summary: PackSummary} | {ok: false; reason: string}
+
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
 
 /** Pure inspection so the rules can be tested without touching the filesystem. */
@@ -35,13 +44,7 @@ export function inspectPackage(pkg: PackageManifest, entryExists: (specifier: st
   const entries = [pkg.main, pkg.module, pkg.types].filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
   if (!entries.length && pkg.exports === undefined) blockers.push('no entry point (main/types/exports)')
   for (const entry of entries) if (!entryExists(entry)) blockers.push('entry file missing: ' + entry)
-  if (pkg.exports !== undefined && typeof pkg.exports === 'object') {
-    const flat = JSON.stringify(pkg.exports)
-    for (const specifier of flat.match(/"\.{1,2}\/[^"]+"/g) ?? []) {
-      const value = specifier.slice(1, -1)
-      if (!entryExists(value)) blockers.push('export target missing: ' + value)
-    }
-  }
+  for (const target of exportTargets(pkg)) if (!entryExists(target)) blockers.push('export target missing: ' + target)
   if (!Array.isArray(pkg.files) || !pkg.files.length) warnings.push('no files list, so the tarball would include everything')
   if (typeof pkg.main === 'string' && pkg.main.endsWith('.ts')) warnings.push('ships TypeScript source as the entry point')
   return {blockers, warnings}
@@ -71,10 +74,44 @@ export async function preflight(root = process.cwd(), packageDirs?: readonly str
   return checks
 }
 
+const ALWAYS_SHIPPED = new Set(['package.json', 'README.md', 'readme.md', 'LICENSE', 'LICENCE'])
+
+/** `npm pack --dry-run` names every file, so "no files list" becomes countable. */
+export function summarizePack(files: readonly string[], size: number, unpackedSize: number): PackSummary {
+  const testFiles = files.filter(file => /\.test\.(?:[cm]?[jt]sx?)$/.test(file) || /(?:^|\/)tests?\//.test(file))
+  // Anything outside dist/ that npm would not ship on its own is a file nobody decided to ship.
+  const notDist = files.filter(file => !ALWAYS_SHIPPED.has(file) && !file.startsWith('dist/'))
+  return {fileCount: files.length, size, unpackedSize, testFiles, notDist}
+}
+
+export function packWarnings(summary: PackSummary, pkg: PackageManifest): string[] {
+  const warnings: string[] = []
+  if (summary.testFiles.length)
+    warnings.push(summary.testFiles.length + ' test file(s) would ship: ' + summary.testFiles.slice(0, 3).join(', '))
+  // A manifest that lists its files is expected to agree with the tarball.
+  if (!Array.isArray(pkg.files) && summary.notDist.length)
+    warnings.push(summary.notDist.length + ' file(s) outside dist/ would ship (' + summary.unpackedSize + ' unpacked bytes)')
+  return warnings
+}
+
 function exportTargets(pkg: PackageManifest): string[] {
-  if (pkg.exports === undefined || typeof pkg.exports !== 'object') return []
-  const flat = JSON.stringify(pkg.exports)
-  return [...(flat.match(/"\.{1,2}\/[^"]+"/g) ?? [])].map(specifier => specifier.slice(1, -1))
+  // Export *keys* look like paths too (`"./key-registry"`), so only the values
+  // are targets; matching the serialised object once reported every key as a
+  // missing file.
+  const targets = new Set<string>()
+  const walk = (node: unknown): void => {
+    if (typeof node === 'string') {
+      if (node.startsWith('./')) targets.add(node)
+      return
+    }
+    if (Array.isArray(node)) {
+      node.forEach(walk)
+      return
+    }
+    if (node && typeof node === 'object') for (const value of Object.values(node)) walk(value)
+  }
+  walk(pkg.exports)
+  return [...targets]
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -86,6 +123,38 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
+/**
+ * Ask npm what it would actually put in the tarball. `--dry-run` is what keeps
+ * this honest: nothing is written, and no lifecycle script runs.
+ */
+async function measurePack(dir: string): Promise<PackMeasurement> {
+  const cli = await npmCli()
+  const [file, prefix] = cli ? [process.execPath, [cli]] : ['npm', []]
+  try {
+    const {stdout} = await execFile(file, [...prefix, 'pack', '--dry-run', '--json', '--ignore-scripts'],
+      {cwd: resolve(dir), maxBuffer: 8 * 1024 * 1024})
+    const parsed = JSON.parse(stdout) as Array<{files?: Array<{path?: unknown}>; size?: unknown; unpackedSize?: unknown}>
+    const result = parsed[0]
+    if (!result) return {ok: false, reason: 'npm returned no tarball description'}
+    const files = (result.files ?? []).map(file => String(file.path ?? '')).filter(Boolean)
+    const pkg = JSON.parse(await readFile(join(resolve(dir), 'package.json'), 'utf8')) as PackageManifest
+    return {ok: true, pkg, summary: summarizePack(files, Number(result.size ?? 0), Number(result.unpackedSize ?? 0))}
+  } catch (error) {
+    return {ok: false, reason: error instanceof Error ? error.message.split('\n')[0] : String(error)}
+  }
+}
+
+/**
+ * Locate npm's own entry point, so `--pack` measures the tarball with the same
+ * npm on every platform. On Windows `npm` is a `.cmd` shim, which `execFile`
+ * refuses to spawn without a shell, and spawning a shell to measure a package is
+ * not worth the quoting risk; `null` falls back to a plain `npm` on PATH.
+ */
+async function npmCli(): Promise<string | null> {
+  const cli = join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js')
+  return (await exists(cli)) ? cli : null
+}
+
 export async function main(argv: readonly string[]): Promise<number> {
   const checks = await preflight()
   const publishable = checks.filter(check => check.blockers.length === 0)
@@ -93,6 +162,20 @@ export async function main(argv: readonly string[]): Promise<number> {
     console.log((check.blockers.length ? 'BLOCKED ' : 'READY   ') + check.name + '@' + check.version + ' (' + check.dir + ')')
     for (const blocker of check.blockers) console.log('  - ' + blocker)
     for (const warning of check.warnings) console.log('  ! ' + warning)
+  }
+  if (argv.includes('--pack')) {
+    console.log('')
+    console.log('npm pack --dry-run (scripts are not run, nothing is written):')
+    for (const check of checks) {
+      const measured = await measurePack(check.dir)
+      if (!measured.ok) {
+        console.log('  ' + check.name + ': pack dry-run failed (' + measured.reason + ')')
+        continue
+      }
+      const {pkg, summary} = measured
+      console.log('  ' + check.name + ': ' + summary.fileCount + ' file(s), ' + summary.size + ' packed bytes, ' + summary.unpackedSize + ' unpacked')
+      for (const warning of packWarnings(summary, pkg)) console.log('    ! ' + warning)
+    }
   }
   console.log('')
   console.log(publishable.length + ' of ' + checks.length + ' packages are publishable as they stand.')

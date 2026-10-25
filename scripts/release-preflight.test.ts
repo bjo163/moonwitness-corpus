@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { inspectPackage, preflight, type PackageManifest } from './release-preflight.js'
+import { inspectPackage, packWarnings, preflight, summarizePack, type PackageManifest } from './release-preflight.js'
 
 /**
  * The preflight exists because P8-002..006 cannot be closed by publishing: no
@@ -45,4 +45,22 @@ test('the real tree has no publishable package yet, and says why', async () => {
   assert.ok(srgbl, 'the srgbl package must be inspected')
   assert.match(srgbl!.blockers.join('; '), /marked private/)
   assert.ok(checks.every(check => check.blockers.length > 0), 'no package may claim to be publishable while the licence is undecided')
+})
+
+test('a tarball that would carry tests and sources is reported as such', () => {
+  const summary = summarizePack(
+    ['package.json', 'src/index.ts', 'src/index.test.ts', 'dist/index.js', 'dist/index.d.ts'],
+    900, 4200)
+  assert.equal(summary.fileCount, 5)
+  assert.deepEqual(summary.testFiles, ['src/index.test.ts'])
+  assert.deepEqual(summary.notDist, ['src/index.ts', 'src/index.test.ts'])
+})
+
+test('pack warnings name tests always, and stray files only when the manifest is unbounded', () => {
+  const summary = summarizePack(['package.json', 'src/index.ts', 'src/index.test.ts'], 900, 4200)
+  const unbounded = packWarnings(summary, {name: '@moonwitness/x', version: '0.0.0-research.1'})
+  assert.match(unbounded.join('; '), /1 test file\(s\) would ship/)
+  assert.match(unbounded.join('; '), /2 file\(s\) outside dist\//)
+  const bounded = packWarnings(summary, {name: '@moonwitness/x', version: '0.0.0-research.1', files: ['dist']})
+  assert.deepEqual(bounded, ['1 test file(s) would ship: src/index.test.ts'])
 })
