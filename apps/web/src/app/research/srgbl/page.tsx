@@ -102,6 +102,13 @@ export default function SRGBLResearchPage(){
       } finally {clearTimeout(timeout)}
     } catch(ex){setError(ex instanceof Error?ex.message:"Source lookup failed")} finally {setBusy(false)}
   }
+  const reviewedLevels=new Set(analyses.flatMap(a=>a.levels.map(c=>c.level)))
+  // Per-stage status: a source trace is not a reviewed claim, and nothing is invented.
+  const stageStatus=(level:string)=>{
+    if(reviewedLevels.has(level)) return "reviewed"
+    if(level==="S1"&&trace) return "source trace"
+    return "UNKNOWN"
+  }
   const currentClaims=analyses.flatMap(a=>a.levels.filter(c=>c.level===active).map(c=>({...c,analysisId:a.id,method:a.method})))
   return <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 text-foreground">
     <header className="space-y-2">
@@ -121,6 +128,7 @@ export default function SRGBLResearchPage(){
       {LEVELS.map(x=><button key={x.id} type="button" role="tab" aria-selected={active===x.id} onClick={()=>setActive(x.id)}
        className={"rounded-lg border p-3 text-left "+(active===x.id?"bg-muted":"bg-background")}>
          <span className="block text-lg font-semibold">{x.id}</span><span className="text-xs">{x.name}</span>
+         <span data-stage-status={x.id} className="mt-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{stageStatus(x.id)}</span>
        </button>)}
     </div>
     <section role="tabpanel" aria-live="polite" className="min-h-56 rounded-lg border p-5">

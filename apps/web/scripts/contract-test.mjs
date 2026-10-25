@@ -78,6 +78,9 @@ expect(!api.includes("import.meta.env"), "Vite-only import.meta.env must be remo
 expect(main.includes("239,841") === false && main.includes("537K+") === false, "runtime corpus metrics must not be hardcoded")
 expect(srgbl.includes('/research/srgbl/reviewed.json'), "SRGBL static reviewed fallback path is missing")
 expect(srgbl.includes('catalog.corpusHash!==body.corpusHash'), "SRGBL static fallback must reject a stale corpus projection")
+expect(srgbl.includes("data-stage-status"), "each S1-L5 tab must render its own approved-evidence status")
+expect(srgbl.includes('if(level==="S1"&&trace) return "source trace"'), "S1 must remain a source trace until a reviewed claim exists")
+expect(srgbl.includes("No synthetic interpretation is generated"), "an empty stage must state that nothing was generated")
 expect(srgbl.includes('UNKNOWN / not materialized'), "SRGBL UI must retain UNKNOWN when no reviewed static or API claim exists")
 
 if (failures.length) {
