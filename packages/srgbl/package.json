@@ -9,6 +9,7 @@
     "./keys": "./src/keys.ts",
     "./key-registry": "./src/key-registry.ts",
     "./vocabulary": "./src/vocabulary.ts",
+    "./assessment-extension": "./src/assessment-extension.ts",
     "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
