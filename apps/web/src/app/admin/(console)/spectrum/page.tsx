@@ -39,7 +39,7 @@ export default function SpectrumPage() {
 
     {feed.phase === "busy" && <p role="status" className="rounded-md border border-dashed p-4 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Reading the sealed export…</p>}
     {feed.phase === "blocked" && <div className="space-y-2 rounded-md border p-4">
-      {feed.message && <p className="text-sm">{feed.message}</p>}
+      {feed.message && <p role="status" className="text-sm">{feed.message}</p>}
       {feed.detail && <p role="alert" className="text-sm">{feed.detail}</p>}
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">No spectrum is drawn from a partial or unverifiable export.</p>
     </div>}

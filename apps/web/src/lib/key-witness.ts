@@ -299,3 +299,62 @@ export function filterSpectrum(rows: readonly SpectrumRow[], filter: SpectrumFil
     (filter.direction === "" || String(row.direction) === filter.direction) &&
     (filter.frame === "" || row.frameLabel === filter.frame))
 }
+
+export type AssessorGroup = {assessor: string; scheme: string; keys: CitationKey[]}
+
+export type DisagreementGroup = {
+  passageId: string
+  workId: string
+  assessors: AssessorGroup[]
+  readings: CitationMessage[]
+  distinctKeys: number
+  /** Fewer than two assessors means there is nothing to compare yet. */
+  unpaired: boolean
+  /** Literal: this screen has no method for agreement and must not imply one. */
+  agreementComputed: false
+  adjudicated: false
+}
+
+/**
+ * P18-012: alternate assessments and the identity of whoever recorded them.
+ * The grouping is deliberately plain - one row per assessor, one row per reviewed
+ * reading - because an agreement statistic belongs to the annotation report, not
+ * to a screen that a reader might mistake for a verdict.
+ */
+export function disagreementGroups(citations: readonly Citation[]): DisagreementGroup[] {
+  return citations
+    .map(citation => {
+      const byAssessor = new Map<string, AssessorGroup>()
+      for (const key of citation.keys) {
+        const group = byAssessor.get(key.assessor) ?? {assessor: key.assessor, scheme: key.scheme, keys: []}
+        group.keys.push(key)
+        byAssessor.set(key.assessor, group)
+      }
+      const assessors = [...byAssessor.values()]
+        .map(group => ({...group, keys: [...group.keys].sort((a, b) => a.key.localeCompare(b.key))}))
+        .sort((a, b) => a.assessor.localeCompare(b.assessor))
+      const readings = [...citation.messages].sort((a, b) => a.reviewer.localeCompare(b.reviewer) || a.id.localeCompare(b.id))
+      const keys = new Set(citation.keys.map(key => key.key))
+      return {
+        passageId: citation.passageId,
+        workId: workIdOf(citation.passageId),
+        assessors,
+        readings,
+        distinctKeys: keys.size,
+        unpaired: assessors.length < 2,
+        agreementComputed: false as const,
+        adjudicated: false as const,
+      }
+    })
+    .sort((a, b) => a.passageId.localeCompare(b.passageId))
+}
+
+/** `alternate` counts passages where a second assessor or a second reading exists. */
+export function disagreementSummary(groups: readonly DisagreementGroup[]) {
+  return {
+    passages: groups.length,
+    alternateAssessments: groups.filter(group => group.assessors.length > 1).length,
+    alternateReadings: groups.filter(group => group.readings.length > 1).length,
+    singleAssessor: groups.filter(group => group.unpaired).length,
+  }
+}

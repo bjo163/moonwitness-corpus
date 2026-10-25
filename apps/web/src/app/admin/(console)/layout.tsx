@@ -13,7 +13,8 @@ const NAV = [
   {href: "/admin/ledger", index: "01", label: "Sealed ledger", short: "Ledger", hint: "what is published"},
   {href: "/admin/balance", index: "02", label: "Key balance", short: "Balance", hint: "counts, never a verdict"},
   {href: "/admin/spectrum", index: "03", label: "Key spectrum", short: "Spectrum", hint: "filter the spread"},
-  {href: "/admin/profile", index: "04", label: "Profile", short: "Profile", hint: "credential and gate"},
+  {href: "/admin/disagreement", index: "04", label: "Disagreement", short: "Disagree", hint: "alternate assessments"},
+  {href: "/admin/profile", index: "05", label: "Profile", short: "Profile", hint: "credential and gate"},
 ] as const
 
 export default function ConsoleLayout({children}:{children:React.ReactNode}) {
