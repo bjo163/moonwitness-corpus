@@ -10,7 +10,7 @@
   "scripts": {
     "build": "turbo run build && tsx scripts/build-corpus.ts",
     "dev": "concurrently -k -n api,web -c blue,green \"pnpm api:dev\" \"pnpm dev:web\"",
-    "dev:web": "pnpm --dir apps/web dev",
+    "dev:web": "node scripts/ensure-web-deps.mjs && pnpm --dir apps/web dev",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test packages/*/src/**/*.test.ts apps/*/src/**/*.test.ts scripts/**/*.test.ts",
     "validate": "tsx packages/validator/src/cli.ts",

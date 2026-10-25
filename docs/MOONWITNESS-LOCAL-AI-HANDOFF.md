@@ -52,6 +52,12 @@ For full repository gate:
 
     pnpm check
 
+To run both dev servers (`pnpm dev` = Fastify API on port 4310, Next.js on port 5174):
+
+    pnpm dev
+
+`pnpm dev` needs the independent web install above. `apps/web` is excluded from the pnpm workspace (`!apps/web` in `pnpm-workspace.yaml`), so `pnpm install` never provides `next`, and a missing or partial install fails as `[web] 'next' is not recognized as an internal or external command` plus `ELIFECYCLE  Command failed with exit code 1`. Fix: `cd apps/web; npm ci`. `pnpm dev:web` now runs `scripts/ensure-web-deps.mjs` first, which fails with that instruction instead of letting the shim error surface.
+
 Relevant small-test example:
 
     pnpm exec tsx --test packages/srgbl/src/analysis.test.ts
@@ -86,7 +92,7 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 
 | Command | Observed result | Writes to the worktree | Note |
 |---|---|---|---|
-| `npm ci` | **not run in this session** | `node_modules/` | Existing install was reused; this file does not claim a lockfile reinstall passed |
+| `npm ci` | exit 0, 95 packages added, 0 vulnerabilities | `apps/web/node_modules/` (ignored) | Required before `pnpm dev`: `apps/web` is excluded from the pnpm workspace, and this command is also what repairs a partial install whose `next` shim is missing |
 | `npm run typecheck` | exit 2 on this checkout; all 5 errors are inside generated, gitignored `.next/dev/types/*.ts` (stale artifact); no `src/**` error | none | Delete or regenerate `.next` before trusting this gate; the failure is a build-cache artifact, not a source error |
 | `npm test` | exit 0 (`RGBL web contract smoke: OK`) | none | Contract smoke test, not the application build |
 | `npm run build` | **not run in this session** | `apps/web/.next/`, `apps/web/public/corpus-catalog.json` (tracked!), `apps/web/public/corpus-db/`, `apps/web/public/vendor/sqlite-httpvfs/` | Fetches the catalog from GitHub raw when missing, so it needs network and can modify a tracked file |
