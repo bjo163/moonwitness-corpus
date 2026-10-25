@@ -5,7 +5,7 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, exportHook, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleSpectrum, consoleProfile] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, exportHook, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleSpectrum, consoleDisagreement, consoleProfile] = await Promise.all([
   read("src/data.ts"),
   read("src/corpus-app.tsx"),
   read("src/api.ts"),
@@ -28,6 +28,7 @@ const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, gener
   read("src/app/admin/(console)/ledger/page.tsx"),
   read("src/app/admin/(console)/balance/page.tsx"),
   read("src/app/admin/(console)/spectrum/page.tsx"),
+  read("src/app/admin/(console)/disagreement/page.tsx"),
   read("src/app/admin/(console)/profile/page.tsx"),
 ])
 
@@ -187,6 +188,25 @@ expect(page.includes('href="/admin"') && page.includes('href="/research/key-witn
 expect(page.includes("No global score") && page.includes("no tradition ranking"), "the landing page must state the boundaries")
 expect(!page.includes("CorpusApp") && !page.includes("use client"), "the landing page must stay static, not the browser corpus app")
 expect(explorer.includes("CorpusApp"), "the corpus app must remain reachable at /explorer")
+
+// The reader app must read as the same product as the landing page and the console.
+expect(main.includes("MoonWitness") && !main.includes("RGBL"), "the explorer must carry the MoonWitness brand, not the legacy RGBL one")
+expect(main.includes('href="/admin"') && main.includes('href="/research/key-witness"'), "the explorer must route to the console and the key card")
+expect(main.includes("This surface shows canonical corpus records only"), "the explorer must say which layer it shows")
+expect(main.includes("MoonWitness owns canonical TEXT identity"), "the explorer footer must state the ownership boundary")
+expect(!api.includes('"RGBL API'), "reader API errors must not leak the legacy brand into the interface")
+
+// P18-012 disagreement: alternate assessments keep their own name and boundary.
+expect(consoleDisagreement.includes("disagreementGroups") && consoleDisagreement.includes("disagreementSummary"), "the disagreement view must group per passage and per assessor")
+expect(consoleDisagreement.includes("reviewer {reading.reviewer}"), "every reviewed reading must name its reviewer")
+expect(consoleDisagreement.includes("A single record is not an agreement"), "one assessor must never read as consensus")
+expect(consoleDisagreement.includes("no agreement statistic is computed"), "the disagreement view must state that it computes no agreement")
+expect(consoleDisagreement.includes('aria-pressed={onlyAlternates}'), "the alternate-only filter must expose its pressed state")
+expect(consoleDisagreement.includes('dir="auto"'), "messages must keep an automatic writing direction")
+expect(consoleDisagreement.includes("derived, not scripture"), "a reading must be labeled as derived")
+expect(keyWitnessLib.includes("agreementComputed: false") && keyWitnessLib.includes("adjudicated: false"), "the model must carry literal false flags instead of a computed agreement")
+expect(!keyWitnessLib.toLowerCase().includes("kappa"), "no agreement statistic may be introduced into the exported model")
+expect(consoleLayout.includes('/admin/disagreement'), "the console rail must expose the disagreement section")
 
 if (failures.length) {
   console.error("RGBL web contract smoke failed:")

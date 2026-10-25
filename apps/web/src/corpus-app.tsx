@@ -493,13 +493,13 @@ export default function CorpusApp() {
     <div className="min-h-svh bg-background">
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
-          <a href="#top" className="flex items-center gap-2.5">
-            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
-              R
+          <a href="/" className="flex items-center gap-2.5">
+            <span className="grid size-8 place-items-center rounded-sm border border-border font-mono text-[10px] tracking-[0.16em]">
+              MW
             </span>
             <span className="leading-tight">
-              <span className="block text-sm font-semibold tracking-tight">RGBL</span>
-              <span className="block text-[10px] tracking-[0.16em] text-muted-foreground uppercase">Trace the text</span>
+              <span className="block text-sm font-medium tracking-tight">MoonWitness</span>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Corpus explorer</span>
             </span>
           </a>
           <nav className="ml-4 hidden items-center gap-0.5 md:flex" aria-label="Primary">
@@ -507,54 +507,91 @@ export default function CorpusApp() {
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="rounded-sm px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 {section.label}
               </a>
             ))}
             <a
-              href="https://github.com/bjo163/rocksoul-rgbl"
+              href="/research/key-witness"
+              className="rounded-sm px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Key witness
+            </a>
+            <a
+              href="/admin"
+              className="rounded-sm px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Console
+            </a>
+            <a
+              href="https://github.com/bjo163/moonwitness-corpus"
               target="_blank"
               rel="noreferrer"
-              className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="rounded-sm px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               Repository
             </a>
           </nav>
+          <nav className="ml-auto flex items-center gap-0.5 md:hidden" aria-label="Primary">
+            <a
+              href="/research/key-witness"
+              className="rounded-sm px-2 py-1 text-xs whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Key witness
+            </a>
+            <a
+              href="/admin"
+              className="rounded-sm px-2 py-1 text-xs whitespace-nowrap text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Console
+            </a>
+          </nav>
           <div className="ml-auto flex items-center gap-2">
-            <Badge variant={sourceMode === "catalog" ? "secondary" : "default"} className="hidden sm:inline-flex">
+            <span className="inline-flex rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
               {sourceModeLabel(sourceMode)}
-            </Badge>
+            </span>
             <ThemeToggle />
           </div>
         </div>
       </header>
 
       <main id="top">
-        <section className="border-b bg-muted/30">
-          <div className="mx-auto max-w-7xl px-4 py-14">
-            <Badge variant="outline" className="tracking-[0.16em] uppercase">
-              Scripture & revelation reference intelligence
-            </Badge>
-            <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+        <section className="border-b">
+          <div className="mx-auto max-w-7xl px-4 py-12">
+            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+              Canonical corpus records
+            </p>
+            <h1 className="mt-5 max-w-3xl text-4xl font-medium leading-[1.1] text-balance md:text-5xl">
               Trace the text.
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
               Inspect canonical work identity, expression, edition, source artifact, exact passage content, rights,
               provenance and explicit textual relations — without collapsing their semantic boundaries.
             </p>
-            <p className="mt-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.16em] text-muted-foreground uppercase">
               Text ≠ interpretation · Translation ≠ source identity · Inclusion ≠ authority
             </p>
+            <p className="mt-4 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              This surface shows canonical corpus records only. The derived key, message and disagreement layer is a separate,
+              sealed research surface in the <a className="underline underline-offset-4" href="/admin">research console</a>, with a
+              single-passage card at <a className="underline underline-offset-4" href="/research/key-witness">Titik Tengah</a>.
+            </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <Button onClick={() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" })}>
+              <Button
+                onClick={() =>
+                  document.getElementById("explore")?.scrollIntoView({
+                    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                  })
+                }
+              >
                 Explore corpus
               </Button>
               <Button
                 variant="outline"
                 onClick={() =>
                   window.open(
-                    "https://github.com/bjo163/rocksoul-rgbl/blob/main/docs/ROCKSOUL_INTEROP.md",
+                    "https://github.com/bjo163/moonwitness-corpus/blob/dev/docs/ROCKSOUL_INTEROP.md",
                     "_blank",
                     "noopener,noreferrer",
                   )
@@ -719,7 +756,7 @@ export default function CorpusApp() {
             <SectionHeading
               kicker="01 / Corpus atlas"
               title="Multi-tradition by design. Authority stays scoped."
-              description="RGBL preserves many textual traditions without collapsing translation, canon, revelation, identity or doctrinal status into a single global verdict."
+              description="MoonWitness preserves many textual traditions without collapsing translation, canon, revelation, identity or doctrinal status into a single global verdict."
             />
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -1150,21 +1187,25 @@ export default function CorpusApp() {
         </div>
       </main>
 
-      <footer className="border-t bg-muted/30">
+      <footer className="border-t">
         <div className="mx-auto max-w-7xl px-4 py-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
-                R
+              <span className="grid size-8 place-items-center rounded-sm border border-border font-mono text-[10px] tracking-[0.16em]">
+                MW
               </span>
               <div className="leading-tight">
-                <p className="text-sm font-semibold">RGBL</p>
-                <p className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">Trace the text.</p>
+                <p className="text-sm font-medium">MoonWitness</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Trace the text.</p>
               </div>
             </div>
-            <nav className="flex items-center gap-4 text-xs text-muted-foreground">
-              <a className="hover:text-foreground" href="https://github.com/bjo163/rocksoul-rgbl" target="_blank" rel="noreferrer">
-                RGBL
+            <nav className="flex flex-wrap items-center gap-4 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+              <a className="hover:text-foreground" href="/">Home</a>
+              <a className="hover:text-foreground" href="/research/srgbl">Research</a>
+              <a className="hover:text-foreground" href="/research/key-witness">Key card</a>
+              <a className="hover:text-foreground" href="/admin">Console</a>
+              <a className="hover:text-foreground" href="https://github.com/bjo163/moonwitness-corpus" target="_blank" rel="noreferrer">
+                Repository
               </a>
               <a className="hover:text-foreground" href="https://github.com/bjo163/rocksoul-assets" target="_blank" rel="noreferrer">
                 Assets
@@ -1172,7 +1213,7 @@ export default function CorpusApp() {
             </nav>
           </div>
           <p className="mt-4 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-            RGBL owns canonical TEXT identity and provenance. Interpretation, event claims, person identity and legal
+            MoonWitness owns canonical TEXT identity and provenance. Interpretation, event claims, person identity and legal
             conclusions stay downstream.
           </p>
         </div>

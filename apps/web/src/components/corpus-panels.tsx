@@ -27,14 +27,13 @@ export function SectionHeading({
 }
 
 export function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  // A ledger cell, not a KPI card: one hairline, mono figures, no shadow to imply emphasis.
   return (
-    <Card className="gap-1 py-4">
-      <CardContent className="px-4">
-        <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">{label}</p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
-        {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
-      </CardContent>
-    </Card>
+    <div className="border-l border-border py-1 pl-3">
+      <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground uppercase">{label}</p>
+      <p className="mt-1 font-mono text-xl tabular-nums">{value}</p>
+      {hint ? <p className="mt-0.5 font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">{hint}</p> : null}
+    </div>
   )
 }
 

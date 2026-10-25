@@ -127,7 +127,7 @@ export function loadCatalog(): Promise<CorpusCatalog> {
 }
 
 async function requestJson<T>(path: string): Promise<T> {
-  if (!API_BASE) throw new Error("RGBL API URL is not configured")
+  if (!API_BASE) throw new Error("The research API URL is not configured")
   const controller = new AbortController()
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {
@@ -135,7 +135,7 @@ async function requestJson<T>(path: string): Promise<T> {
       headers: { accept: "application/json" },
       signal: controller.signal,
     })
-    if (!response.ok) throw new Error("RGBL API returned " + response.status)
+    if (!response.ok) throw new Error("The research API returned " + response.status)
     return await response.json() as T
   } finally {
     window.clearTimeout(timeout)
@@ -143,8 +143,8 @@ async function requestJson<T>(path: string): Promise<T> {
 }
 
 function errorMessage(error: unknown) {
-  if (error instanceof Error) return error.name === "AbortError" ? "RGBL API request timed out" : error.message
-  return "RGBL data request failed"
+  if (error instanceof Error) return error.name === "AbortError" ? "The research API request timed out" : error.message
+  return "The research data request failed"
 }
 
 async function catalogResult<T>(select: (catalog: CorpusCatalog) => T, error?: unknown): Promise<LoadResult<T>> {
@@ -275,7 +275,7 @@ export async function loadWorks(): Promise<LoadResult<Work[]>> {
             tradition: stringValue(row.tradition) ?? "unscoped",
             language: stringValue(row.source_language, row.language),
             description: workType ? workType.replaceAll("_", " ") + " · canonical textual.work" : "Canonical textual.work record.",
-            source: datasetId ?? "RGBL canonical corpus",
+            source: datasetId ?? "MoonWitness canonical corpus",
             datasetId,
             rights: stringValue(row.rights),
             availability: stringValue(row.availability),
@@ -322,7 +322,7 @@ function normalizePassageBundle(item: unknown, workId: string): Passage {
     locator: locatorOf(passage),
     label: labelOf(passage) ?? locatorOf(passage),
     language: firstContent?.language,
-    source: firstContent?.artifact ?? "RGBL canonical corpus",
+    source: firstContent?.artifact ?? "MoonWitness canonical corpus",
     provenance: firstContent?.provenance ?? "Provenance is available on the canonical source/content record.",
     note: contents.length
       ? String(contents.length) + " exact content lane(s) available."
