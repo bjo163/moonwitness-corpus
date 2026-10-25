@@ -75,7 +75,7 @@ Do not execute pnpm todo:sync indiscriminately: the repository issue-sync contra
 
 ## 2.1 Measured command matrix (baseline P19-L01 / #452)
 
-Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`; re-measured at `dev` HEAD `8a30f2d` after the P19-L01..L28 wave. Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
+Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`; re-measured at `dev` HEAD `7a97cc9` after the P19-L01..L38 wave. Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
 
 **Root workspace (`pnpm`, monorepo gate):**
 
@@ -83,10 +83,13 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 |---|---|---|---|
 | `pnpm install --frozen-lockfile` | exit 0 | `node_modules/` only (ignored) | Reports ignored build scripts for `esbuild`, `protobufjs`; do not run `pnpm approve-builds` casually |
 | `pnpm typecheck` | exit 0 (`tsc --noEmit`, no output) | none | Root `tsconfig.json` only; `apps/web` is not covered |
-| `pnpm test` | exit 0, 338 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
+| `pnpm test` | exit 0, 347 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
 | `pnpm exec tsx --test packages/srgbl/src/index.test.ts` | exit 0, 14 tests pass, 0 fail | none | SRGBL core: maturity, quality rubric, direction, Witness /100, Swing candidate, cross-text relation, lens selection, correction counterreadings |
 | `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 23 tests pass, 0 fail | none | Default focused command for SRGBL analysis tasks, and the owner of the Quran research-case fixture and rights-matrix regressions |
-| `pnpm exec tsx --test packages/srgbl/src/publication.test.ts` | exit 0, 8 tests pass, 0 fail | none | Reviewed-snapshot seal, projection structure and stage-order regressions (P19-L26/L27) |
+| `pnpm exec tsx --test packages/srgbl/src/publication.test.ts` | exit 0, 9 tests pass, 0 fail | none | Reviewed-snapshot seal, projection structure, stage order and the 15-case adversarial matrix (P19-L26/L27/L37) |
+| `pnpm exec tsx --test packages/srgbl/src/static.test.ts` | exit 0, 3 tests pass, 0 fail | none | Browser/static export: deterministic passage order, explicit unavailable state, no research-only field (P19-L29) |
+| `pnpm exec tsx --test packages/srgbl/src/annotation.test.ts` | exit 0, 3 tests pass, 0 fail | none | Paired annotation intake: distinct assessors, retained submissions, no adjudication field (P19-L35) |
+| `pnpm exec tsx --test packages/srgbl/src/agreement.test.ts` | exit 0, 4 tests pass, 0 fail | none | Kappa only from comparable pairs; `estimable:false` and `blocked-pilot-input` on synthetic input (P19-L36) |
 | `pnpm validate:editions` | exit 0, `valid: true`, 618 editions / 297 works / 91 languages | none | Edition registry integrity; named verification command for the P19-L25 rights matrix |
 | `pnpm exec tsx --test packages/srgbl/src/research-ledger.test.ts` | exit 0, 5 tests pass, 0 fail | none | Candidate-ledger serialization tasks (P19-L19 / #470) |
 | `pnpm exec tsx --test packages/srgbl/src/sources.test.ts` | exit 0, 4 tests pass, 0 fail | none | Selector/rights-scope file introduced by P19-L05 / #456 |
@@ -94,7 +97,7 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 | `pnpm exec tsx --test scripts/ensure-web-deps.test.ts` | exit 0, 5 tests pass, 0 fail | none | Dev-bootstrap guard: complete install, fresh clone, interrupted `npm ci`, missing `next` package, wrong cwd |
 | `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 15 tests pass, 0 fail | none | Run whenever `packages/srgbl` changes reach the Fastify adapter; includes the reviewed-snapshot 200/404/503 fail-closed cases |
 | `pnpm check` | **not run locally in this session**; passed inside every CI run listed below | SQLite database build output and repository build artifacts (ignored) | Release-grade gate; deliberately not run per micro issue on the laptop because it builds and validates the whole corpus, so it is delegated to the `check` job |
-| `pnpm todo:check` | **not run in this session** | none | Read-only audit; see the warning above |
+| `pnpm todo:check` | exit 0, `TODO sync metadata valid: 330 tracked roadmap tasks` | none | Read-only audit; see the warning above |
 
 **Independent web app (`apps/web`, npm, separate install tree):**
 
@@ -118,8 +121,9 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 | [40146001337](https://github.com/bjo163/moonwitness-corpus/actions/runs/40146001337) | `b0448f2` | #474 miracle attribution | `success` |
 | [40146199184](https://github.com/bjo163/moonwitness-corpus/actions/runs/40146199184) | `be1120d` | #475 rights-safe fixture | `success` |
 | [40147222934](https://github.com/bjo163/moonwitness-corpus/actions/runs/40147222934) | `8a30f2d` | #476-#479 rights matrix, seals, projection structure, API fail-closed | `success` (both `check` and `web`) |
+| [40148296655](https://github.com/bjo163/moonwitness-corpus/actions/runs/40148296655) | `7a97cc9` | #480-#489 static export, five-tab status, message/Swing/lens panels, keyboard+RTL contract, annotation intake, agreement, adversarial matrix, release decision record | `success` (both `check` and `web`) |
 
-A green run is evidence only for its own `headSha`; `9f5014b` has no successful run of its own, and is covered only indirectly by the two later green runs that carry it as an ancestor. `8a30f2d` is the last code SHA measured here; documentation commits after it are covered by the same run only as descendants, so re-dispatch if a doc edit changes behaviour (it must not). `gh` 2.103.2 is installed at `C:\Program Files\GitHub CLI\` and authenticated as `bjo163` (keyring, scopes `repo`, `workflow`, `read:org`, `gist`); the machine-wide PATH entry only reaches terminals started after the install, so an already-open shell must call the absolute path.
+A green run is evidence only for its own `headSha`; `9f5014b` has no successful run of its own, and is covered only indirectly by the two later green runs that carry it as an ancestor. `7a97cc9` is the last code SHA measured here; the documentation commit after it is docs-only, so it inherits that run only as a descendant -- re-dispatch if a doc edit ever changes behaviour. `gh` 2.103.2 is installed at `C:\Program Files\GitHub CLI\` and authenticated as `bjo163` (keyring, scopes `repo`, `workflow`, `read:org`, `gist`); the machine-wide PATH entry only reaches terminals started after the install, so an already-open shell must call the absolute path.
 
 **Worktree policy for these commands:**
 
