@@ -16,6 +16,7 @@
     "./licensing": "./src/licensing.ts",
     "./context-coverage": "./src/context-coverage.ts",
     "./score-profile": "./src/score-profile.ts",
+    "./citation": "./src/citation.ts",
     "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
