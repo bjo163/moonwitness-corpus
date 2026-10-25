@@ -17,6 +17,19 @@ const LEVELS=[
 ] as const
 const API=(process.env.NEXT_PUBLIC_RGBL_API_URL||"").replace(/\/+$/,"")
 
+type ReviewedKeyMessage = {status:"reviewed";message:string;method:string;frame:string;contextNote:string;boundaryNote:string;evidenceIds:string[];sourceContentIds:string[]}
+const nonBlank=(value:unknown):value is string=>typeof value==="string"&&value.trim().length>0
+
+// A derived message is shown only when its method, frame, context, boundary and evidence are all stated.
+function isReviewedKeyMessage(value:unknown):value is ReviewedKeyMessage {
+  if(!value||typeof value!=="object") return false
+  const m=value as Record<string,unknown>
+  return m.status==="reviewed"&&nonBlank(m.message)&&m.message.length<=5000&&nonBlank(m.method)&&
+    nonBlank(m.frame)&&nonBlank(m.contextNote)&&nonBlank(m.boundaryNote)&&
+    Array.isArray(m.evidenceIds)&&m.evidenceIds.length>0&&m.evidenceIds.every(nonBlank)&&
+    Array.isArray(m.sourceContentIds)&&m.sourceContentIds.length>0&&m.sourceContentIds.every(nonBlank)
+}
+
 function isReviewedAnalysis(value:unknown):value is ReviewedAnalysis {
   if(!value||typeof value!=="object") return false
   const item=value as Record<string,unknown>
@@ -110,6 +123,10 @@ export default function SRGBLResearchPage(){
     return "UNKNOWN"
   }
   const currentClaims=analyses.flatMap(a=>a.levels.filter(c=>c.level===active).map(c=>({...c,analysisId:a.id,method:a.method})))
+  const messages=analyses.flatMap(a=>{
+    const key=(a as {keyMessage?:unknown}).keyMessage
+    return isReviewedKeyMessage(key)?[{...key,analysisId:a.id}]:[]
+  })
   return <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 text-foreground">
     <header className="space-y-2">
       <a href="/" className="text-sm text-muted-foreground underline">← Corpus Explorer</a>
@@ -155,6 +172,18 @@ export default function SRGBLResearchPage(){
         </article>)}
       </div>}
       {active!=="S1"&&currentClaims.length===0&&<p className="mt-5 text-sm">UNKNOWN / not materialized. This stage requires source-linked claims, an accountable method, independent review and explicit limitations. No synthetic interpretation is generated.</p>}
+      <section className="mt-5 rounded-md border p-3" aria-labelledby="derived-message">
+        <h3 id="derived-message" className="text-sm font-semibold">Derived message (not original scripture)</h3>
+        {messages.length===0
+          ? <p className="mt-2 text-sm">No reviewed key message is published for this passage. An unreviewed, unbounded or incompletely evidenced message stays withheld rather than drafted.</p>
+          : messages.map(m=><article key={m.analysisId} className="mt-3 rounded-md border p-3 text-sm">
+              <p className="text-xs text-muted-foreground">Method: {m.method} · Frame: {m.frame} · Analysis: {m.analysisId}</p>
+              <p dir="auto" className="my-2 whitespace-pre-wrap">{m.message}</p>
+              <p className="text-xs"><strong>Context:</strong> {m.contextNote}</p>
+              <p className="mt-1 text-xs"><strong>Boundary:</strong> {m.boundaryNote}</p>
+              <p className="mt-2 break-all text-xs text-muted-foreground">Evidence: {m.evidenceIds.join(", ")} · Source content: {m.sourceContentIds.join(", ")}</p>
+            </article>)}
+      </section>
       {reviewNote&&<p className="mt-4 text-xs text-muted-foreground" role="status">{reviewNote}</p>}
     </section>
     <footer className="text-xs text-muted-foreground">Maturity /15 · Quality /40 · Witness /100 · Direction −2..+2 are separate research metrics, withheld until a valid reviewed analysis exists. <a href="https://github.com/bjo163/moonwitness-corpus/blob/dev/docs/SRGBL-V8-MASTER-RFC.md" className="underline">Read the methodology</a>.</footer>
