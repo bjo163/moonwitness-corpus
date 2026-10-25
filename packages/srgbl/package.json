@@ -12,6 +12,7 @@
     "./assessment-extension": "./src/assessment-extension.ts",
     "./message": "./src/message.ts",
     "./review-workflow": "./src/review-workflow.ts",
+    "./annotation-provenance": "./src/annotation-provenance.ts",
     "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
