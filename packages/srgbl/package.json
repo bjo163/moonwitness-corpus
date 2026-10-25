@@ -14,6 +14,7 @@
     "./review-workflow": "./src/review-workflow.ts",
     "./annotation-provenance": "./src/annotation-provenance.ts",
     "./licensing": "./src/licensing.ts",
+    "./context-coverage": "./src/context-coverage.ts",
     "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
