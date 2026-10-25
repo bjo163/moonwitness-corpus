@@ -1,0 +1,77 @@
+{
+  "schema": "mw-key-witness-seal-document:v0",
+  "note": "Synthetic fixture for `pnpm keys:seal`. The ids, readings and licences are placeholders that exist so the CLI can be exercised; nothing here is scripture text, a reviewed reading or a granted right.",
+  "synthetic": true,
+  "methodVersion": "srgbl-v8:key-direction:v0",
+  "deepLinkBase": "https://moonwitness.example/app/",
+  "entries": [
+    {
+      "passageId": "mw:passage:fixture:alpha:1:1",
+      "editionId": "mw:edition:fixture:alpha-witness",
+      "artifactId": "mw:artifact:fixture:alpha-leaf-1",
+      "contentId": "mw:content:fixture:alpha-witness:en",
+      "textRights": "restricted",
+      "annotationLicense": {
+        "kind": "original-creative",
+        "attestedBy": "mw:agent:fixture-curator",
+        "licenseId": "CC-BY-4.0"
+      },
+      "keys": [
+        {
+          "id": "mw:assessment:key:fixture-alpha-1-1:1",
+          "key": "hope",
+          "scheme": "semantic-core:v0",
+          "method": "srgbl-v8:key-direction:v0",
+          "assessor": "mw:agent:fixture-assessor",
+          "reviewStatus": "reviewed"
+        }
+      ],
+      "messages": [
+        {
+          "id": "mw:message:fixture-alpha-1-1",
+          "message": "SYNTHETIC reading - not scripture and not a reviewed conclusion.",
+          "boundaryNote": "Fixture text only; it carries no promised outcome.",
+          "reviewStatus": "reviewed",
+          "reviewer": "mw:agent:fixture-reviewer",
+          "sourceKeyAssessmentIds": ["mw:assessment:key:fixture-alpha-1-1:1"]
+        }
+      ],
+      "provenanceIds": ["mw:provenance:fixture:editorial-note"],
+      "evidenceIds": ["mw:evidence:fixture:alpha-1"]
+    },
+    {
+      "passageId": "mw:passage:fixture:beta:2:3",
+      "editionId": "mw:edition:fixture:beta-witness",
+      "artifactId": "mw:artifact:fixture:beta-leaf-2",
+      "contentId": "mw:content:fixture:beta-witness:id",
+      "textRights": "restricted",
+      "annotationLicense": {
+        "kind": "original-creative",
+        "attestedBy": "mw:agent:fixture-curator",
+        "licenseId": "CC-BY-4.0"
+      },
+      "keys": [
+        {
+          "id": "mw:assessment:key:fixture-beta-2-3:1",
+          "key": "comfort",
+          "scheme": "semantic-core:v0",
+          "method": "srgbl-v8:key-direction:v0",
+          "assessor": "mw:agent:fixture-assessor",
+          "reviewStatus": "reviewed"
+        }
+      ],
+      "messages": [
+        {
+          "id": "mw:message:fixture-beta-2-3",
+          "message": "SYNTHETIC second reading - layout and export example only.",
+          "boundaryNote": "No universal claim; the frame is the fixture, not a tradition.",
+          "reviewStatus": "reviewed",
+          "reviewer": "mw:agent:fixture-reviewer",
+          "sourceKeyAssessmentIds": ["mw:assessment:key:fixture-beta-2-3:1"]
+        }
+      ],
+      "provenanceIds": ["mw:provenance:fixture:editorial-note"],
+      "evidenceIds": ["mw:evidence:fixture:beta-2"]
+    }
+  ]
+}

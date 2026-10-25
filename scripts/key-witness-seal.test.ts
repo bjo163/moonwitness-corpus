@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 import {
-  assertPublishable, readCorpusHash, sealDocument, verifySealed, writeSealed, type SealDocument,
+  assertPublishable, main, readCorpusHash, sealDocument, verifySealed, writeSealed, type SealDocument,
 } from './key-witness-seal.js'
+
+/** The one document a person can copy when writing a real one. */
+const FIXTURE = fileURLToPath(new URL('../fixtures/key-witness/seal-document.json', import.meta.url))
 
 /**
  * The CLI is the only way an index reaches `dist/key-witness/index.json`, so these
@@ -103,6 +107,31 @@ test('a written seal verifies, and a different corpus is refused', async () => {
       await rm(dir, {recursive: true, force: true})
     }
   })
+})
+
+test('the checked-in fixture seals through the CLI and verifies against the catalog', async () => {
+  await withCatalog(async catalogPath => {
+    const dir = await mkdtemp(join(tmpdir(), 'mw-seal-cli-'))
+    try {
+      const out = join(dir, 'index.json')
+      assert.equal(await main(['--records', FIXTURE, '--out', out, '--catalog', catalogPath]), 0)
+      const written = JSON.parse(await readFile(out, 'utf8')) as {corpusHash: string; entries: unknown[]}
+      assert.equal(written.corpusHash, HASH)
+      assert.equal(written.entries.length, 2)
+      assert.equal(await main(['--check', out, '--catalog', catalogPath]), 0)
+    } finally {
+      await rm(dir, {recursive: true, force: true})
+    }
+  })
+})
+
+test('the CLI cannot publish the fixture as the served index', async () => {
+  // No catalog is read before the synthetic guard, so this proves the ordering too.
+  await assert.rejects(() => main(['--records', FIXTURE, '--out', 'dist/key-witness/index.json']), /synthetic/)
+})
+
+test('the CLI refuses to guess its arguments', async () => {
+  assert.equal(await main([]), 2)
 })
 
 test('a draft message is refused at seal time, so the CLI cannot publish it', async () => {
