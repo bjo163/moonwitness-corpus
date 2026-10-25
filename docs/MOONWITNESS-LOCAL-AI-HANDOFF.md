@@ -75,7 +75,7 @@ Do not execute pnpm todo:sync indiscriminately: the repository issue-sync contra
 
 ## 2.1 Measured command matrix (baseline P19-L01 / #452)
 
-Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`; re-measured at `dev` HEAD `7a97cc9` after the P19-L01..L38 wave, and again at `02e25e3` after the P18 contract wave (#425-#428, #441-#443). Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
+Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 on a Windows checkout of `dev`; re-measured at `dev` HEAD `7a97cc9` after the P19-L01..L38 wave, again at `02e25e3` after the P18 contract wave (#425-#428, #441-#443), and again at `2da54b7` after the P18 key-witness export wave (#437-#440, #444). Exit codes below are observed results, not expectations. Re-measure after any dependency or toolchain change; a green historical run is not evidence for a new SHA.
 
 **Root workspace (`pnpm`, monorepo gate):**
 
@@ -83,7 +83,7 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 |---|---|---|---|
 | `pnpm install --frozen-lockfile` | exit 0 | `node_modules/` only (ignored) | Reports ignored build scripts for `esbuild`, `protobufjs`; do not run `pnpm approve-builds` casually |
 | `pnpm typecheck` | exit 0 (`tsc --noEmit`, no output) | none | Root `tsconfig.json` only; `apps/web` is not covered |
-| `pnpm test` | exit 0, 375 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295, then 347; the P18 contract wave adds 28 more (7 new files x 4 tests). Re-read the count instead of trusting this row |
+| `pnpm test` | exit 0, 395 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295, then 347; the P18 contract wave adds 28 more (7 new files x 4 tests), and the key-witness wave adds 8 (5 index/export tests plus 3 API subtests). Re-read the count instead of trusting this row |
 | `pnpm exec tsx --test packages/srgbl/src/index.test.ts` | exit 0, 14 tests pass, 0 fail | none | SRGBL core: maturity, quality rubric, direction, Witness /100, Swing candidate, cross-text relation, lens selection, correction counterreadings |
 | `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 23 tests pass, 0 fail | none | Default focused command for SRGBL analysis tasks, and the owner of the Quran research-case fixture and rights-matrix regressions |
 | `pnpm exec tsx --test packages/srgbl/src/publication.test.ts` | exit 0, 9 tests pass, 0 fail | none | Reviewed-snapshot seal, projection structure, stage order and the 15-case adversarial matrix (P19-L26/L27/L37) |
@@ -97,12 +97,13 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 | `pnpm exec tsx --test packages/srgbl/src/review-workflow.test.ts` | exit 0, 4 tests pass, 0 fail | none | P18-017 / #441: replayable audit chain, `deprecated` terminal, no automated reviewer, claimed status must match history |
 | `pnpm exec tsx --test packages/srgbl/src/annotation-provenance.test.ts` | exit 0, 4 tests pass, 0 fail | none | P18-018 / #442: assessor + method + time + evidence bound to a submission; `attestsIndependence:false`, no verdict field |
 | `pnpm exec tsx --test packages/srgbl/src/licensing.test.ts` | exit 0, 4 tests pass, 0 fail | none | P18-019 / #443: text licence and annotation licence decided independently; quoting restricted text withholds both; `PUBLIC_DOMAIN_INFERENCE:'prohibited'` |
+| `pnpm exec tsx --test packages/srgbl/src/key-witness.test.ts` | exit 0, 5 tests pass, 0 fail | none | P18-020 / #444: sealed `mw:key-witness-index:v0`, deterministic `mw:citation:v0` JSONL with a manifest, re-seal verification, refused restricted text and refused extra score field; Parquet reported as `not-implemented` |
 | `pnpm validate:editions` | exit 0, `valid: true`, 618 editions / 297 works / 91 languages | none | Edition registry integrity; named verification command for the P19-L25 rights matrix |
 | `pnpm exec tsx --test packages/srgbl/src/research-ledger.test.ts` | exit 0, 5 tests pass, 0 fail | none | Candidate-ledger serialization tasks (P19-L19 / #470) |
 | `pnpm exec tsx --test packages/srgbl/src/sources.test.ts` | exit 0, 4 tests pass, 0 fail | none | Selector/rights-scope file introduced by P19-L05 / #456 |
 | `pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts` | exit 0, 8 tests pass, 0 fail | none | Swing candidate/chain tasks |
 | `pnpm exec tsx --test scripts/ensure-web-deps.test.ts` | exit 0, 5 tests pass, 0 fail | none | Dev-bootstrap guard: complete install, fresh clone, interrupted `npm ci`, missing `next` package, wrong cwd |
-| `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 15 tests pass, 0 fail | none | Run whenever `packages/srgbl` changes reach the Fastify adapter; includes the reviewed-snapshot 200/404/503 fail-closed cases |
+| `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 18 tests pass, 0 fail | none | Run whenever `packages/srgbl` changes reach the Fastify adapter; includes the reviewed-snapshot 200/404/503 fail-closed cases and, since #444, the key-witness 404/503 matrix and its `application/x-ndjson` export |
 | `pnpm check` | **not run locally in this session**; passed inside every CI run listed below | SQLite database build output and repository build artifacts (ignored) | Release-grade gate; deliberately not run per micro issue on the laptop because it builds and validates the whole corpus, so it is delegated to the `check` job |
 | `pnpm todo:check` | exit 0, `TODO sync metadata valid: 330 tracked roadmap tasks` | none | Read-only audit; see the warning above |
 
@@ -132,8 +133,9 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 | [40149634769](https://github.com/bjo163/moonwitness-corpus/actions/runs/40149634769) | `0e5a0dc` | #425 20-key v0 registry with `en`/`id` definitions | `success` (both `check` and `web`) |
 | [40152033194](https://github.com/bjo163/moonwitness-corpus/actions/runs/40152033194) | `b89589f` | #426-#428 controlled vocabulary, assessment extension, derived message contract | `success` (both `check` and `web`) |
 | [40153504300](https://github.com/bjo163/moonwitness-corpus/actions/runs/40153504300) | `02e25e3` | #441-#443 review workflow chain, annotation provenance, text/annotation licence split | `success` (both `check` and `web`) |
+| [40156090170](https://github.com/bjo163/moonwitness-corpus/actions/runs/40156090170) | `2da54b7` | #437-#440 coverage, score profile, citation export and #444 sealed key-witness index plus read-only endpoints | `success` (both `check` and `web`) |
 
-A green run is evidence only for its own `headSha`; `9f5014b` has no successful run of its own, and is covered only indirectly by the two later green runs that carry it as an ancestor. `02e25e3` is the last code SHA measured here. **The P18 issues above stay open on purpose:** `TODO.md` keeps every P18 checkbox unchecked "so an online AI or human review can correct them before the pilot is ratified", and issue state follows that checkbox, so implementing and testing a task does not authorise ticking it. Ratifying the 20-key vocabulary, the reviewer identity and the pilot traditions remains a human decision (#429-#432 stay blocked on it). `gh` 2.103.2 is installed at `C:\Program Files\GitHub CLI\` and authenticated as `bjo163` (keyring, scopes `repo`, `workflow`, `read:org`, `gist`); the machine-wide PATH entry only reaches terminals started after the install, so an already-open shell must call the absolute path.
+A green run is evidence only for its own `headSha`; `9f5014b` has no successful run of its own, and is covered only indirectly by the two later green runs that carry it as an ancestor. `2da54b7` is the last code SHA measured here. **The P18 issues above stay open on purpose:** `TODO.md` keeps every P18 checkbox unchecked "so an online AI or human review can correct them before the pilot is ratified", and issue state follows that checkbox, so implementing and testing a task does not authorise ticking it. Ratifying the 20-key vocabulary, the reviewer identity and the pilot traditions remains a human decision (#429-#432 stay blocked on it). `gh` 2.103.2 is installed at `C:\Program Files\GitHub CLI\` and authenticated as `bjo163` (keyring, scopes `repo`, `workflow`, `read:org`, `gist`); the machine-wide PATH entry only reaches terminals started after the install, so an already-open shell must call the absolute path.
 
 **Worktree policy for these commands:**
 
