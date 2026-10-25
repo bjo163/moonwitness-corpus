@@ -180,3 +180,60 @@ test('no reviewed case results in no fabricated scripture findings',()=>{
   assert.deepEqual(out.publicSummaries,[])
   assert.deepEqual(out.records.reviewedAnalyses,[])
 })
+
+function twoStageRun(): AnalysisRun {
+  const run=oneStageRun()
+  run.claims=[...run.claims,{...run.claims[0],id:'claim:R2',level:'R2',claim:'Synthetic stage two observation',dependsOn:['claim:S1']}]
+  const {inputHash:unused,...payload}=run
+  run.inputHash=computeAnalysisInputHash(payload)
+  return run
+}
+
+test('the adversarial matrix fails closed on every forged projection',()=>{
+  const base=()=>{
+    const run=twoStageRun()
+    return createReviewedSnapshot({corpusHash,methodVersion:run.methodVersion,runs:[run],candidates:[],miracleClaims:[]}) as unknown as Record<string,unknown>
+  }
+  const forge=(mutate:(p:Record<string,any>)=>void)=>{
+    const p=structuredClone(base()) as Record<string,any>
+    mutate(p)
+    // Every adversarial case recomputes the checksum, so only a real invariant may reject it.
+    p.projectionSha256=sha256Json({schema:p.schema,corpusHash:p.corpusHash,methodVersion:p.methodVersion,
+      inputSha256:p.inputSha256,authenticatedSignature:p.authenticatedSignature,records:p.records,publicSummaries:p.publicSummaries})
+    return p
+  }
+  const summary=(p:Record<string,any>)=>p.publicSummaries[0] as Record<string,any>
+  const levels=(p:Record<string,any>)=>summary(p).levels as Record<string,any>[]
+  const cases:[string,RegExp,(p:Record<string,any>)=>void][]=[
+    ['wrong schema',/schema mismatch/,p=>{p.schema='srgbl-v8-reviewed-derived-v2'}],
+    ['unknown projection field',/unknown field in reviewed projection/,p=>{p.approvedByHuman='someone'}],
+    ['missing input checksum',/input checksum missing/,p=>{p.inputSha256='abc'}],
+    ['forged signature claim',/not an authenticated signature/,p=>{p.authenticatedSignature=true}],
+    ['empty public claims',/missing stage in published reviewed trace/,p=>{summary(p).levels=[]}],
+    ['dropped evidence',/unsupported or untraceable public level/,p=>{levels(p)[0].evidenceIds=[]}],
+    ['blank claim text',/unsupported or untraceable public level/,p=>{levels(p)[0].claim='   '}],
+    ['unknown epistemic kind',/unsupported or untraceable public level/,p=>{levels(p)[0].epistemic='revealed'}],
+    ['unreviewed status relabelled',/bad public summary/,p=>{summary(p).status='draft'}],
+    ['out-of-order stages',/reviewed stages are out of order/,p=>{p.publicSummaries[0].levels=[levels(p)[1],levels(p)[0]]}],
+    ['orphan public summary',/orphan public summary/,p=>{summary(p).passageId='mw:passage:test:other'}],
+    ['duplicate analysis identity',/bad or duplicate reviewed analysis/,p=>{p.records.reviewedAnalyses.push(structuredClone(p.records.reviewedAnalyses[0]))}],
+    ['unsupported relation type',/bad or unsupported reviewed relation/,p=>{p.records.reviewedRelations.push({id:'rel:forged',method:'textual-research:v8',relation:'PROVES',reviewer:'mw:reviewer:test'})}],
+    ['attributed claim without claimant',/bad attributed claim/,p=>{p.records.attributedClaims.push({id:'claim:forged',targetPassageId:'mw:passage:test:one',tradition:'islam',method:'textual-research:v8',claimant:'  ',reviewer:'mw:reviewer:test'})}],
+    ['duplicate derived id across types',/duplicate derived ID/,p=>{p.records.reviewedRelations.push({id:'claim:forged',method:'textual-research:v8',relation:'PARALLELS',reviewer:'mw:reviewer:test'});p.records.attributedClaims.push({id:'claim:forged',targetPassageId:'mw:passage:test:one',tradition:'islam',method:'textual-research:v8',claimant:'mw:claimant:test',reviewer:'mw:reviewer:test'})}]
+  ]
+  for(const [name,expected,mutate] of cases){
+    assert.throws(()=>verifyReviewedPublication(forge(mutate),corpusHash),expected,name)
+  }
+  // Negative: the same fields without a recomputed checksum are rejected by the checksum itself.
+  const tampered=structuredClone(base())
+  ;(tampered.publicSummaries as Record<string,any>[])[0].levels[0].claim='FORGED CLAIM'
+  assert.throws(()=>verifyReviewedPublication(tampered,corpusHash),/projection has changed/,'stale checksum')
+  // Negative: a different corpus is never accepted even when everything else is intact.
+  assert.throws(()=>verifyReviewedPublication(base(),'b'.repeat(64)),/corpus hash mismatch/,'stale corpus')
+  // Positive control: the untouched synthetic publication still verifies, and it is not a human approval.
+  const verified=verifyReviewedPublication(base(),corpusHash)
+  assert.equal(verified.publicSummaries.length,1)
+  const serialized=JSON.stringify(verified)
+  // Negative: no forged field survives and a verified synthetic publication is not a human approval.
+  for(const forbidden of ['approvedByHuman','authenticatedSignature":true']) assert.equal(serialized.includes(forbidden),false)
+})
