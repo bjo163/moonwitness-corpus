@@ -41,6 +41,30 @@ function isSwingCandidate(value:unknown):value is SwingCandidate {
     (c.sourcePassageId===undefined||(typeof c.sourcePassageId==="string"&&c.sourcePassageId.startsWith("mw:passage:")))
 }
 
+type ReviewedRelation = {id:string;lens:string;type:string;subjectPassageId:string;objectPassageId:string;evidenceIds:string[];reviewStatus:"reviewed";uncertainty:string;frameNote?:string}
+const RELATION_TYPES:Record<string,{label:string;correction:boolean}>={
+  AFFIRMS:{label:"affirms",correction:false},
+  PARALLELS:{label:"parallels",correction:false},
+  CLARIFIES:{label:"clarifies",correction:false},
+  QUALIFIES:{label:"qualifies",correction:false},
+  CONTRASTS:{label:"contrasts",correction:false},
+  CORRECTS_WITHIN_FRAME:{label:"correction within a declared frame",correction:true},
+  UNRESOLVED:{label:"unresolved",correction:false},
+  NOT_RELATED:{label:"not related",correction:false}
+}
+
+// A reviewed relation needs a lens, a precise pair, typed relation, evidence, uncertainty and, for a correction, its frame.
+function isReviewedRelation(value:unknown):value is ReviewedRelation {
+  if(!value||typeof value!=="object") return false
+  const r=value as Record<string,unknown>
+  return nonBlank(r.id)&&nonBlank(r.lens)&&nonBlank(r.type)&&RELATION_TYPES[r.type as string]!==undefined&&
+    nonBlank(r.subjectPassageId)&&r.subjectPassageId.startsWith("mw:passage:")&&
+    nonBlank(r.objectPassageId)&&r.objectPassageId.startsWith("mw:passage:")&&
+    nonBlank(r.uncertainty)&&r.reviewStatus==="reviewed"&&
+    Array.isArray(r.evidenceIds)&&r.evidenceIds.length>0&&r.evidenceIds.every(nonBlank)&&
+    (!RELATION_TYPES[r.type as string].correction||(typeof r.frameNote==="string"&&r.frameNote.trim().length>0))
+}
+
 function isReviewedAnalysis(value:unknown):value is ReviewedAnalysis {
   if(!value||typeof value!=="object") return false
   const item=value as Record<string,unknown>
@@ -71,6 +95,7 @@ export default function SRGBLResearchPage(){
   const [busy,setBusy]=useState(false)
   const [active,setActive]=useState("S1")
   const [swing,setSwing]=useState<string|null>(null)
+  const [lensFilter,setLensFilter]=useState("")
   async function lookup(e:FormEvent<HTMLFormElement>){
     e.preventDefault()
     setTrace(null);setAnalyses([]);setError("")
@@ -135,8 +160,18 @@ export default function SRGBLResearchPage(){
     return "UNKNOWN"
   }
   const currentClaims=analyses.flatMap(a=>a.levels.filter(c=>c.level===active).map(c=>({...c,analysisId:a.id,method:a.method})))
-  const swingPool=analyses.flatMap(a=>Array.isArray((a as {swingCandidates?:unknown}).swingCandidates)
-    ? (a as {swingCandidates:unknown[]}).swingCandidates : [])
+  const relationPool=analyses.flatMap(a=>{
+    const value=(a as unknown as {relations?:unknown}).relations
+    return Array.isArray(value)?value:[]
+  })
+  const relations=relationPool.filter(isReviewedRelation)
+  const withheldRelations=relationPool.length-relations.length
+  const lenses=[...new Set(relations.map(r=>r.lens))].sort()
+  const visibleRelations=lensFilter?relations.filter(r=>r.lens===lensFilter):relations
+  const swingPool=analyses.flatMap(a=>{
+    const value=(a as unknown as {swingCandidates?:unknown}).swingCandidates
+    return Array.isArray(value)?value:[]
+  })
   const swings=swingPool.filter(isSwingCandidate)
   const withheldSwings=swingPool.length-swings.length
   const messages=analyses.flatMap(a=>{
@@ -213,6 +248,27 @@ export default function SRGBLResearchPage(){
               {swing===s.id&&<p className="mt-1 break-all px-2 text-xs text-muted-foreground">Candidate {s.id}{s.sourcePassageId?" · source origin: "+s.sourcePassageId:" · source origin: UNKNOWN"}. No reviewed claim, no inherited score and no supporting reference is implied.</p>}
             </li>)}</ul>}
         {withheldSwings>0&&<p className="mt-2 text-xs text-muted-foreground">{withheldSwings} candidate(s) withheld: a candidate must state depth 1-3, an unverified evidence status and a canonical source origin.</p>}
+      </section>
+      <section className="mt-5 rounded-md border p-3" aria-labelledby="comparative-lens">
+        <h3 id="comparative-lens" className="text-sm font-semibold">Comparative lens (interpretation, not neutral truth)</h3>
+        {relations.length>0&&<label className="mt-2 block text-xs" htmlFor="lens-filter">Filter by lens
+          <select id="lens-filter" className="mt-1 block w-full rounded-md border bg-background p-2 text-sm" value={lensFilter} onChange={e=>setLensFilter(e.target.value)}>
+            <option value="">All declared lenses</option>
+            {lenses.map(lens=><option key={lens} value={lens}>{lens}</option>)}
+          </select>
+        </label>}
+        {visibleRelations.length===0
+          ? <p className="mt-2 text-sm">No reviewed comparative relation is published for this passage and lens.</p>
+          : <ul className="mt-3 space-y-2" role="list">{visibleRelations.map(r=><li key={r.id} className="rounded-md border p-3 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide">Lens: {r.lens} · {RELATION_TYPES[r.type].label}</p>
+              <p className="mt-1 break-all text-xs">Pair: {r.subjectPassageId} {'->'} {r.objectPassageId}</p>
+              <p className="mt-1 text-xs">Review status: {r.reviewStatus} · Evidence: {r.evidenceIds.join(", ")}</p>
+              <p className="mt-1 text-xs"><strong>Uncertainty:</strong> {r.uncertainty}</p>
+              {RELATION_TYPES[r.type].correction
+                ? <p className="mt-2 text-xs">Interpretation within the {r.lens} frame, not a cross-relational neutral truth. Frame: {r.frameNote}</p>
+                : <p className="mt-2 text-xs">Neutral comparison within the {r.lens} lens: no correction is claimed and no tradition is ranked.</p>}
+            </li>)}</ul>}
+        {withheldRelations>0&&<p className="mt-2 text-xs text-muted-foreground">{withheldRelations} relation(s) withheld: a relation needs a lens, a canonical pair, a supported relation type, evidence, uncertainty and a declared frame for any correction.</p>}
       </section>
       {reviewNote&&<p className="mt-4 text-xs text-muted-foreground" role="status">{reviewNote}</p>}
     </section>
