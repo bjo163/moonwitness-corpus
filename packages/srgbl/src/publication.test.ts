@@ -49,6 +49,48 @@ test('reviewed export rejects a modified analysis even if status is still review
     corpusHash,methodVersion:run.methodVersion,runs:[run],candidates:[],miracleClaims:[]
   }),/analysis input hash mismatch/)
 })
+test('a sealed run fails export when its source, reviewer, claim or evidence changes',()=>{
+  const sealed=oneStageRun()
+  const snapshotOf=(run:AnalysisRun)=>createReviewedSnapshot({
+    corpusHash,methodVersion:run.methodVersion,runs:[run],candidates:[],miracleClaims:[]})
+  // Positive: the same reviewed bytes always produce the same input SHA.
+  assert.equal(snapshotOf(structuredClone(sealed)).inputSha256,snapshotOf(sealed).inputSha256)
+  // Positive: the seal covers the record set, not the order a caller listed it in.
+  const twin=structuredClone(sealed)
+  twin.id='run:synthetic:review-2'
+  const {inputHash:unusedHash,...twinPayload}=twin
+  twin.inputHash=computeAnalysisInputHash(twinPayload)
+  const forward=createReviewedSnapshot({corpusHash,methodVersion:sealed.methodVersion,
+    runs:[sealed,twin],candidates:[],miracleClaims:[]})
+  const reversed=createReviewedSnapshot({corpusHash,methodVersion:sealed.methodVersion,
+    runs:[twin,sealed],candidates:[],miracleClaims:[]})
+  assert.equal(reversed.inputSha256,forward.inputSha256)
+  assert.equal(reversed.projectionSha256,forward.projectionSha256)
+  // Negative: every part of the seal fails closed once it is edited after sealing.
+  const mutations:Array<{label:string;mutate:(run:AnalysisRun)=>void}>=[
+    {label:'reviewer',mutate:run=>{run.reviewer='mw:reviewer:impostor'}},
+    {label:'source edition',mutate:run=>{run.sourceWitnesses[0].editionId='mw:edition:swapped'}},
+    {label:'source text',mutate:run=>{run.sourceWitnesses[0].text='SUBSTITUTED TEXT'}},
+    {label:'source rights',mutate:run=>{run.sourceWitnesses[0].rights='unknown'}},
+    {label:'claim',mutate:run=>{run.claims[0].claim='Altered after the seal'}},
+    {label:'claim evidence',mutate:run=>{run.claims[0].evidenceIds=['mw:evidence:injected']}},
+    {label:'source content',mutate:run=>{run.claims[0].sourceContentIds=['mw:content:injected']}}
+  ]
+  for (const {label,mutate} of mutations) {
+    const copy=structuredClone(sealed)
+    mutate(copy)
+    assert.throws(()=>snapshotOf(copy),/analysis input hash mismatch/,
+      label+' changed after sealing must fail the reviewed export')
+  }
+  // Negative: the seal is a content checksum, not a human signature, and it says so.
+  const snapshot=snapshotOf(sealed)
+  assert.equal(snapshot.authenticatedSignature,false)
+  const forged=structuredClone(snapshot) as unknown as Record<string,unknown>
+  forged.authenticatedSignature=true
+  const {projectionSha256:unused,...projection}=forged
+  forged.projectionSha256=sha256Json(projection)
+  assert.throws(()=>verifyReviewedPublication(forged,corpusHash),/not an authenticated signature/)
+})
 test('missing verified S1 stage cannot be published even if reviewer exists',()=>{
   const run=oneStageRun()
   run.claims=[]

@@ -16,6 +16,11 @@ export type ResearchPublication = {
   inputSha256: string
   /** Checksum of the exact public + research projection, not an author signature. */
   projectionSha256: string
+  /**
+   * A content checksum binds bytes. It authenticates no person, is not a reviewer
+   * signature and grants no rights; it is therefore always false.
+   */
+  authenticatedSignature: false
   records: {
     /** Full assessment details are retained in review-only view. */
     reviewedAnalyses: Array<{id:string;passageId:string;reviewer:string;maturity:number;max:15}>
@@ -45,7 +50,8 @@ export function sha256Json(value:unknown):string {
   return createHash('sha256').update(canonicalJson(value),'utf8').digest('hex')
 }
 
-/** Bind an analysis to its exact source/claim/reviewer bytes, excluding the hash field itself. */
+/** Bind an analysis to its exact source/claim/reviewer bytes, excluding the hash field itself.
+ * This proves byte-identity of what a reviewer sealed; it is not authorship or permission. */
 export function computeAnalysisInputHash(run: Omit<AnalysisRun,'inputHash'>): string {
   return sha256Json(run)
 }
@@ -94,8 +100,15 @@ export function createReviewedSnapshot(input:SnapshotInput):ResearchPublication 
   reviewedRelations.sort((a,b)=>a.id.localeCompare(b.id))
   attributedClaims.sort((a,b)=>a.id.localeCompare(b.id))
   publicSummaries.sort((a,b)=>a.id.localeCompare(b.id))
+  // The seal covers the record sets, not the caller's array order: the same reviewed
+  // records passed in a different order must produce the same input SHA.
+  const sealed={corpusHash:input.corpusHash,methodVersion:input.methodVersion,
+    runs:[...input.runs].sort((a,b)=>a.id.localeCompare(b.id)),
+    candidates:[...input.candidates].sort((a,b)=>a.id.localeCompare(b.id)),
+    miracleClaims:[...input.miracleClaims].sort((a,b)=>a.id.localeCompare(b.id))}
   const projection={schema:'srgbl-v8-reviewed-derived-v1' as const,corpusHash:input.corpusHash,
-    methodVersion:input.methodVersion,inputSha256:sha256Json(input),
+    methodVersion:input.methodVersion,inputSha256:sha256Json(sealed),
+    authenticatedSignature:false as const,
     records:{reviewedAnalyses,reviewedRelations,attributedClaims},publicSummaries}
   return {...projection,projectionSha256:sha256Json(projection)}
 }

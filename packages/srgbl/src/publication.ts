@@ -14,6 +14,7 @@ export function verifyReviewedPublication(value: unknown, expectedCorpusHash: st
   if (typeof o.methodVersion !== 'string' || !o.methodVersion.trim()) fail('method missing')
   if (typeof o.inputSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(o.inputSha256)) fail('input checksum missing')
   if (typeof o.projectionSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(o.projectionSha256)) fail('projection checksum missing')
+  if (o.authenticatedSignature !== false) fail('a content checksum is not an authenticated signature')
   const { projectionSha256, ...projection } = o
   if (sha256Json(projection) !== projectionSha256) fail('projection has changed')
   if (!o.records || typeof o.records !== 'object' || Array.isArray(o.records)) fail('records missing')
