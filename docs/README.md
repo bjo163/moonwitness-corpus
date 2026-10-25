@@ -22,6 +22,7 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 - **[SRGBL v8 Implementation & UX Blueprint](./MOONWITNESS-SRGBL-V8-BLUEPRINT.md)** — record contracts, UI architecture, API/static ingestion, review and release stages.
 - **[38 Atomic Local-AI Issues / Microtask Register](./MOONWITNESS-P19-MICROTASKS.md)** — real GitHub Issues #452–#489, parent-task crosswalk and dependency order.
 - **[Local AI Handoff — NO NEW BRANCHES](./MOONWITNESS-LOCAL-AI-HANDOFF.md)** — exact Node/pnpm/test commands, one issue at a time, direct dev only.
+- **[P19 Register Reconciliation](./P19-REGISTER-RECONCILIATION.md)** — the microtask register checked against commit evidence, including the two L19 anomalies and the tags that crossed.
 - [Machine-readable Microtask Manifest](./MOONWITNESS-P19-MICROTASKS.json) — source of small-issue file scope, tests and GitHub issue IDs.
 
 - **[Knowledge Observatory UI Atlas v2 — 20 screen design guide](./design/knowledge-observatory-v2/README.md)** — Corpus Reader, prophetic figures table, multilingual terminology, ontology, research and curator-console screen contracts (design only).
