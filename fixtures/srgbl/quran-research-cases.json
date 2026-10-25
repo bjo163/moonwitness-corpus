@@ -9,6 +9,18 @@
     "requiresRightsReviewBeforeAnalysis": true
   },
   "method": "srgbl-v8-textual-research-proposed",
+  "rightsAuditPolicy": {
+    "document": "docs/SRGBL-V8-SOURCE-EDITION-MATRIX.md",
+    "clearedRequires": [
+      "editionId",
+      "licenseExpression",
+      "evidenceUrl",
+      "reVerifiedOn",
+      "reviewedBy"
+    ],
+    "publicDomainInference": "prohibited",
+    "humanConfirmation": "pending"
+  },
   "cases": [
     {
       "id": "quran-42-51",
@@ -19,6 +31,35 @@
         "verse": 51
       },
       "purpose": "Compare directly enumerated communication modes against inferred modes; do not invent revelation",
+      "rightsAudit": {
+        "status": "pending-human-rights-confirmation",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "assets": [
+          {
+            "kind": "quran-text",
+            "editionId": "quran-tanzil-uthmani",
+            "licenseExpression": "CC-BY-3.0",
+            "evidenceUrl": "https://tanzil.net/docs/Text_License",
+            "recordedIn": "datasets/quran-tanzil-uthmani/LICENSES/TANZIL.md",
+            "reVerifiedOn": "2026-08-27",
+            "conditions": [
+              "attribution-required",
+              "text-must-not-be-changed"
+            ],
+            "status": "documented-conditions-apply"
+          },
+          {
+            "kind": "interpretive-reading",
+            "editionId": null,
+            "licenseExpression": null,
+            "evidenceUrl": null,
+            "recordedIn": null,
+            "reVerifiedOn": null,
+            "status": "no-edition-selected"
+          }
+        ]
+      },
       "intendedLevels": [
         "S1",
         "R2",
@@ -37,6 +78,35 @@
         "verse": 48
       },
       "purpose": "Test Quran-anchored source-scoped comparative correction, not global proof",
+      "rightsAudit": {
+        "status": "pending-human-rights-confirmation",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "assets": [
+          {
+            "kind": "quran-text",
+            "editionId": "quran-tanzil-uthmani",
+            "licenseExpression": "CC-BY-3.0",
+            "evidenceUrl": "https://tanzil.net/docs/Text_License",
+            "recordedIn": "datasets/quran-tanzil-uthmani/LICENSES/TANZIL.md",
+            "reVerifiedOn": "2026-08-27",
+            "conditions": [
+              "attribution-required",
+              "text-must-not-be-changed"
+            ],
+            "status": "documented-conditions-apply"
+          },
+          {
+            "kind": "interpretive-reading",
+            "editionId": null,
+            "licenseExpression": null,
+            "evidenceUrl": null,
+            "recordedIn": null,
+            "reVerifiedOn": null,
+            "status": "no-edition-selected"
+          }
+        ]
+      },
       "intendedLevels": [
         "S1",
         "R2",
@@ -82,6 +152,35 @@
         "literalVerseWording": false,
         "note": "Editorial metaphor used for OFFSIDE diagnostics; it is not verse wording and must never be rendered as scripture or as the passage's own claim."
       },
+      "rightsAudit": {
+        "status": "pending-human-rights-confirmation",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "assets": [
+          {
+            "kind": "quran-text",
+            "editionId": "quran-tanzil-uthmani",
+            "licenseExpression": "CC-BY-3.0",
+            "evidenceUrl": "https://tanzil.net/docs/Text_License",
+            "recordedIn": "datasets/quran-tanzil-uthmani/LICENSES/TANZIL.md",
+            "reVerifiedOn": "2026-08-27",
+            "conditions": [
+              "attribution-required",
+              "text-must-not-be-changed"
+            ],
+            "status": "documented-conditions-apply"
+          },
+          {
+            "kind": "interpretive-reading",
+            "editionId": null,
+            "licenseExpression": null,
+            "evidenceUrl": null,
+            "recordedIn": null,
+            "reVerifiedOn": null,
+            "status": "no-edition-selected"
+          }
+        ]
+      },
       "intendedLevels": [
         "S1",
         "R2",
@@ -119,6 +218,35 @@
         }
       ],
       "metaphor": null,
+      "rightsAudit": {
+        "status": "pending-human-rights-confirmation",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "assets": [
+          {
+            "kind": "quran-text",
+            "editionId": "quran-tanzil-uthmani",
+            "licenseExpression": "CC-BY-3.0",
+            "evidenceUrl": "https://tanzil.net/docs/Text_License",
+            "recordedIn": "datasets/quran-tanzil-uthmani/LICENSES/TANZIL.md",
+            "reVerifiedOn": "2026-08-27",
+            "conditions": [
+              "attribution-required",
+              "text-must-not-be-changed"
+            ],
+            "status": "documented-conditions-apply"
+          },
+          {
+            "kind": "interpretive-reading",
+            "editionId": null,
+            "licenseExpression": null,
+            "evidenceUrl": null,
+            "recordedIn": null,
+            "reVerifiedOn": null,
+            "status": "no-edition-selected"
+          }
+        ]
+      },
       "intendedLevels": [
         "S1",
         "R2",
@@ -137,6 +265,35 @@
         "verse": 82
       },
       "purpose": "Test multiple key candidates, recipients and bounded message without promoting unratified keys",
+      "rightsAudit": {
+        "status": "pending-human-rights-confirmation",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "assets": [
+          {
+            "kind": "quran-text",
+            "editionId": "quran-tanzil-uthmani",
+            "licenseExpression": "CC-BY-3.0",
+            "evidenceUrl": "https://tanzil.net/docs/Text_License",
+            "recordedIn": "datasets/quran-tanzil-uthmani/LICENSES/TANZIL.md",
+            "reVerifiedOn": "2026-08-27",
+            "conditions": [
+              "attribution-required",
+              "text-must-not-be-changed"
+            ],
+            "status": "documented-conditions-apply"
+          },
+          {
+            "kind": "interpretive-reading",
+            "editionId": null,
+            "licenseExpression": null,
+            "evidenceUrl": null,
+            "recordedIn": null,
+            "reVerifiedOn": null,
+            "status": "no-edition-selected"
+          }
+        ]
+      },
       "intendedLevels": [
         "S1",
         "R2",

@@ -457,3 +457,52 @@ test('the Quran research fixture keeps neighbour context and metaphor rights-saf
     editionRequired:true,rightsReviewRequired:true,cannotAssumeMiracle:true,cannotInheritSwingScore:true})
   assert.equal(fixture.note.startsWith('No claim has a canonical passage ID'),true)
 })
+test('the pilot rights matrix cites one documented licence and clears nothing',()=>{
+  const fixture:any=JSON.parse(readFileSync(
+    new URL('../../../fixtures/srgbl/quran-research-cases.json',import.meta.url),'utf8'))
+  // The rule that decides when a row may move is part of the fixture, not of a comment.
+  assert.deepEqual(fixture.rightsAuditPolicy,{document:'docs/SRGBL-V8-SOURCE-EDITION-MATRIX.md',
+    clearedRequires:['editionId','licenseExpression','evidenceUrl','reVerifiedOn','reviewedBy'],
+    publicDomainInference:'prohibited',humanConfirmation:'pending'})
+  const cleared=fixture.rightsAuditPolicy.clearedRequires
+  for (const entry of fixture.cases) {
+    const audit=entry.rightsAudit
+    assert.ok(audit,'every case carries a rights audit: '+entry.id)
+    // Negative: none of the five is cleared, and no reviewer is claimed without a review.
+    assert.deepEqual([audit.status,audit.reviewedBy,audit.reviewedOn],
+      ['pending-human-rights-confirmation',null,null])
+    assert.notEqual(audit.status,'cleared')
+    const text=audit.assets.find((asset:any)=>asset.kind==='quran-text')
+    assert.ok(text,'the text asset is named: '+entry.id)
+    // Positive: the one documented asset cites an official source, a date and its conditions.
+    assert.deepEqual([text.editionId,text.licenseExpression,text.status],
+      ['quran-tanzil-uthmani','CC-BY-3.0','documented-conditions-apply'])
+    assert.equal(text.evidenceUrl.startsWith('https://tanzil.net/'),true)
+    assert.equal(text.reVerifiedOn,'2026-08-27')
+    assert.deepEqual(text.conditions,['attribution-required','text-must-not-be-changed'])
+    const reading=audit.assets.find((asset:any)=>asset.kind==='interpretive-reading')
+    // Negative: no interpretive edition is selected, so nothing is claimed for it.
+    assert.deepEqual([reading.editionId,reading.licenseExpression,reading.evidenceUrl,reading.status],
+      [null,null,null,'no-edition-selected'])
+    // Negative: no asset anywhere asserts public domain or a bare licence name.
+    for (const asset of audit.assets) {
+      assert.equal(String(asset.licenseExpression??'').toLowerCase().includes('public domain'),false)
+    }
+    // Negative: while pending, the record cannot satisfy the clearance requirement, and any
+    // future cleared row must supply every required field.
+    const satisfied=cleared.filter((field:string)=>audit[field]??text[field])
+    if (audit.status==='cleared') assert.deepEqual(satisfied.sort(),[...cleared].sort())
+    else assert.ok(satisfied.length<cleared.length,'a pending row must not satisfy every clearance field')
+  }
+  // The cited note exists and really records the licence expression and its scope limit.
+  const note=readFileSync(new URL('../../../'+fixture.cases[0].rightsAudit.assets[0].recordedIn,import.meta.url),'utf8')
+  assert.equal(note.includes('CC-BY-3.0'),true)
+  assert.equal(note.includes('does not establish rights for modern translations'),true)
+  // The matrix document itself lists every audited case and states the gate stays closed.
+  const matrix=readFileSync(new URL('../../../'+fixture.rightsAuditPolicy.document,import.meta.url),'utf8')
+  for (const entry of fixture.cases) assert.equal(matrix.includes(entry.id),true,entry.id+' is listed')
+  assert.equal(matrix.includes('CC-BY-3.0'),true)
+  assert.equal(matrix.includes('https://tanzil.net/docs/Text_License'),true)
+  assert.equal(matrix.includes('Never infer public domain from the age'),true)
+  assert.equal(matrix.includes('No pilot case is cleared'),true)
+})
