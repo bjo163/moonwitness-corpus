@@ -72,7 +72,7 @@ export type KeyWitnessExportManifest = {
 
 const RECORD_FIELDS = ['passageId','editionId','artifactId','contentId','text','textRights',
   'annotationLicense','keys','messages','provenanceIds','evidenceIds'] as const
-const KEY_FIELDS = ['id','key','scheme','method','assessor','reviewStatus'] as const
+const KEY_FIELDS = ['id','key','scheme','method','assessor','reviewStatus','relation','direction','frame'] as const
 const MESSAGE_FIELDS = ['id','message','boundaryNote','reviewStatus','reviewer','sourceKeyAssessmentIds'] as const
 const LICENSE_FIELDS = ['kind','licenseId','attestedBy'] as const
 

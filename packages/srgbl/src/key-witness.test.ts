@@ -120,6 +120,26 @@ test('sealing refuses an untraceable or unexportable entry', () => {
   })),/unknown field in entry\[0\]: score/)
 })
 
+test('annotation facets travel with the cited key, and a fabricated one is refused', () => {
+  const frame={agent:'narrator',recipient:'individual',domain:'textual',scope:'quran:2:286',genre:'annotation'}
+  const faceted=buildKeyWitnessExport(sealKeyWitnessIndex(input({entries:[record({keys:[{
+    ...record().keys[0],relation:'comforts',direction:1,frame
+  }]})]})))
+  assert.deepEqual(faceted.errors,[])
+  const cited=JSON.parse(faceted.jsonl!.trim()).keys[0]
+  assert.equal(cited.relation,'comforts')
+  assert.equal(cited.direction,1)
+  assert.equal(cited.frame.genre,'annotation')
+  // An absent facet stays absent rather than becoming a neutral 0 a filter would match.
+  const plain=JSON.parse(buildKeyWitnessExport(sealKeyWitnessIndex(input())).jsonl!.trim()).keys[0]
+  assert.equal('direction' in plain,false)
+  assert.equal('frame' in plain,false)
+  assert.throws(()=>sealKeyWitnessIndex(input({entries:[record({keys:[{...record().keys[0],direction:3 as never}]})]})),/direction outside/)
+  assert.throws(()=>sealKeyWitnessIndex(input({entries:[record({keys:[{...record().keys[0],relation:'blesses' as never}]})]})),/undeclared relation/)
+  // A partial frame is not a frame: all five fields or none.
+  assert.throws(()=>sealKeyWitnessIndex(input({entries:[record({keys:[{...record().keys[0],frame:{agent:'narrator'} as never}]})]})),/frame\./)
+})
+
 test('a sealed index is served only while its bytes still hash to the seal', () => {
   const sealed=sealKeyWitnessIndex(input())
   assert.equal(verifyKeyWitnessIndex(JSON.parse(JSON.stringify(sealed)),HASH).indexSha256,sealed.indexSha256)

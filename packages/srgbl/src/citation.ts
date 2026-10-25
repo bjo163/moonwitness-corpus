@@ -1,6 +1,7 @@
 import { decidePublication, type AnnotationLicense } from './licensing.js'
-import { validateKeyToken } from './keys.js'
-import type { ReviewStatus, RightsStatus } from './analysis.js'
+import { KEY_RELATIONS, validateKeyToken, type KeyRelation } from './keys.js'
+import { DIRECTION_VALUES } from './vocabulary.js'
+import { validateResearchFrame, type ResearchFrame, type ReviewStatus, type RightsStatus } from './analysis.js'
 
 /**
  * P18-016: a citation carries the reader back to the evidence. It bundles the
@@ -15,6 +16,14 @@ export type CitationKey = {
   method: string
   assessor: string
   reviewStatus: ReviewStatus
+  /**
+   * Annotation facets, when the assessment recorded them. P18-011 filters the
+   * spectrum by key, relation, direction and frame, so a citation has to carry
+   * what it was annotated with instead of letting the reader guess.
+   */
+  relation?: KeyRelation
+  direction?: -2 | -1 | 0 | 1 | 2
+  frame?: ResearchFrame
 }
 
 export type CitationMessage = {
@@ -83,6 +92,11 @@ export function buildCitationBundle(input: CitationInput): {citation: CitationBu
     if (nonblank(entry.assessor) && !entry.assessor.startsWith('mw:'))
       errors.push('citation key assessor must be a canonical mw: principal')
     if (entry.reviewStatus === 'reviewed' && !nonblank(entry.assessor)) errors.push('reviewed key ' + entry.id + ' needs an assessor')
+    if (entry.relation !== undefined && !(KEY_RELATIONS as readonly string[]).includes(entry.relation))
+      errors.push('citation key ' + entry.id + ' has an undeclared relation: ' + String(entry.relation))
+    if (entry.direction !== undefined && !(DIRECTION_VALUES as readonly number[]).includes(entry.direction))
+      errors.push('citation key ' + entry.id + ' has a direction outside -2..+2')
+    if (entry.frame !== undefined) errors.push(...validateResearchFrame(entry.frame).map(error => 'citation key ' + entry.id + ': ' + error))
   }
   // A draft reading may not leave the tool as something a reader can cite.
   const messages = (input?.messages ?? []).filter(message => nonblank(message?.id))
@@ -113,6 +127,19 @@ export function buildCitationBundle(input: CitationInput): {citation: CitationBu
     seen.add(mark)
     return true
   })
+  // Facets travel only when they were recorded: an absent direction stays absent
+  // rather than becoming a neutral 0 that a filter would then match.
+  const citedKeys = uniqueKeys.map(entry => ({
+    id: entry.id,
+    key: entry.key,
+    scheme: entry.scheme,
+    method: entry.method,
+    assessor: entry.assessor,
+    reviewStatus: entry.reviewStatus,
+    ...(entry.relation !== undefined ? {relation: entry.relation} : {}),
+    ...(entry.direction !== undefined ? {direction: entry.direction} : {}),
+    ...(entry.frame !== undefined ? {frame: {...entry.frame}} : {})
+  }))
 
   return {citation: {
     schema: 'mw:citation:v0',
@@ -122,7 +149,7 @@ export function buildCitationBundle(input: CitationInput): {citation: CitationBu
     contentId: nonblank(input.contentId) ? input.contentId : null,
     text: includeText ? input.text ?? null : null,
     textOmissionReason,
-    keys: uniqueKeys,
+    keys: citedKeys,
     messages,
     rights: { text: input.textRights, annotation: input.annotationLicense, publicDomainInference: 'prohibited' },
     provenance: [...new Set(input.provenanceIds.filter(nonblank))].sort(),
