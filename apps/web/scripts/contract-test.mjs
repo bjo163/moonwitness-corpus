@@ -5,7 +5,7 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleProfile] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, exportHook, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleSpectrum, consoleProfile] = await Promise.all([
   read("src/data.ts"),
   read("src/corpus-app.tsx"),
   read("src/api.ts"),
@@ -13,6 +13,7 @@ const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, sema
   read("package.json"),
   read("src/app/layout.tsx"),
   read("src/app/page.tsx"),
+  read("src/app/explorer/page.tsx"),
   read("src/app/globals.css"),
   read("../../scripts/export-web-catalog.mjs"),
   read("../../config/textual-semantic-rules.json"),
@@ -20,11 +21,13 @@ const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, sema
   read("src/app/research/srgbl/page.tsx"),
   read("src/app/research/key-witness/page.tsx"),
   read("src/lib/key-witness.ts"),
+  read("src/lib/use-key-witness-export.ts"),
   read("src/lib/console-session.ts"),
   read("src/app/admin/page.tsx"),
   read("src/app/admin/(console)/layout.tsx"),
   read("src/app/admin/(console)/ledger/page.tsx"),
   read("src/app/admin/(console)/balance/page.tsx"),
+  read("src/app/admin/(console)/spectrum/page.tsx"),
   read("src/app/admin/(console)/profile/page.tsx"),
 ])
 
@@ -80,7 +83,7 @@ expect(pkg.scripts?.build?.includes("ensure-browser-db.mjs"), "production build 
 expect(pkg.dependencies?.next, "web runtime must be Next.js")
 expect(!pkg.devDependencies?.vite && !pkg.dependencies?.vite, "web runtime must not depend on Vite")
 expect(pkg.scripts?.build?.includes("next build"), "production build must run next build")
-expect(page.includes('ssr: false'), "browser-only corpus app must not be server-rendered")
+expect(explorer.includes('ssr: false'), "browser-only corpus app must not be server-rendered")
 expect(api.includes("NEXT_PUBLIC_RGBL_API_URL"), "REST base URL must use the Next public env prefix")
 expect(!api.includes("import.meta.env"), "Vite-only import.meta.env must be removed")
 expect(main.includes("239,841") === false && main.includes("537K+") === false, "runtime corpus metrics must not be hardcoded")
@@ -159,12 +162,31 @@ expect(consoleLedger.includes('m.schema !== "mw:key-witness-export:v0"'), "the l
 expect(consoleLedger.includes("catalog.corpusHash !== verified.corpusHash"), "a manifest from another corpus must be refused")
 expect(consoleLedger.includes("m.scoresIncluded !== false"), "the ledger must refuse an export that carries scores")
 expect(consoleLedger.includes("manifest.parquetGap"), "the ledger must state the Parquet gap instead of implying a file")
-expect(consoleBalance.includes("parseExportJsonl") && consoleBalance.includes("No distribution is drawn from a partial"), "the balance must refuse a partial or unverifiable export")
+expect(consoleBalance.includes("No distribution is drawn from a partial"), "the balance must refuse a partial or unverifiable export")
 expect(consoleBalance.includes('aria-pressed={view === option}'), "the grouping toggle must expose its pressed state")
 expect(consoleBalance.includes("Keys are listed alphabetically"), "the balance must say why the order is not a ranking")
 expect(consoleBalance.includes("not a ranking of the passage"), "a bar length must not read as a ranking")
 expect(consoleProfile.includes("changeCredential") && consoleProfile.includes("Not server authentication"), "the profile must change a local credential and state its limit")
-expect(page.includes("CorpusApp") && page.includes('ssr: false'), "the reader home must stay the browser corpus app, separate from the console")
+
+// The shared export reader keeps "not published" and "failed integrity" distinguishable.
+expect(exportHook.includes("parseExportJsonl") && exportHook.includes("One unreadable line invalidates"), "one reader must reject a partial export for every screen")
+expect(exportHook.includes("key_witness_not_materialized") && exportHook.includes("key_witness_index_integrity_failure"), "the export reader must keep both fail-closed states distinct")
+expect(exportHook.includes("does not invent records"), "a static build must say it invents no records")
+
+// P18-011 spectrum: facets are filtered, unpublished facets are named.
+expect(consoleSpectrum.includes("filterSpectrum") && consoleSpectrum.includes("spectrumFacets"), "the spectrum must filter by key, relation, direction and frame")
+expect(consoleSpectrum.includes("Not published by this export"), "a facet the export does not carry must be named, not offered as an empty filter")
+expect(consoleSpectrum.includes("A dash means the annotation did not record that facet"), "an absent facet must not be read as a neutral zero")
+expect(consoleSpectrum.includes("never scores a verse"), "the spectrum must not score a verse or a tradition")
+expect(consoleSpectrum.includes("empty selection, not evidence"), "an empty result must not be read as evidence of absence")
+expect(keyWitnessLib.includes("frameLabel") && keyWitnessLib.includes("available: {"), "the spectrum must expose facet availability")
+
+// The landing page routes a reader; the corpus app lives on its own route.
+expect(page.includes("Trace the text") && page.includes('href="/explorer"'), "the landing page must state the thesis and route to the explorer")
+expect(page.includes('href="/admin"') && page.includes('href="/research/key-witness"'), "the landing page must route to the console and the key card")
+expect(page.includes("No global score") && page.includes("no tradition ranking"), "the landing page must state the boundaries")
+expect(!page.includes("CorpusApp") && !page.includes("use client"), "the landing page must stay static, not the browser corpus app")
+expect(explorer.includes("CorpusApp"), "the corpus app must remain reachable at /explorer")
 
 if (failures.length) {
   console.error("RGBL web contract smoke failed:")

@@ -8,6 +8,7 @@ export type Rights = {
   annotation: { kind: string; licenseId?: string; attestedBy?: string }
   publicDomainInference: "prohibited"
 }
+export type KeyFrame = {agent: string; recipient: string; domain: string; scope: string; genre: string}
 export type CitationKey = {
   id: string
   key: string
@@ -15,6 +16,10 @@ export type CitationKey = {
   method: string
   assessor: string
   reviewStatus: "draft" | "reviewed" | "disputed" | "deprecated"
+  /** Annotation facets, present only when the assessment recorded them. */
+  relation?: string
+  direction?: number
+  frame?: KeyFrame
 }
 export type CitationMessage = {
   id: string
@@ -45,6 +50,8 @@ export type Citation = {
 
 const RIGHTS = ["cleared", "restricted", "unknown"]
 const REVIEW = ["draft", "reviewed", "disputed", "deprecated"]
+const DIRECTIONS = [-2, -1, 0, 1, 2]
+const FRAME_FIELDS = ["agent", "recipient", "domain", "scope", "genre"] as const
 const nonBlank = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.length > 0 && value.every(nonBlank)
 
@@ -84,6 +91,15 @@ export function validateCitation(value: unknown): Citation {
     for (const field of ["key", "scheme", "method"] as const) if (!nonBlank(k[field])) throw new Error("A cited key is missing its " + field)
     if (!nonBlank(k.assessor) || !k.assessor.startsWith("mw:")) throw new Error("A cited key names no canonical assessor")
     if (typeof k.reviewStatus !== "string" || !REVIEW.includes(k.reviewStatus)) throw new Error("A cited key has an unknown review status")
+    // A facet that was not recorded must stay absent; a wrong one is a defect.
+    if (k.relation !== undefined && !nonBlank(k.relation)) throw new Error("A cited key carries a blank relation")
+    if (k.direction !== undefined && (typeof k.direction !== "number" || !DIRECTIONS.includes(k.direction)))
+      throw new Error("A cited key has a direction outside -2..+2")
+    if (k.frame !== undefined) {
+      const frame = k.frame as Record<string, unknown>
+      if (!frame || typeof frame !== "object") throw new Error("A cited key has a frame that is not an object")
+      for (const field of FRAME_FIELDS) if (!nonBlank(frame[field])) throw new Error("A cited key frame is missing its " + field)
+    }
   }
   const messages = Array.isArray(c.messages) ? c.messages : []
   for (const raw of messages) {
@@ -106,6 +122,9 @@ export function validateCitation(value: unknown): Citation {
     keys: keys.map(k => ({
       id: k.id as string, key: k.key as string, scheme: k.scheme as string, method: k.method as string,
       assessor: k.assessor as string, reviewStatus: k.reviewStatus as CitationKey["reviewStatus"],
+      ...(k.relation !== undefined ? {relation: k.relation as string} : {}),
+      ...(k.direction !== undefined ? {direction: k.direction as number} : {}),
+      ...(k.frame !== undefined ? {frame: {...(k.frame as KeyFrame)}} : {}),
     })),
     messages: messages.map(m => ({
       id: m.id as string, message: m.message as string, boundaryNote: m.boundaryNote as string,
@@ -206,4 +225,77 @@ export function groupByKey(keys: readonly CitationKey[]): Array<[string, Citatio
 /** The maximum count in a set, used only to size a bar, never to rank a reading. */
 export function maxCount(keys: readonly KeyCount[]): number {
   return keys.reduce((max, key) => Math.max(max, key.count), 1)
+}
+
+export type SpectrumRow = {
+  passageId: string
+  workId: string
+  key: string
+  relation: string | null
+  direction: number | null
+  frame: KeyFrame | null
+  frameLabel: string | null
+  assessor: string
+  scheme: string
+  reviewStatus: string
+  recordId: string
+}
+
+export type SpectrumFacets = {
+  keys: string[]
+  relations: string[]
+  directions: number[]
+  frames: string[]
+  /** How many cited keys carry each facet: a zero names an unpublished facet. */
+  available: {relation: number; direction: number; frame: number}
+  total: number
+}
+
+/** One row per cited key, with the annotation facets the export actually carries. */
+export function spectrumRows(citations: readonly Citation[]): SpectrumRow[] {
+  const rows: SpectrumRow[] = []
+  for (const citation of citations) for (const key of citation.keys) {
+    rows.push({
+      passageId: citation.passageId,
+      workId: workIdOf(citation.passageId),
+      key: key.key,
+      relation: key.relation ?? null,
+      direction: key.direction ?? null,
+      frame: key.frame ?? null,
+      frameLabel: key.frame ? key.frame.agent + " / " + key.frame.genre : null,
+      assessor: key.assessor,
+      scheme: key.scheme,
+      reviewStatus: key.reviewStatus,
+      recordId: key.id,
+    })
+  }
+  // Ordered by passage, then key: a spectrum is for scanning, not for ranking.
+  return rows.sort((a, b) => a.passageId.localeCompare(b.passageId) || a.key.localeCompare(b.key) || a.assessor.localeCompare(b.assessor))
+}
+
+export function spectrumFacets(rows: readonly SpectrumRow[]): SpectrumFacets {
+  const unique = <T,>(values: T[]) => [...new Set(values)]
+  return {
+    keys: unique(rows.map(row => row.key)).sort(),
+    relations: unique(rows.flatMap(row => (row.relation ? [row.relation] : []))).sort(),
+    directions: unique(rows.flatMap(row => (row.direction === null ? [] : [row.direction]))).sort((a, b) => a - b),
+    frames: unique(rows.flatMap(row => (row.frameLabel ? [row.frameLabel] : []))).sort(),
+    available: {
+      relation: rows.filter(row => row.relation !== null).length,
+      direction: rows.filter(row => row.direction !== null).length,
+      frame: rows.filter(row => row.frame !== null).length,
+    },
+    total: rows.length,
+  }
+}
+
+export type SpectrumFilter = {key: string; relation: string; direction: string; frame: string}
+
+/** An empty filter value means "any", which is why it is compared as a string. */
+export function filterSpectrum(rows: readonly SpectrumRow[], filter: SpectrumFilter): SpectrumRow[] {
+  return rows.filter(row =>
+    (filter.key === "" || row.key === filter.key) &&
+    (filter.relation === "" || row.relation === filter.relation) &&
+    (filter.direction === "" || String(row.direction) === filter.direction) &&
+    (filter.frame === "" || row.frameLabel === filter.frame))
 }

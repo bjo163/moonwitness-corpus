@@ -74,7 +74,7 @@ export default function KeyWitnessCardPage(){
   const grouped=card?groupByKey(card.citation.keys):[]
   return <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 text-foreground">
     <header className="space-y-2">
-      <a href="/" className="text-sm text-muted-foreground underline">← Corpus Explorer</a>
+      <a href="/explorer" className="text-sm text-muted-foreground underline">← Corpus Explorer</a>
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">MoonWitness · Key Witness v0 · derived research</p>
       <h1 className="text-3xl font-semibold">Titik Tengah</h1>
       <p className="max-w-3xl text-sm text-muted-foreground">Witness, key, message, boundary and disagreement for one passage. The card cites what was recorded and what was reviewed; it does not resolve the disagreement, rank the reading or score the verse.</p>

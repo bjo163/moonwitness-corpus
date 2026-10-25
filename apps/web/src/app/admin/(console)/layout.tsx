@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { endSession, readSession, usesDefaultCredential, type ConsoleSession } from "@/lib/console-session"
+import { consoleChanged, endSession, readSession, usesDefaultCredential, type ConsoleSession } from "@/lib/console-session"
 
 /**
  * The console shell. It is intentionally a different surface from the reader
@@ -10,9 +10,10 @@ import { endSession, readSession, usesDefaultCredential, type ConsoleSession } f
  * instead of a grid of decorative statistics cards.
  */
 const NAV = [
-  {href: "/admin/ledger", index: "01", label: "Sealed ledger", hint: "what is published"},
-  {href: "/admin/balance", index: "02", label: "Key balance", hint: "counts, never a verdict"},
-  {href: "/admin/profile", index: "03", label: "Profile", hint: "credential and gate"},
+  {href: "/admin/ledger", index: "01", label: "Sealed ledger", short: "Ledger", hint: "what is published"},
+  {href: "/admin/balance", index: "02", label: "Key balance", short: "Balance", hint: "counts, never a verdict"},
+  {href: "/admin/spectrum", index: "03", label: "Key spectrum", short: "Spectrum", hint: "filter the spread"},
+  {href: "/admin/profile", index: "04", label: "Profile", short: "Profile", hint: "credential and gate"},
 ] as const
 
 export default function ConsoleLayout({children}:{children:React.ReactNode}) {
@@ -23,8 +24,10 @@ export default function ConsoleLayout({children}:{children:React.ReactNode}) {
   const [isDefault, setIsDefault] = useState(false)
 
   useEffect(() => {
-    setSession(readSession())
-    setIsDefault(usesDefaultCredential())
+    const reread = () => { setSession(readSession()); setIsDefault(usesDefaultCredential()) }
+    reread()
+    // A credential change happens in a child screen; the shell must not keep a stale identity.
+    return consoleChanged(reread)
   }, [pathname])
 
   if (session === undefined) {
@@ -94,7 +97,7 @@ export default function ConsoleLayout({children}:{children:React.ReactNode}) {
           <nav aria-label="Console sections" className="flex w-full gap-1 md:hidden">
             {NAV.map(item => <a key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined}
               className={"flex-1 rounded-sm border px-2 py-1 text-center font-mono text-[10px] uppercase tracking-[0.12em] " +
-                (pathname === item.href ? "bg-accent text-foreground" : "text-muted-foreground")}>{item.label}</a>)}
+                (pathname === item.href ? "bg-accent text-foreground" : "text-muted-foreground")}>{item.short}</a>)}
           </nav>
         </header>
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8">{children}</main>

@@ -11,6 +11,8 @@
  */
 export const CONSOLE_CREDENTIAL_KEY = "mw.console.credential.v1"
 export const CONSOLE_SESSION_KEY = "mw.console.session.v1"
+/** Fired after any credential or session write, so the shell and forms re-read state. */
+export const CONSOLE_CHANGE_EVENT = "mw:console-change"
 export const DEFAULT_CONSOLE_USER = "admin"
 const DEFAULT_CONSOLE_PASSWORD = "admin"
 const SESSION_HOURS = 8
@@ -48,6 +50,13 @@ export function usesDefaultCredential(): boolean {
   return readCredential() === null
 }
 
+/** Subscribe to credential/session writes so a shell never shows a stale identity. */
+export function consoleChanged(listener: () => void): () => void {
+  if (typeof window === "undefined") return () => {}
+  window.addEventListener(CONSOLE_CHANGE_EVENT, listener)
+  return () => window.removeEventListener(CONSOLE_CHANGE_EVENT, listener)
+}
+
 export async function verifyCredential(username: string, password: string): Promise<boolean> {
   const stored = readCredential()
   const expectedUser = stored?.username ?? DEFAULT_CONSOLE_USER
@@ -78,12 +87,14 @@ export async function startSession(username: string, password: string): Promise<
     expiresAt: new Date(startedAt.getTime() + SESSION_HOURS * 60 * 60 * 1000).toISOString(),
   }
   window.sessionStorage.setItem(CONSOLE_SESSION_KEY, JSON.stringify(session))
+  window.dispatchEvent(new Event(CONSOLE_CHANGE_EVENT))
   return session
 }
 
 export function endSession(): void {
   if (typeof window === "undefined") return
   window.sessionStorage.removeItem(CONSOLE_SESSION_KEY)
+  window.dispatchEvent(new Event(CONSOLE_CHANGE_EVENT))
 }
 
 export function validateNewCredential(username: string, password: string, repeat: string): string[] {
@@ -117,6 +128,7 @@ export async function changeCredential(currentPassword: string, username: string
   if (session) {
     window.sessionStorage.setItem(CONSOLE_SESSION_KEY, JSON.stringify({...session, username: credential.username}))
   }
+  window.dispatchEvent(new Event(CONSOLE_CHANGE_EVENT))
 }
 
 /** Local state assumed by credential changes, used by the profile screen. */

@@ -191,7 +191,7 @@ export default function SRGBLResearchPage(){
   })
   return <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 text-foreground">
     <header className="space-y-2">
-      <a href="/" className="text-sm text-muted-foreground underline">← Corpus Explorer</a>
+      <a href="/explorer" className="text-sm text-muted-foreground underline">← Corpus Explorer</a>
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">MoonWitness · Research preview · SRGBL v8</p>
       <h1 className="text-3xl font-semibold">Five-Layer Witness</h1>
       <p className="max-w-3xl text-sm text-muted-foreground">Trace source provenance first. Other stages remain UNKNOWN until reviewed, evidence-backed analysis exists. This tool never scores scripture, religious traditions or alleged miracles.</p>

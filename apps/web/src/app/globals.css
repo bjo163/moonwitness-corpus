@@ -94,8 +94,10 @@
     @apply border-border outline-ring/50;
   }
 
+  /* No global smooth scrolling: Next's router warns that it fights scroll
+     restoration, and reduced-motion users should not have to opt out twice. */
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 
   body {

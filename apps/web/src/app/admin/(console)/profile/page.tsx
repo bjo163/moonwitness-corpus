@@ -43,7 +43,8 @@ export default function ProfilePage() {
       setDone("Credential replaced in this browser. The next sign-in uses the new username and password.")
       setCurrent(""); setPassword(""); setRepeat("")
       setIsDefault(false)
-      // The shell reads the session when the route changes, so refresh the identity it shows.
+      // The change rewrote the session identity; show the new one instead of the old name.
+      setSession(readSession())
       router.refresh()
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The credential could not be changed")
@@ -96,7 +97,7 @@ export default function ProfilePage() {
             onChange={event => setPassword(event.target.value)} required
             className="mt-1 w-full rounded-md border bg-background px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" />
         </label>
-        <label className="block text-sm" htmlFor="profile-repeat">Repeat new password
+        <label className="block text-sm sm:col-span-2" htmlFor="profile-repeat">Repeat new password
           <input id="profile-repeat" type="password" autoComplete="new-password" value={repeat}
             onChange={event => setRepeat(event.target.value)} required
             className="mt-1 w-full rounded-md border bg-background px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" />

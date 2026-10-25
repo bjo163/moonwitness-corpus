@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { DEFAULT_CONSOLE_USER, startSession, usesDefaultCredential } from "@/lib/console-session"
+import { activeUsername, DEFAULT_CONSOLE_USER, startSession, usesDefaultCredential } from "@/lib/console-session"
 
 /**
  * The console entrance. It is a separate surface from the reader: no corpus
@@ -18,7 +18,11 @@ export default function ConsoleLoginPage() {
   // Read the credential after hydration: the prerendered HTML cannot know it.
   const [isDefault, setIsDefault] = useState(true)
 
-  useEffect(() => { setIsDefault(usesDefaultCredential()) }, [])
+  useEffect(() => {
+    // After hydration: prefill the username this device actually uses, not the shipped default.
+    setUsername(activeUsername())
+    setIsDefault(usesDefaultCredential())
+  }, [])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
