@@ -1,15 +1,14 @@
 import { scoreDirection, type FrameDirectionInput } from './index.js'
 import { validateResearchFrame, type ResearchFrame, type ReviewStatus } from './analysis.js'
+import { DIRECTION_VALUES, INTENSITY_VALUES, RELATION_VOCABULARY, REVIEW_STATUS_VALUES } from './vocabulary.js'
 
 export const P18_KEY_CANDIDATES = [
   'mercy','compassion','forgiveness','comfort','justice','truth','accountability','restoration',
   'praise','gratitude','trust','hope','patience','humility','generosity','wisdom',
   'narrative','warning','promise','covenant'
 ] as const
-export const KEY_RELATIONS = [
-  'expresses','commands','prohibits','promises','warns','narrates','praises',
-  'condemns','comforts','questions','describes','covenants'
-] as const
+/** Single source for relations: the declared vocabulary, not a second copy. */
+export const KEY_RELATIONS = RELATION_VOCABULARY
 export type KeyToken = (typeof P18_KEY_CANDIDATES)[number]
 export type KeyRelation = (typeof KEY_RELATIONS)[number]
 
@@ -80,9 +79,11 @@ export function validateKeyAssessment(record: FramedKeyAssessment): string[] {
   const errors = validateResearchFrame(record.frame)
   for (const k of ['id','passageId','contentId','method','assessor'] as const) if (!string(record[k])) errors.push('key.'+k+' required')
   errors.push(...validateKeyToken(record.scheme, record.key))
-  if (!KEY_RELATIONS.includes(record.relation)) errors.push('invalid key relation')
-  if (!Number.isInteger(record.direction) || Math.abs(record.direction)>2) errors.push('direction out of range')
-  if (!Number.isInteger(record.intensity) || record.intensity<1 || record.intensity>3) errors.push('intensity out of range')
+  if (!(KEY_RELATIONS as readonly string[]).includes(record.relation)) errors.push('invalid key relation')
+  if (!(DIRECTION_VALUES as readonly number[]).includes(record.direction)) errors.push('direction out of range')
+  if (!(INTENSITY_VALUES as readonly number[]).includes(record.intensity)) errors.push('intensity out of range')
+  // A status outside the vocabulary is not a softer draft; it is unreadable state.
+  if (!REVIEW_STATUS_VALUES.includes(record.reviewStatus)) errors.push('invalid review status')
   if (!Number.isFinite(record.confidence) || record.confidence<0 || record.confidence>1) errors.push('confidence out of range')
   if (!Number.isFinite(record.weight) || record.weight < 0) errors.push('weight must be nonnegative')
   if (!Array.isArray(record.evidenceIds) || record.evidenceIds.some(x=>!string(x))) errors.push('invalid key evidence')
@@ -97,6 +98,7 @@ export function validateKeyMessage(message: KeyMessage, keys: readonly FramedKey
     if (!string(message[k])) errors.push('message.'+k+' required')
   if (!Array.isArray(message.sourceKeyAssessmentIds) || !message.sourceKeyAssessmentIds.length) errors.push('message must cite key assessments')
   if (!Array.isArray(message.evidenceIds) || message.evidenceIds.some(x => !string(x))) errors.push('message evidence missing')
+  if (!REVIEW_STATUS_VALUES.includes(message.reviewStatus)) errors.push('invalid review status')
   // A supplied record set with two identical IDs resolves arbitrarily, so the
   // reference is reported as ambiguous instead of silently picking the last one.
   const index = new Map<string, FramedKeyAssessment>()

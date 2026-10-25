@@ -8,6 +8,7 @@
     "./analysis": "./src/analysis.ts",
     "./keys": "./src/keys.ts",
     "./key-registry": "./src/key-registry.ts",
+    "./vocabulary": "./src/vocabulary.ts",
     "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",

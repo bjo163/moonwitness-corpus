@@ -1,4 +1,5 @@
 import { scoreMaturity, type LevelStatus, type SrgbLLevel, SRGBL_LEVELS } from './index.js'
+import { FRAME_FIELDS } from './vocabulary.js'
 
 /**
  * P19 derived research contract. Pure validation: NEVER updates canonical corpus.
@@ -69,7 +70,8 @@ export interface AnalysisValidation {
   publishable: boolean
 }
 
-const requiredFrame = ['agent', 'recipient', 'domain', 'scope', 'genre'] as const
+/** Frame fields come from the declared vocabulary so this check cannot drift from it. */
+const requiredFrame = FRAME_FIELDS
 const nonblank = (x: unknown): x is string => typeof x === 'string' && x.trim().length > 0
 
 export function validateResearchFrame(frame: ResearchFrame): string[] {
