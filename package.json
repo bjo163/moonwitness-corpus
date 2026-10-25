@@ -73,6 +73,7 @@
     "research:steward": "tsx scripts/research-steward.ts",
     "srgbl:build-reviewed": "tsx scripts/build-srgbl-reviewed.ts",
     "srgbl:export-static": "tsx scripts/export-srgbl-static.ts",
+    "keys:annotate": "tsx scripts/key-annotate.ts",
     "research:audit": "tsx scripts/research-contract-audit.ts --check",
     "todo:sync": "tsx scripts/sync-todo-issues.ts todo-to-issues",
     "todo:sync:issue": "tsx scripts/reconcile-issue-status.ts",
