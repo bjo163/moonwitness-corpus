@@ -56,7 +56,12 @@ To run both dev servers (`pnpm dev` = Fastify API on port 4310, Next.js on port 
 
     pnpm dev
 
-`pnpm dev` needs the independent web install above. `apps/web` is excluded from the pnpm workspace (`!apps/web` in `pnpm-workspace.yaml`), so `pnpm install` never provides `next`, and a missing or partial install fails as `[web] 'next' is not recognized as an internal or external command` plus `ELIFECYCLE  Command failed with exit code 1`. Fix: `cd apps/web; npm ci`. `pnpm dev:web` now runs `scripts/ensure-web-deps.mjs` first, which fails with that instruction instead of letting the shim error surface.
+`pnpm dev` needs the independent web install above. `apps/web` is excluded from the pnpm workspace (`!apps/web` in `pnpm-workspace.yaml`), so `pnpm install` never provides `next`. `npm ci` deletes `node_modules` before it installs, so an interrupted install leaves a directory tree that exists but has no `next` binary, which surfaced only as:
+
+    [web] 'next' is not recognized as an internal or external command,
+    [web] ELIFECYCLE  Command failed with exit code 1.
+
+`pnpm dev:web` now runs `scripts/ensure-web-deps.mjs` first. It checks `node_modules/.package-lock.json`, `node_modules/next/package.json` and the `node_modules/.bin/next` shim; if any is missing it prints the reason and runs `npm ci` inside `apps/web` itself, then re-checks. A fresh clone therefore starts with `pnpm dev` alone. Use `node scripts/ensure-web-deps.mjs --check` to report without touching the filesystem.
 
 Relevant small-test example:
 
@@ -78,12 +83,13 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 |---|---|---|---|
 | `pnpm install --frozen-lockfile` | exit 0 | `node_modules/` only (ignored) | Reports ignored build scripts for `esbuild`, `protobufjs`; do not run `pnpm approve-builds` casually |
 | `pnpm typecheck` | exit 0 (`tsc --noEmit`, no output) | none | Root `tsconfig.json` only; `apps/web` is not covered |
-| `pnpm test` | exit 0, 324 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
+| `pnpm test` | exit 0, 330 tests pass, 0 fail | none | Baseline before the P19 micro-issue wave was 295; each micro issue adds regression tests, so re-read the count instead of trusting this row |
 | `pnpm exec tsx --test packages/srgbl/src/index.test.ts` | exit 0, 12 tests pass, 0 fail | none | SRGBL core: maturity, quality rubric, direction, Witness /100, Swing candidate, cross-text relation |
 | `pnpm exec tsx --test packages/srgbl/src/analysis.test.ts` | exit 0, 20 tests pass, 0 fail | none | Default focused command for SRGBL analysis tasks |
 | `pnpm exec tsx --test packages/srgbl/src/research-ledger.test.ts` | exit 0, 5 tests pass, 0 fail | none | Candidate-ledger serialization tasks (P19-L19 / #470) |
 | `pnpm exec tsx --test packages/srgbl/src/sources.test.ts` | exit 0, 4 tests pass, 0 fail | none | Selector/rights-scope file introduced by P19-L05 / #456 |
 | `pnpm exec tsx --test packages/srgbl/src/swing-chain.test.ts` | exit 0, 8 tests pass, 0 fail | none | Swing candidate/chain tasks |
+| `pnpm exec tsx --test scripts/ensure-web-deps.test.ts` | exit 0, 5 tests pass, 0 fail | none | Dev-bootstrap guard: complete install, fresh clone, interrupted `npm ci`, missing `next` package, wrong cwd |
 | `pnpm exec tsx --test apps/api/src/api.test.ts` | exit 0, 13 tests pass, 0 fail | none | Run whenever `packages/srgbl` changes reach the Fastify adapter |
 | `pnpm check` | **not run locally in this session**; passed inside CI runs 40144490214 and 40144755987 | SQLite database build output and repository build artifacts (ignored) | Release-grade gate; deliberately not run per micro issue on the laptop because it builds and validates the whole corpus, so it is delegated to the `check` job |
 | `pnpm todo:check` | **not run in this session** | none | Read-only audit; see the warning above |
@@ -92,8 +98,8 @@ Measured on 2026-10-25 with Node 24.22.1, pnpm 10.33.4, npm 11.19.1, git 2.56.0 
 
 | Command | Observed result | Writes to the worktree | Note |
 |---|---|---|---|
-| `npm ci` | exit 0, 95 packages added, 0 vulnerabilities | `apps/web/node_modules/` (ignored) | Required before `pnpm dev`: `apps/web` is excluded from the pnpm workspace, and this command is also what repairs a partial install whose `next` shim is missing |
-| `npm run typecheck` | exit 2 on this checkout; all 5 errors are inside generated, gitignored `.next/dev/types/*.ts` (stale artifact); no `src/**` error | none | Delete or regenerate `.next` before trusting this gate; the failure is a build-cache artifact, not a source error |
+| `npm ci` | exit 0, 95 packages added, 0 vulnerabilities | `apps/web/node_modules/` (ignored) | Run automatically by `scripts/ensure-web-deps.mjs` when `pnpm dev` finds the install incomplete; `apps/web` is excluded from the pnpm workspace, so nothing else installs it |
+| `npm run typecheck` | exit 0 (`tsc --noEmit`, no output) once `.next/` was regenerated | none | A stale gitignored `.next/dev/types/*.ts` from an aborted run makes this exit 2 with errors that point only into generated files; let `next dev` (or `npx next typegen`) regenerate them before trusting the gate |
 | `npm test` | exit 0 (`RGBL web contract smoke: OK`) | none | Contract smoke test, not the application build |
 | `npm run build` | **not run in this session** | `apps/web/.next/`, `apps/web/public/corpus-catalog.json` (tracked!), `apps/web/public/corpus-db/`, `apps/web/public/vendor/sqlite-httpvfs/` | Fetches the catalog from GitHub raw when missing, so it needs network and can modify a tracked file |
 
