@@ -18,6 +18,7 @@
     "./score-profile": "./src/score-profile.ts",
     "./citation": "./src/citation.ts",
     "./key-witness": "./src/key-witness.ts",
+    "./annotation-tool": "./src/annotation-tool.ts",
     "./agreement": "./src/agreement.ts",
     "./sources": "./src/sources.ts",
     "./research-ledger": "./src/research-ledger.ts",
