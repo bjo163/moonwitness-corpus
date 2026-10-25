@@ -14,7 +14,9 @@ const NAV = [
   {href: "/admin/balance", index: "02", label: "Key balance", short: "Balance", hint: "counts, never a verdict"},
   {href: "/admin/spectrum", index: "03", label: "Key spectrum", short: "Spectrum", hint: "filter the spread"},
   {href: "/admin/disagreement", index: "04", label: "Disagreement", short: "Disagree", hint: "alternate assessments"},
-  {href: "/admin/profile", index: "05", label: "Profile", short: "Profile", hint: "credential and gate"},
+  {href: "/admin/coverage", index: "05", label: "Context coverage", short: "Context", hint: "9 fields and gaps"},
+  {href: "/admin/compare", index: "06", label: "Compare by key", short: "Compare", hint: "one key, two passages"},
+  {href: "/admin/profile", index: "07", label: "Profile", short: "Profile", hint: "credential and gate"},
 ] as const
 
 export default function ConsoleLayout({children}:{children:React.ReactNode}) {
@@ -95,9 +97,9 @@ export default function ConsoleLayout({children}:{children:React.ReactNode}) {
             <span className="rounded-sm border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Local gate · not server auth</span>
             <a href="/" className="rounded-sm border px-2 py-0.5 text-[11px] hover:bg-accent">Reader view</a>
           </div>
-          <nav aria-label="Console sections" className="flex w-full gap-1 md:hidden">
+          <nav aria-label="Console sections" className="flex w-full gap-1 overflow-x-auto pb-0.5 md:hidden">
             {NAV.map(item => <a key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined}
-              className={"flex-1 rounded-sm border px-2 py-1 text-center font-mono text-[10px] uppercase tracking-[0.12em] " +
+              className={"shrink-0 rounded-sm border px-2 py-1 text-center font-mono text-[10px] uppercase tracking-[0.12em] " +
                 (pathname === item.href ? "bg-accent text-foreground" : "text-muted-foreground")}>{item.short}</a>)}
           </nav>
         </header>

@@ -358,3 +358,169 @@ export function disagreementSummary(groups: readonly DisagreementGroup[]) {
     singleAssessor: groups.filter(group => group.unpaired).length,
   }
 }
+
+/**
+ * P18-013: the nine readiness fields named in PRODUCT-BLUEPRINT 6.4 and
+ * KEY-WITNESS-V0 4.5, mirrored from packages/srgbl/src/context-coverage.ts so the
+ * console and the data layer cannot drift on what "complete" means.
+ */
+export const CONTEXT_FIELDS = ['textualWitness', 'rights', 'genre', 'agent', 'recipient', 'domain', 'scope', 'key', 'evidence'] as const
+export type ContextField = (typeof CONTEXT_FIELDS)[number]
+
+export type ContextCoverage = {
+  required: number
+  filled: number
+  ratio: number
+  gaps: ContextField[]
+  /** Reader-facing form, e.g. `7/9`; a readiness meter, never a grade. */
+  display: string
+  isTextQualityScore: false
+  /** Which cited key supplied the frame, so the reader can check it. */
+  frameSource: string | null
+}
+
+const firstFrame = (citation: Citation) => {
+  const key = [...citation.keys].sort((a, b) => a.id.localeCompare(b.id)).find(entry => entry.frame !== undefined)
+  return {frame: key?.frame ?? null, source: key?.id ?? null}
+}
+
+export function measureCitationCoverage(citation: Citation): ContextCoverage {
+  const {frame, source} = firstFrame(citation)
+  const present: Record<ContextField, boolean> = {
+    // An edition without an artifact names a book but not the object, so both are needed.
+    textualWitness: nonBlank(citation.editionId) && nonBlank(citation.artifactId),
+    // `unknown` is a question, not an answer, so it does not count as covered.
+    rights: citation.rights.text === "cleared" || citation.rights.text === "restricted",
+    genre: nonBlank(frame?.genre),
+    agent: nonBlank(frame?.agent),
+    recipient: nonBlank(frame?.recipient),
+    domain: nonBlank(frame?.domain),
+    scope: nonBlank(frame?.scope),
+    key: citation.keys.length > 0,
+    evidence: citation.evidence.length > 0 || citation.provenance.length > 0,
+  }
+  // Gaps keep the canonical order so two runs over the same card agree.
+  const gaps = CONTEXT_FIELDS.filter(field => !present[field])
+  const filled = CONTEXT_FIELDS.length - gaps.length
+  return {
+    required: CONTEXT_FIELDS.length,
+    filled,
+    ratio: filled / CONTEXT_FIELDS.length,
+    gaps,
+    display: filled + "/" + CONTEXT_FIELDS.length,
+    isTextQualityScore: false,
+    frameSource: source,
+  }
+}
+
+export function coverageSummary(citations: readonly Citation[]) {
+  const measured = citations.map(citation => ({passageId: citation.passageId, ...measureCitationCoverage(citation)}))
+  const gaps: Record<string, number> = {}
+  for (const entry of measured) for (const gap of entry.gaps) gaps[gap] = (gaps[gap] ?? 0) + 1
+  return {
+    measured,
+    complete: measured.filter(entry => entry.gaps.length === 0).length,
+    average: measured.length ? measured.reduce((sum, entry) => sum + entry.ratio, 0) / measured.length : 0,
+    gaps,
+  }
+}
+
+/**
+ * P18-014 readiness. The v0 formula needs weight, intensity and confidence per
+ * assessment; the citation export publishes none of them, so the console reports
+ * what is missing instead of inventing a number.
+ */
+export type ScoreReadiness = {
+  passageId: string
+  n: number
+  coverage: number
+  agreement: null
+  agreementReason: "fewer-than-two-assessors"
+  status: "computed" | "not-computable"
+  missingInputs: string[]
+  researchOnly: true
+}
+
+export function scoreReadiness(citation: Citation, coverage: ContextCoverage): ScoreReadiness {
+  const assessors = new Set(citation.keys.map(key => key.assessor))
+  return {
+    passageId: citation.passageId,
+    n: citation.keys.length,
+    coverage: coverage.ratio,
+    agreement: null,
+    agreementReason: "fewer-than-two-assessors",
+    status: "not-computable",
+    // Named exactly as the formula names them, so the gap is actionable.
+    missingInputs: assessors.size < 2 ? ["weight", "intensity", "confidence", "a second assessor"] : ["weight", "intensity", "confidence"],
+    researchOnly: true,
+  }
+}
+
+export type CompareSide = {
+  passageId: string
+  keyId: string
+  assessor: string
+  method: string
+  scheme: string
+  relation: string | null
+  direction: number | null
+  frame: KeyFrame | null
+  reviewStatus: string
+}
+
+export type KeyComparison = {
+  key: string
+  status: "comparable" | "missing-side" | "method-mismatch" | "scheme-mismatch"
+  sides: CompareSide[]
+  /** Explicit frame boundaries: which fields differ, and how. */
+  frameBoundaries: string[]
+  /** Why a comparison is refused; empty when the sides are comparable. */
+  refusals: string[]
+  globalScore: null
+}
+
+const sideOf = (citation: Citation, key: string): CompareSide | null => {
+  const matches = citation.keys.filter(entry => entry.key === key).sort((a, b) => a.assessor.localeCompare(b.assessor))
+  const entry = matches[0]
+  if (!entry) return null
+  return {
+    passageId: citation.passageId,
+    keyId: entry.id,
+    assessor: entry.assessor,
+    method: entry.method,
+    scheme: entry.scheme,
+    relation: entry.relation ?? null,
+    direction: entry.direction ?? null,
+    frame: entry.frame ?? null,
+    reviewStatus: entry.reviewStatus,
+  }
+}
+
+/**
+ * P18-015: two passages, one key. A comparison is only shown when both sides use
+ * the same method and scheme; frame differences are listed as boundaries rather
+ * than silently normalised away.
+ */
+export function compareByKey(citations: readonly Citation[], key: string, passageA: string, passageB: string): KeyComparison {
+  const a = citations.find(citation => citation.passageId === passageA)
+  const b = citations.find(citation => citation.passageId === passageB)
+  const sides = [a ? sideOf(a, key) : null, b ? sideOf(b, key) : null].filter((side): side is CompareSide => side !== null)
+  const refusals: string[] = []
+  if (sides.length < 2) refusals.push("both passages need a recorded assessment for this key")
+  let status: KeyComparison["status"] = "comparable"
+  if (sides.length < 2) status = "missing-side"
+  else if (sides[0].method !== sides[1].method) {
+    status = "method-mismatch"
+    refusals.push("the two assessments use different methods, so they are not comparable")
+  } else if (sides[0].scheme !== sides[1].scheme) {
+    status = "scheme-mismatch"
+    refusals.push("the two assessments use different key schemes")
+  }
+  const frameBoundaries: string[] = []
+  if (sides.length === 2) for (const field of FRAME_FIELDS) {
+    const left = sides[0].frame?.[field] ?? "not recorded"
+    const right = sides[1].frame?.[field] ?? "not recorded"
+    if (left !== right) frameBoundaries.push(field + ": " + left + " vs " + right)
+  }
+  return {key, status, sides, frameBoundaries, refusals, globalScore: null}
+}

@@ -1,7 +1,13 @@
 node_modules/
 dist/
 .turbo/
-coverage/
+# Test-coverage output, not every directory named coverage: the console has a
+# route at apps/web/src/app/admin/(console)/coverage that must stay tracked.
+/coverage/
+coverage/lcov.info
+packages/*/coverage/
+apps/api/coverage/
+apps/web/coverage/
 .pnpm-store/
 apps/web/public/corpus-db/
 apps/web/public/vendor/

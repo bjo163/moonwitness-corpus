@@ -5,7 +5,7 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, exportHook, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleSpectrum, consoleDisagreement, consoleProfile] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, exportHook, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleSpectrum, consoleDisagreement, consoleCoverage, consoleCompare, consoleProfile] = await Promise.all([
   read("src/data.ts"),
   read("src/corpus-app.tsx"),
   read("src/api.ts"),
@@ -29,6 +29,8 @@ const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, gener
   read("src/app/admin/(console)/balance/page.tsx"),
   read("src/app/admin/(console)/spectrum/page.tsx"),
   read("src/app/admin/(console)/disagreement/page.tsx"),
+  read("src/app/admin/(console)/coverage/page.tsx"),
+  read("src/app/admin/(console)/compare/page.tsx"),
   read("src/app/admin/(console)/profile/page.tsx"),
 ])
 
@@ -207,6 +209,33 @@ expect(consoleDisagreement.includes("derived, not scripture"), "a reading must b
 expect(keyWitnessLib.includes("agreementComputed: false") && keyWitnessLib.includes("adjudicated: false"), "the model must carry literal false flags instead of a computed agreement")
 expect(!keyWitnessLib.toLowerCase().includes("kappa"), "no agreement statistic may be introduced into the exported model")
 expect(consoleLayout.includes('/admin/disagreement'), "the console rail must expose the disagreement section")
+
+// P18-013 coverage: nine named readiness fields with explicit gaps.
+const CONTEXT_FIELDS = ['textualWitness', 'rights', 'genre', 'agent', 'recipient', 'domain', 'scope', 'key', 'evidence']
+expect(CONTEXT_FIELDS.every(field => keyWitnessLib.includes("'" + field + "'")), "the meter must name all nine required fields")
+expect(keyWitnessLib.includes('display: filled + "/" + CONTEXT_FIELDS.length'), "coverage must render as x/9, not as a grade")
+expect(keyWitnessLib.includes("citation.rights.text === \"cleared\""), "an unknown rights status must not count as covered")
+expect(keyWitnessLib.includes("isTextQualityScore: false"), "coverage must state that it is not a text-quality score")
+expect(keyWitnessLib.includes("nonBlank(citation.editionId) && nonBlank(citation.artifactId)"), "the witness field needs both edition and artifact")
+expect(consoleCoverage.includes("measureCitationCoverage") && consoleCoverage.includes("scoreReadiness"), "the console must measure coverage and profile readiness from one model")
+expect(consoleCoverage.includes("gaps: "), "an incomplete card must print its gaps")
+expect(consoleCoverage.includes("never a low grade for a verse"), "coverage must not read as a verdict on the text")
+expect(consoleCoverage.includes("never part of the canonical JSONL"), "the score profile must stay out of the canonical export")
+expect(consoleCoverage.includes("missing ") && consoleCoverage.includes("requires a weight, an intensity and a confidence"), "a profile that cannot be computed must name the missing inputs")
+
+// P18-014 score profile readiness: research-only, with n and coverage, never a global number.
+expect(keyWitnessLib.includes('status: "not-computable"'), "the export cannot carry a v0 score, so the status must say so")
+expect(keyWitnessLib.includes("researchOnly: true") && keyWitnessLib.includes("agreement: null"), "the profile must stay research-only and unflagged as agreement")
+expect(!keyWitnessLib.includes("kappa") && !keyWitnessLib.includes("globalScore: 0"), "no agreement statistic or zero stand-in may enter the profile")
+
+// P18-015 compare: same method only, frame boundaries printed, no delta.
+expect(consoleCompare.includes("compareByKey") && consoleCompare.includes('key && left && right'), "the compare screen must only compare an explicit selection")
+expect(keyWitnessLib.includes('status = "method-mismatch"') && keyWitnessLib.includes('status = "scheme-mismatch"'), "a comparison across methods or schemes must be refused")
+expect(consoleCompare.includes("different methods") && keyWitnessLib.includes("not comparable"), "the refusal must say why the comparison is unavailable")
+expect(consoleCompare.includes("Frame boundaries") && consoleCompare.includes("frameBoundaries"), "every differing frame field must be listed")
+expect(consoleCompare.includes("never subtracts one reading from the other") && consoleCompare.includes("no global score"), "a comparison must not become a delta or a ranking")
+expect(keyWitnessLib.includes("globalScore: null"), "the comparison object must carry a null global score")
+expect(consoleLayout.includes('/admin/coverage') && consoleLayout.includes('/admin/compare'), "the console rail must expose coverage and compare")
 
 if (failures.length) {
   console.error("RGBL web contract smoke failed:")

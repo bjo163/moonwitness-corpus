@@ -63,7 +63,7 @@ export function useKeyWitnessExport(): ExportState {
       } catch (reason) {
         if (cancelled) return
         setState({
-          phase: "blocked", citations: [], message: "The export could not be read.",
+          phase: "blocked", citations: [], message: "The research API could not be reached, so nothing is shown.",
           detail: reason instanceof Error ? reason.message : "",
         })
       }
