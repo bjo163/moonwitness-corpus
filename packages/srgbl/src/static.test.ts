@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { computeAnalysisInputHash, createReviewedSnapshot } from './derived.js'
-import { createStaticResearchPublication } from './static.js'
+import { createStaticResearchPublication, staticResearchUnavailable } from './static.js'
 import type { AnalysisRun } from './analysis.js'
 import { canonicalJson } from './derived.js'
 
@@ -50,4 +50,32 @@ test('static projection fails closed for a stale corpus and serializes determini
   const first=createStaticResearchPublication(publication,corpusHash)
   const second=createStaticResearchPublication(structuredClone(publication),corpusHash)
   assert.equal(canonicalJson(first),canonicalJson(second))
+  assert.equal(first.available,true)
+})
+
+test('static export is passage-ordered and a mismatch yields an explicit unavailable state',()=>{
+  const run=reviewedInput()
+  const also:AnalysisRun={...structuredClone(run),id:'run:synthetic:static-2',passageId:'mw:passage:test:aaa'}
+  also.sourceWitnesses=[{...also.sourceWitnesses[0],passageId:also.passageId}]
+  const {inputHash:_,...alsoPayload}=also
+  also.inputHash=computeAnalysisInputHash(alsoPayload)
+  const publication=createReviewedSnapshot({corpusHash,methodVersion:run.methodVersion,
+    runs:[run,also],candidates:[],miracleClaims:[]})
+  const out=createStaticResearchPublication(publication,corpusHash)
+  // Positive: deterministic passage ordering, not materialization order.
+  assert.deepEqual(out.analyses.map(item=>item.passageId),
+    ['mw:passage:test:aaa','mw:passage:test:static'])
+  // Negative: the export owns copies, so the caller cannot mutate published claims afterwards.
+  const exported=out.analyses[0]
+  const before=canonicalJson(exported)
+  exported.levels[0].evidenceIds.push('mw:evidence:injected')
+  assert.equal(canonicalJson(publication.publicSummaries[0]).includes('mw:evidence:injected'),false)
+  assert.notEqual(canonicalJson(exported),before)
+  // Negative: a mismatched catalog never borrows a corpus and never returns claims.
+  assert.throws(()=>createStaticResearchPublication(publication,'c'.repeat(64)),/corpus hash mismatch/)
+  const unavailable=staticResearchUnavailable('corpus catalog mismatch')
+  assert.deepEqual(unavailable,{schema:'srgbl-v8-static-public-v1',available:false,
+    reason:'corpus catalog mismatch',corpusHash:null,methodVersion:null,analyses:[]})
+  assert.equal(JSON.stringify(unavailable).includes('maturity'),false)
+  assert.throws(()=>staticResearchUnavailable('  '),/needs a stated reason/)
 })
