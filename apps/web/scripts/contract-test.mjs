@@ -5,7 +5,7 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog, srgbl, keyWitness] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleProfile] = await Promise.all([
   read("src/data.ts"),
   read("src/corpus-app.tsx"),
   read("src/api.ts"),
@@ -19,6 +19,13 @@ const [data, main, api, browserDb, pkgRaw, layout, page, styles, generator, sema
   read("public/corpus-catalog.json"),
   read("src/app/research/srgbl/page.tsx"),
   read("src/app/research/key-witness/page.tsx"),
+  read("src/lib/key-witness.ts"),
+  read("src/lib/console-session.ts"),
+  read("src/app/admin/page.tsx"),
+  read("src/app/admin/(console)/layout.tsx"),
+  read("src/app/admin/(console)/ledger/page.tsx"),
+  read("src/app/admin/(console)/balance/page.tsx"),
+  read("src/app/admin/(console)/profile/page.tsx"),
 ])
 
 const pkg = JSON.parse(pkgRaw)
@@ -103,15 +110,9 @@ expect(srgbl.includes('UNKNOWN / not materialized'), "SRGBL UI must retain UNKNO
 expect(srgbl.includes('/research/key-witness'), "the SRGBL view must link to the derived key/message card")
 
 // P18-009 Titik Tengah card: derived, rights-bound and never a verdict.
-expect(keyWitness.includes('c.schema!=="mw:citation:v0"'), "the card must pin the citation schema it renders")
-expect(keyWitness.includes("c.passageId!==envelope.passageId"), "a card must describe the passage that was requested")
-expect(keyWitness.includes("c.corpusHash!==envelope.corpusHash"), "a card must be bound to the corpus version it was served for")
-expect(keyWitness.includes(`rights.publicDomainInference!=="prohibited"`), "a card may not infer public domain")
-expect(keyWitness.includes("Withheld witness text arrived from the API and was refused"), "the card must refuse withheld text even when a server sends it")
-expect(keyWitness.includes('m.reviewStatus!=="reviewed"'), "a draft message must never render as a card message")
-expect(keyWitness.includes("A card message needs text, a boundary and a reviewer"), "a message without a boundary or reviewer must be withheld")
-expect(keyWitness.includes("!strings(c.provenance)"), "a card without provenance must be refused")
-expect(keyWitness.includes("deep link is not an http(s) address"), "a card must refuse a non-http deep link")
+expect(keyWitness.includes("citation.passageId!==envelope.passageId"), "a card must describe the passage that was requested")
+expect(keyWitness.includes("citation.corpusHash!==envelope.corpusHash"), "a card must be bound to the corpus version it was served for")
+expect(keyWitness.includes("validateCitation"), "the card must render only a validated citation bundle")
 expect(keyWitness.includes("key_witness_not_materialized"), "an unpublished key layer must be shown as unavailable, not drafted")
 expect(keyWitness.includes("key_witness_index_integrity_failure"), "an integrity failure must withhold the card entirely")
 expect(keyWitness.includes("A single record is not an agreement"), "one assessor must never be presented as agreement")
@@ -124,6 +125,46 @@ expect(!keyWitness.includes("animate-"), "no decorative animation may gate readi
 expect(!keyWitness.includes('"score"'), "the card must not render a score field")
 expect(!keyWitness.includes("witnessScore"), "the card must not render a witness score")
 expect(keyWitness.includes("NEXT_PUBLIC_RGBL_API_URL"), "the card must read the documented research API base")
+
+// The citation contract is shared, so one validator decides what every surface may render.
+expect(keyWitnessLib.includes('c.schema !== "mw:citation:v0"'), "the shared validator must pin the citation schema")
+expect(keyWitnessLib.includes('rights.publicDomainInference !== "prohibited"'), "the shared validator may not infer public domain")
+expect(keyWitnessLib.includes("Withheld witness text arrived from the API and was refused"), "withheld text must be refused even when a server sends it")
+expect(keyWitnessLib.includes('m.reviewStatus !== "reviewed"'), "a draft message may never render as a card message")
+expect(keyWitnessLib.includes("A card message needs text, a boundary and a reviewer"), "a message without a boundary or reviewer must be withheld")
+expect(keyWitnessLib.includes("if (!strings(c.provenance))"), "a citation without provenance must be refused")
+expect(keyWitnessLib.includes("deep link is not an http(s) address"), "a citation must refuse a non-http deep link")
+expect(keyWitnessLib.includes("the export contains no records"), "an empty export must fail rather than render an empty balance")
+expect(keyWitnessLib.includes("sort(([a], [b]) => a.localeCompare(b))"), "keys and works must be listed alphabetically, never by size")
+expect(keyWitnessLib.includes("ordering by count would be a ranking"), "the no-ranking rule must be stated where the order is chosen")
+expect(keyWitnessLib.includes("export function balanceByWork") && keyWitnessLib.includes("export function balanceByPassage"), "the balance view must aggregate per work and per passage")
+
+// The console is a separate surface with a local-only gate.
+expect(consoleSession.includes('DEFAULT_CONSOLE_USER = "admin"'), "the shipped console user must be the documented admin")
+expect(consoleSession.includes("crypto.subtle.digest(\"SHA-256\""), "the console credential must be stored as a hash, never as plain text")
+expect(consoleSession.includes("CREDENTIAL_SALT"), "the credential hash must be salted")
+expect(consoleSession.includes("It does not protect data from anyone holding this device"), "the local gate must state its own limit")
+expect(consoleSession.includes("Date.parse(stored.expiresAt) <= Date.now()"), "an expired session must stop being a session")
+expect(consoleSession.includes("verifyCredential(active, currentPassword)"), "changing the credential must require the current password")
+expect(consoleSession.includes("password.length < 6"), "a replacement password must have a stated minimum length")
+expect(consoleLogin.includes("admin / admin"), "the entrance must state the shipped default credentials")
+expect(consoleLogin.includes("not server authentication"), "the entrance must not present the gate as authentication")
+expect(consoleLogin.includes('role="alert"'), "a failed sign-in must be announced")
+expect(consoleLogin.includes("motion-safe:"), "the entrance must respect reduced motion")
+expect(!consoleLayout.includes("corpus-app"), "the console shell must not reuse the reader application")
+expect(consoleLayout.includes('aria-label="Console sections"') && consoleLayout.includes("aria-current"), "console navigation must expose a labelled, current section")
+expect(consoleLayout.includes("Console locked"), "a console without a session must say so instead of rendering data")
+expect(consoleLayout.includes("Local gate · not server auth"), "the shell must keep the gate's limit visible")
+expect(consoleLedger.includes('m.schema !== "mw:key-witness-export:v0"'), "the ledger must validate the export schema it displays")
+expect(consoleLedger.includes("catalog.corpusHash !== verified.corpusHash"), "a manifest from another corpus must be refused")
+expect(consoleLedger.includes("m.scoresIncluded !== false"), "the ledger must refuse an export that carries scores")
+expect(consoleLedger.includes("manifest.parquetGap"), "the ledger must state the Parquet gap instead of implying a file")
+expect(consoleBalance.includes("parseExportJsonl") && consoleBalance.includes("No distribution is drawn from a partial"), "the balance must refuse a partial or unverifiable export")
+expect(consoleBalance.includes('aria-pressed={view === option}'), "the grouping toggle must expose its pressed state")
+expect(consoleBalance.includes("Keys are listed alphabetically"), "the balance must say why the order is not a ranking")
+expect(consoleBalance.includes("not a ranking of the passage"), "a bar length must not read as a ranking")
+expect(consoleProfile.includes("changeCredential") && consoleProfile.includes("Not server authentication"), "the profile must change a local credential and state its limit")
+expect(page.includes("CorpusApp") && page.includes('ssr: false'), "the reader home must stay the browser corpus app, separate from the console")
 
 if (failures.length) {
   console.error("RGBL web contract smoke failed:")
