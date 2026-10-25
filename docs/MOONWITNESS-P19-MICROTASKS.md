@@ -6,6 +6,12 @@
 **Epic:** [#446](https://github.com/bjo163/moonwitness-corpus/issues/446) · **Pre-existing P18 tasks:** #425–#444 (do not duplicate).  
 **Local instruction:** [Local AI Handoff](./MOONWITNESS-LOCAL-AI-HANDOFF.md).
 
+> **The Status column below is the original readiness snapshot, not the current tree.** All 37 micros
+> still read `READY`, although most have merged commits. Per-micro commit evidence, and two ids that do
+> not add up (L19 has no commit; L13's subject does not match its outcome), are recorded in
+> [`P19-REGISTER-RECONCILIATION.md`](./P19-REGISTER-RECONCILIATION.md). Read that before treating this
+> table as a progress report.
+
 **Before coding, open:** [Detailed input/output and failure examples for all 38 issues](./MOONWITNESS-P19-EXECUTABLE-SPECS.md) and [What MoonWitness is supposed to do in one real user session](./MOONWITNESS-EXPLAINED-WALKTHROUGH.md). The issue bodies #452–#489 were expanded with those examples; a title by itself is not an executable specification.
 
 ## What “one small issue” means
