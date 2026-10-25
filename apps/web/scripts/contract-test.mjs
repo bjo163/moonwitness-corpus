@@ -5,7 +5,7 @@ import process from "node:process"
 const root = process.cwd()
 const read = (file) => readFile(path.join(root, file), "utf8")
 
-const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, exportHook, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleSpectrum, consoleDisagreement, consoleCoverage, consoleCompare, consoleProfile] = await Promise.all([
+const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, generator, semanticRules, catalog, srgbl, keyWitness, keyWitnessLib, exportHook, exportReader, consoleSession, consoleLogin, consoleLayout, consoleLedger, consoleBalance, consoleSpectrum, consoleDisagreement, consoleCoverage, consoleCompare, consoleProfile] = await Promise.all([
   read("src/data.ts"),
   read("src/corpus-app.tsx"),
   read("src/api.ts"),
@@ -22,6 +22,7 @@ const [data, main, api, browserDb, pkgRaw, layout, page, explorer, styles, gener
   read("src/app/research/key-witness/page.tsx"),
   read("src/lib/key-witness.ts"),
   read("src/lib/use-key-witness-export.ts"),
+  read("src/lib/key-witness-export.ts"),
   read("src/lib/console-session.ts"),
   read("src/app/admin/page.tsx"),
   read("src/app/admin/(console)/layout.tsx"),
@@ -172,9 +173,10 @@ expect(consoleBalance.includes("not a ranking of the passage"), "a bar length mu
 expect(consoleProfile.includes("changeCredential") && consoleProfile.includes("Not server authentication"), "the profile must change a local credential and state its limit")
 
 // The shared export reader keeps "not published" and "failed integrity" distinguishable.
-expect(exportHook.includes("parseExportJsonl") && exportHook.includes("One unreadable line invalidates"), "one reader must reject a partial export for every screen")
-expect(exportHook.includes("key_witness_not_materialized") && exportHook.includes("key_witness_index_integrity_failure"), "the export reader must keep both fail-closed states distinct")
-expect(exportHook.includes("does not invent records"), "a static build must say it invents no records")
+expect(exportReader.includes("parseExportJsonl") && exportReader.includes("One unreadable line invalidates"), "one reader must reject a partial export for every screen")
+expect(exportReader.includes("key_witness_not_materialized") && exportReader.includes("key_witness_index_integrity_failure"), "the export reader must keep both fail-closed states distinct")
+expect(exportReader.includes("does not invent records"), "a static build must say it invents no records")
+expect(exportHook.includes("useKeyWitnessExport") && !exportHook.includes("parseExportJsonl"), "the hook must stay a thin shell so the reader is testable without React")
 
 // P18-011 spectrum: facets are filtered, unpublished facets are named.
 expect(consoleSpectrum.includes("filterSpectrum") && consoleSpectrum.includes("spectrumFacets"), "the spectrum must filter by key, relation, direction and frame")
@@ -244,8 +246,8 @@ expect(consoleCoverage.includes("inputs missing"), "the profile figure must coun
 // assertion above; making it local is a contract change, not a cleanup.
 expect(styles.includes('font-feature-settings: "kern"') && !styles.includes("cv02"), "the font stack must be stated, not a Geist-only feature list that does nothing")
 expect(consoleLedger.includes('download="key-witness-export.jsonl"') && consoleLedger.includes("Re-hash the saved file"), "the ledger must offer the export it hashes")
-expect(exportHook.includes("const cache = new Map") && exportHook.includes("resetExportCache"), "one reader must share a single request per API base")
-expect(exportHook.includes("EXPORT_PATH") && exportHook.includes("export function loadKeyWitnessExport"), "the loader must be importable so its dedupe is testable")
+expect(exportReader.includes("const cache = new Map") && exportReader.includes("resetExportCache"), "one reader must share a single request per API base")
+expect(exportReader.includes("EXPORT_PATH") && exportReader.includes("export function loadKeyWitnessExport"), "the loader must be importable so its dedupe is testable")
 
 if (failures.length) {
   console.error("MoonWitness web contract smoke failed:")

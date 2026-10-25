@@ -6,7 +6,7 @@ import {
   filterSpectrum, maxCount, measureCitationCoverage, parseExportJsonl, scoreReadiness, spectrumFacets,
   spectrumRows, validateCitation, workIdOf, type Citation,
 } from './key-witness.js'
-import { loadKeyWitnessExport, resetExportCache } from './use-key-witness-export.js'
+import { loadKeyWitnessExport, resetExportCache } from './key-witness-export.js'
 
 /**
  * Behavioural tests for the model behind the console screens. The string-based
