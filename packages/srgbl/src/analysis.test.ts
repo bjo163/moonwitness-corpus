@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { validateAnalysisRun, validateResearchFrame, validateRepresentationLanes, diagnoseOffside, type AnalysisRun, type ResearchFrame, type WitnessSource } from './analysis.js'
 import { evaluateFramedKeys, validateKeyAssessment, validateKeyMessage, validateKeyToken, type FramedKeyAssessment } from './keys.js'
@@ -408,4 +409,51 @@ test('a miracle claim is displayed as an attributed reading, never as a score',(
   const before=JSON.stringify(claim)
   describeMiracleAttribution(claim)
   assert.equal(JSON.stringify(claim),before)
+})
+test('the Quran research fixture keeps neighbour context and metaphor rights-safe',()=>{
+  const fixture:any=JSON.parse(readFileSync(
+    new URL('../../../fixtures/srgbl/quran-research-cases.json',import.meta.url),'utf8'))
+  // Rights: the index carries pointers only, and states that in one place.
+  assert.deepEqual(fixture.textPolicy,{embedsScriptureText:false,embedsTranslationText:false,
+    requiresExactEditionBeforeAnalysis:true,requiresRightsReviewBeforeAnalysis:true})
+  assert.deepEqual([fixture.status,fixture.license],
+    ['unreviewed-source-pointers-only','no scripture or translation text is embedded'])
+  // Negative: no case may carry verse or translation text under any field name.
+  const keys=new Set<string>()
+  const walk=(node:unknown):void=>{
+    if (Array.isArray(node)) node.forEach(walk)
+    else if (node && typeof node==='object') for (const [key,value] of Object.entries(node)) { keys.add(key); walk(value) }
+  }
+  walk(fixture)
+  for (const banned of ['text','translation','transliteration','quote','verseText']) {
+    assert.equal(keys.has(banned),false,banned+' is not allowed in a rights-safe pointer')
+  }
+  assert.equal(keys.has('textEmbedded'),true)
+  const byId:Map<string,any>=new Map(fixture.cases.map((entry:any)=>[entry.id,entry]))
+  assert.deepEqual([...byId.keys()],['quran-42-51','quran-5-48','quran-37-30','quran-20-5','quran-2-82'])
+  const offside=byId.get('quran-37-30')
+  // Positive: actor and recipient stay explicitly unknown until an exact edition exists.
+  assert.deepEqual([offside.actor,offside.recipient],['unknown-pending-exact-edition','unknown-pending-exact-edition'])
+  assert.deepEqual([offside.sourceEdition,offside.rights,offside.reviewer],[null,'unknown',null])
+  // Neighbours are named as selectors, not as quoted context.
+  assert.equal(offside.neighborReferences.length,1)
+  assert.deepEqual(offside.neighborReferences[0].select,
+    {kind:'verse-range',work:'al-quran',chapter:37,fromVerse:27,toVerse:33})
+  for (const reference of offside.neighborReferences) {
+    assert.deepEqual([reference.resolve,reference.textEmbedded,reference.selectorResolved],
+      ['pending-exact-edition',false,false])
+  }
+  // OFFSIDE remains an editorial candidate and is never rendered as verse wording.
+  assert.deepEqual([offside.metaphor.label,offside.metaphor.status,offside.metaphor.literalVerseWording],
+    ['Master Gula','editorial-candidate',false])
+  // Literary context and creative metaphor are distinguished per case, not conflated.
+  const literary=byId.get('quran-20-5')
+  assert.deepEqual([offside.contextKind,literary.contextKind],['creative-metaphor-candidate','literary-context'])
+  assert.equal(literary.metaphor,null)
+  assert.deepEqual(literary.neighborReferences[0].select,
+    {kind:'chapter-range',work:'al-quran',chapter:20,fromVerse:1,toVerse:8})
+  // The gate that blocks analysis before edition and rights review is untouched.
+  assert.deepEqual(fixture.qualityGate,{reviewRequired:true,exactPassageIdRequiredBeforeAnalysis:true,
+    editionRequired:true,rightsReviewRequired:true,cannotAssumeMiracle:true,cannotInheritSwingScore:true})
+  assert.equal(fixture.note.startsWith('No claim has a canonical passage ID'),true)
 })

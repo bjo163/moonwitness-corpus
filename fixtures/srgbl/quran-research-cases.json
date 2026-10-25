@@ -2,6 +2,12 @@
   "schema": "srgbl-research-case-index-v1",
   "status": "unreviewed-source-pointers-only",
   "license": "no scripture or translation text is embedded",
+  "textPolicy": {
+    "embedsScriptureText": false,
+    "embedsTranslationText": false,
+    "requiresExactEditionBeforeAnalysis": true,
+    "requiresRightsReviewBeforeAnalysis": true
+  },
   "method": "srgbl-v8-textual-research-proposed",
   "cases": [
     {
@@ -51,6 +57,31 @@
       },
       "purpose": "OFFSIDE actor and addressee diagnostics require surrounding text, no editorial metaphor as literal scripture",
       "neighboringContextRequired": true,
+      "contextScope": "chapter-neighbors",
+      "contextKind": "creative-metaphor-candidate",
+      "neighborReferences": [
+        {
+          "select": {
+            "kind": "verse-range",
+            "work": "al-quran",
+            "chapter": 37,
+            "fromVerse": 27,
+            "toVerse": 33
+          },
+          "resolve": "pending-exact-edition",
+          "textEmbedded": false,
+          "selectorResolved": false,
+          "note": "Range pointer only. Who acts and who is addressed is settled by these neighbours, and that cannot be read until an exact licensed edition is chosen for the range."
+        }
+      ],
+      "actor": "unknown-pending-exact-edition",
+      "recipient": "unknown-pending-exact-edition",
+      "metaphor": {
+        "label": "Master Gula",
+        "status": "editorial-candidate",
+        "literalVerseWording": false,
+        "note": "Editorial metaphor used for OFFSIDE diagnostics; it is not verse wording and must never be rendered as scripture or as the passage's own claim."
+      },
       "intendedLevels": [
         "S1",
         "R2",
@@ -70,6 +101,24 @@
         "verse": 5
       },
       "purpose": "Distinct attributed theological/editorial reference; never claim literal football coaching text",
+      "contextScope": "chapter-neighbors",
+      "contextKind": "literary-context",
+      "neighborReferences": [
+        {
+          "select": {
+            "kind": "chapter-range",
+            "work": "al-quran",
+            "chapter": 20,
+            "fromVerse": 1,
+            "toVerse": 8
+          },
+          "resolve": "pending-exact-edition",
+          "textEmbedded": false,
+          "selectorResolved": false,
+          "note": "Chapter-opening pointer. The verse is read inside its own literary unit, so no wording and no spatial claim is asserted here."
+        }
+      ],
+      "metaphor": null,
       "intendedLevels": [
         "S1",
         "R2",
