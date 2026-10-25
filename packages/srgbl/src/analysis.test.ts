@@ -3,7 +3,7 @@ import test from 'node:test'
 import { validateAnalysisRun, validateResearchFrame, validateRepresentationLanes, diagnoseOffside, type AnalysisRun, type ResearchFrame, type WitnessSource } from './analysis.js'
 import { evaluateFramedKeys, validateKeyAssessment, validateKeyMessage, validateKeyToken, type FramedKeyAssessment } from './keys.js'
 import { adaptPassageSources, resolveSourceReference, type SourceCatalog } from './sources.js'
-import { validateReviewedCandidate, validateMiracleAttribution, summarizeCandidate } from './research-ledger.js'
+import { validateReviewedCandidate, validateMiracleAttribution, describeMiracleAttribution, summarizeCandidate } from './research-ledger.js'
 import { proposeSwing, type ScopedTextRelation } from './index.js'
 
 const frame: ResearchFrame = {agent:'narrator',recipient:'community',domain:'wisdom',scope:'community',genre:'narrative'}
@@ -372,4 +372,40 @@ test('Swing candidates and miracle claims cannot be self-approved as truth',()=>
     tradition:'islam',claimant:'mw:agent:test',method:'islamic-interpretive:v8',
     claimText:'Attributed theological claim only',evidenceIds:['mw:evidence:test'],
     reviewStatus:'reviewed',reviewer:'mw:agent:reviewer',empiricallyVerified:false}),[])
+})
+test('a miracle claim is displayed as an attributed reading, never as a score',()=>{
+  const claim={id:'claim:test',targetPassageId:'mw:passage:test:a',tradition:'islam',
+    claimant:'mw:agent:test',method:'islamic-interpretive:v8',
+    claimText:'Attributed theological claim only',evidenceIds:['mw:evidence:test'],
+    reviewStatus:'reviewed' as const,reviewer:'mw:agent:reviewer',empiricallyVerified:false as const}
+  // Positive: a sourced, reviewed attribution is displayable, with its limits named.
+  const view=describeMiracleAttribution(claim)
+  assert.deepEqual([view.claimType,view.claimant,view.reviewer],['attributed-claim','mw:agent:test','mw:agent:reviewer'])
+  assert.equal(view.claimText,claim.claimText)
+  // No numeric channel: the view carries no score, and nothing is certified.
+  assert.deepEqual([view.score,view.empiricallyVerified,view.universalProof],[null,false,false])
+  assert.ok(view.limitations.some(text=>text.includes('attributed to mw:agent:test (islam)')))
+  assert.ok(view.limitations.some(text=>text.includes('No numeric witness score')))
+  assert.equal(view.limitations.length,2)
+  assert.equal(Object.isFrozen(view),true)
+  // Negative: a witness score cannot be smuggled in as proof, under any of its names.
+  for (const field of ['score','witnessScore','witnessSupport','confidence','probability','certainty']) {
+    assert.throws(()=>describeMiracleAttribution({...claim,[field]:100} as never),
+      /a witness score is not empirical proof/,field)
+  }
+  // Negative: no invented claimant, no silent default name, no unknown fields.
+  assert.throws(()=>describeMiracleAttribution({...claim,claimant:'  '}),/claimant required/)
+  assert.throws(()=>describeMiracleAttribution({...claim,claimant:undefined as never}),/claimant required/)
+  assert.throws(()=>describeMiracleAttribution({...claim,provenance:'invented'} as never),/unknown field\(s\): provenance/)
+  // Negative: certification is refused before display, whatever the score says.
+  assert.throws(()=>describeMiracleAttribution({...claim,empiricallyVerified:true} as never),/empirical certification is prohibited/)
+  // An unreviewed claim is displayable only with its review state and missing evidence named.
+  const draft=describeMiracleAttribution({...claim,reviewStatus:'draft',reviewer:undefined,evidenceIds:[]})
+  assert.deepEqual([draft.reviewStatus,draft.reviewer],[ 'draft',null])
+  assert.ok(draft.limitations.some(text=>text.includes('draft')))
+  assert.ok(draft.limitations.some(text=>text.includes('No source evidence')))
+  // The attribution itself is never mutated by being displayed.
+  const before=JSON.stringify(claim)
+  describeMiracleAttribution(claim)
+  assert.equal(JSON.stringify(claim),before)
 })

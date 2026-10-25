@@ -90,6 +90,54 @@ export function validateMiracleAttribution(item:MiracleAttribution):string[] {
   if(item.reviewStatus==='reviewed' && (!nonblank(item.reviewer) || !item.evidenceIds.length)) errors.push('reviewed miracle claim requires reviewer and source evidence')
   return errors
 }
+const MIRACLE_FIELDS = ['id','targetPassageId','tradition','claimant','method','claimText','evidenceIds',
+  'reviewStatus','reviewer','empiricallyVerified'] as const
+/** Numeric fields a caller might try to smuggle in as proof of a supernatural claim. */
+const SCORE_FIELDS = ['score','witnessScore','witnessSupport','confidence','probability','certainty'] as const
+export interface MiracleAttributionView {
+  id: string
+  claimType: 'attributed-claim'
+  /** Echoed exactly as recorded: an absent claimant is an error, never a default name. */
+  claimant: string
+  tradition: string
+  method: string
+  claimText: string
+  reviewStatus: ReviewStatus
+  reviewer: string | null
+  evidenceIds: string[]
+  /** Typed null so a witness score cannot be attached to the claim. */
+  score: null
+  empiricallyVerified: false
+  universalProof: false
+  limitations: string[]
+}
+/**
+ * Presents a claim as what it is: someone's attributed reading, together with the
+ * limits of knowing it. A high witness score has no path into this record, so a
+ * numeric result can never be displayed as an empirical miracle.
+ */
+export function describeMiracleAttribution(item:MiracleAttribution):MiracleAttributionView {
+  const errors=validateMiracleAttribution(item)
+  if (errors.length) throw new TypeError('miracle attribution cannot be displayed: '+errors.join('; '))
+  const raw:unknown=item
+  const unknown=Object.keys(raw as object)
+    .filter(key=>!(MIRACLE_FIELDS as readonly string[]).includes(key) && !(SCORE_FIELDS as readonly string[]).includes(key)).sort()
+  if (unknown.length) throw new TypeError('miracle attribution has unknown field(s): '+unknown.join(', '))
+  const carried=SCORE_FIELDS.filter(field=>(raw as Record<string, unknown>)[field]!==undefined)
+  if (carried.length) throw new TypeError('miracle attribution must not carry '+carried.join(', ')+': a witness score is not empirical proof')
+  const limitations=['Claim is attributed to '+item.claimant+' ('+item.tradition+'); MoonWitness does not assert it.',
+    'No numeric witness score is carried, and none can turn this claim into empirical proof.']
+  if (item.reviewStatus!=='reviewed') limitations.push('Review status is '+item.reviewStatus+': no reviewer has accepted the claim.')
+  if (!item.evidenceIds.length) limitations.push('No source evidence is recorded for this claim.')
+  return Object.freeze({
+    id:item.id, claimType:'attributed-claim' as const, claimant:item.claimant, tradition:item.tradition,
+    method:item.method, claimText:item.claimText, reviewStatus:item.reviewStatus,
+    reviewer:nonblank(item.reviewer)?item.reviewer:null,
+    evidenceIds:Object.freeze([...item.evidenceIds]) as string[],
+    score:null, empiricallyVerified:false as const, universalProof:false as const,
+    limitations:Object.freeze(limitations) as string[]
+  })
+}
 
 /**
  * Canonical text form of a candidate ledger. The document is a record of
