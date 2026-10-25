@@ -257,6 +257,8 @@ export const SRGBL_RELATION_TYPES = [
 export type SrgbLRelationType = (typeof SRGBL_RELATION_TYPES)[number]
 /** Exact canonical passage id; a fuzzy citation string is not a cross-text endpoint. */
 const PASSAGE_ID = /^mw:passage:[^\s:]+(?::[^\s:]+)*$/
+/** A named evidence record; prose such as "a scholar said so" is not an evidence ID. */
+const EVIDENCE_ID = /^mw:evidence:[^\s]+$/
 export interface ScopedTextRelation {
   leftPassageId: string
   rightPassageId: string
@@ -264,8 +266,18 @@ export interface ScopedTextRelation {
   method: string
   frame: string
   evidenceIds: string[]
+  /**
+   * Alternative or dissenting readings, kept verbatim so a reviewed correction
+   * can never be published as if the objection had not been recorded.
+   */
+  counterReadings?: string[]
   reviewer?: string
   reviewStatus: 'draft' | 'reviewed' | 'disputed' | 'deprecated'
+}
+/** The lens a stored frame actually names, or undefined; an unknown frame is never guessed. */
+function declaredLens(frame: string) {
+  const name = (RESEARCH_LENSES as readonly ResearchLens[]).find(lens => LENS_TABLE[lens].frame === frame.trim())
+  return name ? LENS_TABLE[name] : undefined
 }
 /** Strictly validates a *record*, never infers a correction or miracle. */
 export function validateScopedRelation(record: ScopedTextRelation): void {
@@ -280,12 +292,25 @@ export function validateScopedRelation(record: ScopedTextRelation): void {
   }
   if (!(SRGBL_RELATION_TYPES as readonly string[]).includes(record.relation)) throw new RangeError('Unsupported relation')
   if (!Array.isArray(record.evidenceIds) || record.evidenceIds.some(x => typeof x !== 'string' || !x.trim())) throw new TypeError('Invalid evidence IDs')
+  if (record.evidenceIds.some(id => !EVIDENCE_ID.test(id))) throw new TypeError('Every evidence reference must be a named mw:evidence ID: ' + JSON.stringify(record.evidenceIds.join(', ')))
   if (new Set(record.evidenceIds).size !== record.evidenceIds.length) throw new TypeError('Evidence IDs must be unique')
   if (record.reviewStatus === 'reviewed' && (!record.reviewer?.trim() || !record.evidenceIds.length)) {
     throw new TypeError('Reviewed relationship requires reviewer and explicit evidence')
   }
-  if (record.relation === 'CORRECTS_WITHIN_FRAME' && record.frame === 'comparative-neutral') {
-    throw new RangeError('Doctrinal correction cannot be asserted as neutral')
+  const counterReadings = record.counterReadings
+  if (counterReadings !== undefined) {
+    if (!Array.isArray(counterReadings) || counterReadings.some(x => typeof x !== 'string' || !x.trim())) throw new TypeError('Counterreadings must be named text entries')
+    if (new Set(counterReadings.map(x => x.trim())).size !== counterReadings.length) throw new TypeError('Counterreadings must be distinct')
+  }
+  if (record.relation === 'CORRECTS_WITHIN_FRAME') {
+    // Neutrality cannot carry a correction, and neither can a frame no lens declares.
+    if (!declaredLens(record.frame)?.allowsCorrection) {
+      throw new RangeError('A doctrinal correction must declare a lens that allows it; ' + JSON.stringify(record.frame) + ' does not')
+    }
+    // The objection has to survive review, or the "correction" is a one-sided claim.
+    if (record.reviewStatus === 'reviewed' && !counterReadings?.length) {
+      throw new TypeError('A reviewed correction must preserve at least one counterreading')
+    }
   }
 }
 
@@ -308,6 +333,10 @@ export interface RelationSourceResolution {
   unresolved: string[]
   /** True only for a reviewed record whose every endpoint the repository confirms. */
   publishable: boolean
+  /** The objection list travels with the decision; it is never dropped on the way out. */
+  counterReadings: string[]
+  /** A correction stays scoped to its declared frame, so it is never a universal proof. */
+  universalProof: false
   automaticCanonicalApproval: false
 }
 /**
@@ -340,6 +369,8 @@ export function resolveRelationSources(
     endpoints,
     unresolved,
     publishable: record.reviewStatus === 'reviewed' && unresolved.length === 0,
+    counterReadings: [...(record.counterReadings ?? [])],
+    universalProof: false as const,
     automaticCanonicalApproval: false as const
   }
 }

@@ -175,9 +175,10 @@ test('Swing always makes unverified candidate, depth-limited, no inherited score
   ]}),RangeError)
 })
 test('cross-text correction always requires a non-neutral frame; reviewed requires reviewer and evidence', () => {
-  const valid={leftPassageId:'mw:passage:quran:5:48',rightPassageId:'mw:passage:example',
+  const valid:ScopedTextRelation={leftPassageId:'mw:passage:quran:5:48',rightPassageId:'mw:passage:example',
     relation:'CORRECTS_WITHIN_FRAME',method:'quran-anchored:v8',frame:'islamic-quran-anchored',
-    evidenceIds:['mw:evidence:test'],reviewer:'mw:agent:reviewer',reviewStatus:'reviewed'} as const
+    evidenceIds:['mw:evidence:test'],reviewer:'mw:agent:reviewer',reviewStatus:'reviewed',
+    counterReadings:['Read as a clarification within the passage, not a replacement for it']}
   assert.doesNotThrow(()=>validateScopedRelation({...valid,evidenceIds:[...valid.evidenceIds]}))
   assert.throws(()=>validateScopedRelation({...valid,frame:'comparative-neutral',evidenceIds:[...valid.evidenceIds]}),RangeError)
   assert.throws(()=>validateScopedRelation({...valid,reviewer:undefined,evidenceIds:[...valid.evidenceIds]}),TypeError)
@@ -250,7 +251,8 @@ test('lens is chosen explicitly and a UI filter can never rewrite a stored frame
   assert.equal(JSON.stringify(stored),before)
   assert.equal(stored.frame,'comparative-neutral')
   // Correction is scoped to the non-neutral lens, and still needs the review record.
-  const correction={...stored,method:'quran-anchored:v8',frame:'islamic-quran-anchored',relation:'CORRECTS_WITHIN_FRAME' as const}
+  const correction={...stored,method:'quran-anchored:v8',frame:'islamic-quran-anchored',relation:'CORRECTS_WITHIN_FRAME' as const,
+    counterReadings:['Read as addressed to an earlier community, not to this reader']}
   assert.doesNotThrow(()=>validateScopedRelation(correction))
   assert.equal(compareRelationLens(correction,anchored).matches,true)
   assert.equal(resolveRelationSources(correction,{hasPassage:()=>true,hasEvidence:()=>true}).publishable,true)
@@ -259,4 +261,38 @@ test('lens is chosen explicitly and a UI filter can never rewrite a stored frame
   // An unrecognised frame is reported as undeclared rather than guessed into a lens.
   assert.equal(readRelationLens({...stored,frame:'comparative-contextual'}).lens,'undeclared')
   assert.equal(readRelationLens(undefined as never).lens,'undeclared')
+})
+test('an unframed correction is rejected and a reviewed one keeps its objections', () => {
+  const anchored:ScopedTextRelation={leftPassageId:'mw:passage:quran:37:30',rightPassageId:'mw:passage:example',
+    relation:'CORRECTS_WITHIN_FRAME',method:'quran-anchored:v8',frame:'islamic-quran-anchored',
+    evidenceIds:['mw:evidence:tafsir:qurtubi'],reviewer:'mw:agent:reviewer',reviewStatus:'reviewed',
+    counterReadings:['Read as addressed to an earlier community, not to the present reader']}
+  // Positive: a labeled Islamic lens, named evidence and a recorded objection pass the structural check.
+  assert.doesNotThrow(()=>validateScopedRelation(anchored))
+  // Negative: neutral cannot carry a correction ...
+  assert.throws(()=>validateScopedRelation({...anchored,frame:'comparative-neutral',method:'comparative:v8'}),
+    /must declare a lens that allows it/)
+  // ... and a frame no lens declares is unframed even when it sounds Islamic.
+  assert.throws(()=>validateScopedRelation({...anchored,frame:'islamic-scholarly'}),
+    /must declare a lens that allows it/)
+  // Negative: review is only complete when the objection survived it.
+  assert.throws(()=>validateScopedRelation({...anchored,counterReadings:undefined}),
+    /preserve at least one counterreading/)
+  assert.throws(()=>validateScopedRelation({...anchored,counterReadings:[]}),
+    /preserve at least one counterreading/)
+  // A draft may still be under construction: the structural bar is only the declared lens.
+  assert.doesNotThrow(()=>validateScopedRelation({...anchored,reviewStatus:'draft',reviewer:undefined,counterReadings:undefined}))
+  // Negative: blank, duplicated or unnamed entries are not evidence or objections.
+  assert.throws(()=>validateScopedRelation({...anchored,counterReadings:['   ']}),/named text entries/)
+  assert.throws(()=>validateScopedRelation({...anchored,counterReadings:['same','  same  ']}),/must be distinct/)
+  assert.throws(()=>validateScopedRelation({...anchored,evidenceIds:['a scholar said so']}),/named mw:evidence ID/)
+  assert.throws(()=>validateScopedRelation({...anchored,evidenceIds:['mw:evidence:test extra']}),/named mw:evidence ID/)
+  // The decision keeps the objections and is never promoted to a universal proof.
+  const before=JSON.stringify(anchored)
+  const resolved=resolveRelationSources(anchored,{hasPassage:()=>true,hasEvidence:()=>true})
+  assert.deepEqual([resolved.publishable,resolved.universalProof,resolved.automaticCanonicalApproval],[true,false,false])
+  assert.deepEqual(resolved.counterReadings,[...anchored.counterReadings!])
+  assert.equal(JSON.stringify(anchored),before)
+  const draft=resolveRelationSources({...anchored,reviewStatus:'draft'},{hasPassage:()=>true,hasEvidence:()=>true})
+  assert.deepEqual([draft.publishable,draft.counterReadings],[false,[...anchored.counterReadings!]])
 })

@@ -106,7 +106,7 @@ const CANDIDATE_FIELDS = ['id','origin','relation','supportingEvidenceIds','cont
 const ORIGIN_FIELDS = ['signature','operator','subject','relation','object','depth','state',
   'evidenceStatus','inheritedScore'] as const
 const RELATION_FIELDS = ['leftPassageId','rightPassageId','relation','method','frame','evidenceIds',
-  'reviewer','reviewStatus'] as const
+  'counterReadings','reviewer','reviewStatus'] as const
 const COMPONENT_FIELDS = Object.keys(WITNESS_COMPONENT_MAX) as (keyof WitnessComponents)[]
 
 const sortedIds = (ids: readonly string[]): string[] => [...ids].sort()
@@ -133,6 +133,8 @@ function canonicalCandidate(c: ReviewedCandidate) {
       leftPassageId: relation.leftPassageId, rightPassageId: relation.rightPassageId,
       relation: relation.relation, method: relation.method, frame: relation.frame,
       evidenceIds: sortedIds(relation.evidenceIds), reviewStatus: relation.reviewStatus,
+      // Counterreadings are prose: their order is the reviewer's, so they are never sorted.
+      ...(relation.counterReadings?.length ? { counterReadings: [...relation.counterReadings] } : {}),
       ...(nonblank(relation.reviewer) ? { reviewer: relation.reviewer } : {})
     },
     supportingEvidenceIds: sortedIds(c.supportingEvidenceIds),
@@ -187,7 +189,7 @@ function reviveCandidate(raw: unknown, index: number): ReviewedCandidate {
   const origin = nested(raw, 'origin', ORIGIN_FIELDS, label)
   requiredKeys(origin, ORIGIN_FIELDS, label + ' origin')
   const relation = nested(raw, 'relation', RELATION_FIELDS, label)
-  requiredKeys(relation, RELATION_FIELDS.filter(name => name !== 'reviewer'), label + ' relation')
+  requiredKeys(relation, RELATION_FIELDS.filter(name => name !== 'reviewer' && name !== 'counterReadings'), label + ' relation')
   const components = raw.components
   if (components !== null) {
     if (!isRecord(components)) throw new TypeError(label + ' components must be an object or null')
@@ -211,7 +213,9 @@ function freezeCandidate(c: ReviewedCandidate): ReviewedCandidate {
   return Object.freeze({
     ...c,
     origin: Object.freeze({ ...c.origin }),
-    relation: Object.freeze({ ...c.relation, evidenceIds: frozenIds(c.relation.evidenceIds) }) as ScopedTextRelation,
+    relation: Object.freeze({ ...c.relation, evidenceIds: frozenIds(c.relation.evidenceIds),
+      ...(c.relation.counterReadings ? { counterReadings: frozenIds(c.relation.counterReadings) } : {})
+    }) as ScopedTextRelation,
     supportingEvidenceIds: frozenIds(c.supportingEvidenceIds),
     contradictingEvidenceIds: frozenIds(c.contradictingEvidenceIds),
     independentSourceIds: frozenIds(c.independentSourceIds),

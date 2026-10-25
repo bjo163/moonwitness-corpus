@@ -77,6 +77,14 @@ test('candidate ledger serializes identically whatever order records and evidenc
     const after = summarizeCandidate(entry)
     assert.deepEqual([after.publishable, after.contradictionEvidence], [before.publishable, before.contradictionEvidence])
   })
+  // Counterreadings survive the codec verbatim, in the reviewer's order.
+  const objection = serializeCandidateLedger([candidate({
+    relation: { ...relation, counterReadings: ['read as a warning', 'read as a promise'] }
+  })])
+  const revived = deserializeCandidateLedger(objection).candidates[0]
+  assert.deepEqual(revived.relation.counterReadings, ['read as a warning', 'read as a promise'])
+  assert.equal(Object.isFrozen(revived.relation.counterReadings), true)
+  assert.equal(serializeCandidateLedger([revived]), objection)
 })
 
 test('duplicate IDs and a dropped contradiction list are refused, not repaired', () => {
