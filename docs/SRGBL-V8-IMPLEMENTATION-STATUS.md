@@ -64,3 +64,38 @@ Read: [Master RFC](./SRGBL-V8-MASTER-RFC.md), [Key Witness](./KEY-WITNESS-V0.md)
 - Display reviewed S1–L5 claims only when the review projection is present and passes the integrity gate; otherwise UNKNOWN.
 - On missing/stale index, return explicit 404/503 instead of fabricated results.
 - See [Reviewed Publication Runbook](./SRGBL-V8-PUBLICATION-RUNBOOK.md). The repository has **manual-only GitHub Actions**; trigger CI on the exact candidate branch before merging this follow-up PR.
+
+## P19 release decision record - 2026-10-25
+
+This record answers one question only: may the reviewed SRGBL v8 reader be promoted to production? It is written by the executing agent, it cites only measured evidence, and it does **not** tick any parent `P19-0xx` item.
+
+**Decision: BLOCKED. Not production-ready. The owner must not promote `main` on the basis of this record.**
+
+| Gate | Status | Independent evidence | Why |
+| --- | --- | --- | --- |
+| Reviewed projection integrity | PASS (unit) | `packages/srgbl/src/publication.test.ts` 9 tests, incl. the 15-case adversarial matrix (#488, `64f5742`); #477, #478 | Closed structure, ordered stages, duplicate derived IDs, checksum-not-signature all fail closed |
+| Static/browser export contract | PASS (unit) | `packages/srgbl/src/static.test.ts` 3 tests (#480, `47dc70e`) | Deterministic passage order, explicit unavailable state, no research-only score |
+| API fail-closed surface | PASS (unit) | `apps/api/src/api.test.ts` 15 tests (#479, `8a30f2d`) | 200 only when pinned; 503 corrupt; 404 absent/empty/orphaned |
+| Five-stage reader UI | PASS (source contract) | `apps/web/scripts/contract-test.mjs` + `tsc --noEmit` (#481-#485, `af466d4`..`50660df`) | UNKNOWN preserved, no synthetic paragraph, keyboard/roving tab stop, `dir="auto"`, motion-safe |
+| Browser, screen-reader, mobile audit | UNKNOWN | none | No browser session, device or assistive-technology pass was executed for #481-#485 |
+| Source edition rights | FAIL / OPEN | [source-edition matrix](./SRGBL-V8-SOURCE-EDITION-MATRIX.md); #476 | No pilot edition is cleared; only the Tanzil note (CC-BY-3.0, re-verified 2026-08-27) is cited, and translations remain unidentified |
+| Human reviewer authorization | UNKNOWN | no reviewer attestation exists | Reviewer IDs in fixtures are synthetic; a checksum is not a signature |
+| Two independent annotators | UNKNOWN | no paired human data | #486 validates intake; #487 computes kappa, but `satisfiesPilot:false` and `blocked-pilot-input` on every run |
+| Inter-rater agreement | NOT ESTIMABLE | `packages/srgbl/src/agreement.test.ts` 4 tests (#487, `0a8ed3d`) | N=0 real pairs; the module returns `estimable:false` rather than a fabricated coefficient |
+| Cross-tradition correction framing | PASS (contract) | `#484` lens panel + `CORRECTS_WITHIN_FRAME` `frameNote` requirement | A correction renders as interpretation inside its declared lens, never as neutral truth |
+| Consumer release / promotion | FAIL | [consumer release contract](./CONSUMER_RELEASE_CONTRACT.md); no approval record | No editorial approval, no rights clearance, no pilot evidence |
+| CI on the candidate SHA | PASS (recorded run) | run `40147222934` on `8a30f2d`: `check` and `web` succeeded | Earlier batch only; runs after 2026-10-25 commits are listed in the local AI handoff log |
+
+### What this record does not claim
+
+- Unit-test success is not empirical validation, editorial approval, rights clearance or production readiness.
+- No human pilot exists: the annotation and agreement fixtures are synthetic and are labelled as such in code.
+- No scripture ranking, miracle verdict, canon claim or reviewer name was produced by this wave.
+
+### Conditions before any promotion
+
+1. Select and record the exact edition, licence expression, evidence URL and re-verification date for every published source; flip `rightsAudit` off `pending-human-rights-confirmation` through a human decision, not a code change.
+2. Run a real paired annotation pilot, retain disagreements and missingness, and report agreement with its own N and limits.
+3. Obtain an independent reviewer attestation for each published analysis; a content checksum stays `authenticatedSignature: false`.
+4. Execute a browser, keyboard, RTL and screen-reader pass against a built `apps/web` bundle and record the result.
+5. Promote only through the guarded, non-forced `dev` to `main` path in [Branching](./BRANCHING.md), after the above.

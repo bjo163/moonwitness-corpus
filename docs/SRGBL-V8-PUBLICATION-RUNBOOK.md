@@ -71,3 +71,14 @@ The static export uses the same verifier and corpus hash as the API. The browser
 The repository changed CI on `dev` to **manual-only `workflow_dispatch`** as of commit `4ed1f23`. This PR must not re-enable automatic workflows. To check an implementation branch: open **Actions → CI → Run workflow**, select that branch, run, and verify both `check` and `web` succeed for the exact PR HEAD. A previous successful run from another commit is not evidence that this PR passes.
 
 See also: [P19 execution backlog](../TODO.md) and [Epic #446](https://github.com/bjo163/moonwitness-corpus/issues/446).
+
+## P19 release decision record
+
+Promotion of the reviewed SRGBL v8 reader is **BLOCKED** as of 2026-10-25. The gate-by-gate decision table with its evidence lives in [SRGBL-V8-IMPLEMENTATION-STATUS.md](./SRGBL-V8-IMPLEMENTATION-STATUS.md#p19-release-decision-record---2026-10-25).
+
+Operating rules while blocked:
+
+- A green unit suite is not an approval; cite the issue, commit and run ID instead of describing the suite as validation.
+- Serve reviewed claims only from a projection that passes `verifyReviewedPublication` against the served corpus catalog; otherwise return the explicit 404/503 state.
+- Keep `authenticatedSignature: false`, `rightsAudit: pending-human-rights-confirmation` and `satisfiesPilot: false` until a human changes them with evidence.
+- A rights, reviewer or pilot gate may only move by a recorded human decision, never by editing a fixture.
