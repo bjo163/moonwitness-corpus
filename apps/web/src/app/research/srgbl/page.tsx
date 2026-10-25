@@ -30,6 +30,17 @@ function isReviewedKeyMessage(value:unknown):value is ReviewedKeyMessage {
     Array.isArray(m.sourceContentIds)&&m.sourceContentIds.length>0&&m.sourceContentIds.every(nonBlank)
 }
 
+type SwingCandidate = {id:string;operator:string;relation:string;depth:1|2|3;evidenceStatus:"unverified";sourcePassageId?:string}
+
+// A Swing candidate is an unreviewed search lead: only depth 1..3 and an unverified status may render.
+function isSwingCandidate(value:unknown):value is SwingCandidate {
+  if(!value||typeof value!=="object") return false
+  const c=value as Record<string,unknown>
+  return nonBlank(c.id)&&nonBlank(c.operator)&&nonBlank(c.relation)&&
+    (c.depth===1||c.depth===2||c.depth===3)&&c.evidenceStatus==="unverified"&&
+    (c.sourcePassageId===undefined||(typeof c.sourcePassageId==="string"&&c.sourcePassageId.startsWith("mw:passage:")))
+}
+
 function isReviewedAnalysis(value:unknown):value is ReviewedAnalysis {
   if(!value||typeof value!=="object") return false
   const item=value as Record<string,unknown>
@@ -59,6 +70,7 @@ export default function SRGBLResearchPage(){
   const [error,setError]=useState("")
   const [busy,setBusy]=useState(false)
   const [active,setActive]=useState("S1")
+  const [swing,setSwing]=useState<string|null>(null)
   async function lookup(e:FormEvent<HTMLFormElement>){
     e.preventDefault()
     setTrace(null);setAnalyses([]);setError("")
@@ -123,6 +135,10 @@ export default function SRGBLResearchPage(){
     return "UNKNOWN"
   }
   const currentClaims=analyses.flatMap(a=>a.levels.filter(c=>c.level===active).map(c=>({...c,analysisId:a.id,method:a.method})))
+  const swingPool=analyses.flatMap(a=>Array.isArray((a as {swingCandidates?:unknown}).swingCandidates)
+    ? (a as {swingCandidates:unknown[]}).swingCandidates : [])
+  const swings=swingPool.filter(isSwingCandidate)
+  const withheldSwings=swingPool.length-swings.length
   const messages=analyses.flatMap(a=>{
     const key=(a as {keyMessage?:unknown}).keyMessage
     return isReviewedKeyMessage(key)?[{...key,analysisId:a.id}]:[]
@@ -183,6 +199,20 @@ export default function SRGBLResearchPage(){
               <p className="mt-1 text-xs"><strong>Boundary:</strong> {m.boundaryNote}</p>
               <p className="mt-2 break-all text-xs text-muted-foreground">Evidence: {m.evidenceIds.join(", ")} · Source content: {m.sourceContentIds.join(", ")}</p>
             </article>)}
+      </section>
+      <section className="mt-5 rounded-md border p-3" aria-labelledby="swing-candidates">
+        <h3 id="swing-candidates" className="text-sm font-semibold">Swing candidates (unreviewed leads)</h3>
+        {swings.length===0
+          ? <p className="mt-2 text-sm">No swing candidate is published. A candidate is a search lead, not evidence, and never inherits a source score.</p>
+          : <ul className="mt-3 space-y-2" role="list">{swings.map(s=><li key={s.id}>
+              <button type="button" aria-pressed={swing===s.id} onClick={()=>setSwing(swing===s.id?null:s.id)}
+                className="w-full rounded-md border p-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                <span className="mr-2 rounded border px-1 text-[10px] font-semibold uppercase tracking-wide">Unverified</span>
+                <span className="text-xs">depth {s.depth} · {s.relation} · {s.operator} · evidence: {s.evidenceStatus}</span>
+              </button>
+              {swing===s.id&&<p className="mt-1 break-all px-2 text-xs text-muted-foreground">Candidate {s.id}{s.sourcePassageId?" · source origin: "+s.sourcePassageId:" · source origin: UNKNOWN"}. No reviewed claim, no inherited score and no supporting reference is implied.</p>}
+            </li>)}</ul>}
+        {withheldSwings>0&&<p className="mt-2 text-xs text-muted-foreground">{withheldSwings} candidate(s) withheld: a candidate must state depth 1-3, an unverified evidence status and a canonical source origin.</p>}
       </section>
       {reviewNote&&<p className="mt-4 text-xs text-muted-foreground" role="status">{reviewNote}</p>}
     </section>
