@@ -24,6 +24,8 @@ Pusat dokumentasi arsitektur, spesifikasi teknis, pedoman upstream ingestion, da
 - **[Local AI Handoff — NO NEW BRANCHES](./MOONWITNESS-LOCAL-AI-HANDOFF.md)** — exact Node/pnpm/test commands, one issue at a time, direct dev only.
 - [Machine-readable Microtask Manifest](./MOONWITNESS-P19-MICROTASKS.json) — source of small-issue file scope, tests and GitHub issue IDs.
 
+- **[Knowledge Observatory UI Atlas v2 — 20 screen design guide](./design/knowledge-observatory-v2/README.md)** — Corpus Reader, prophetic figures table, multilingual terminology, ontology, research and curator-console screen contracts (design only).
+
 ## Product Narrative & Blueprint
 
 - [**Cerita Produk (final)**](./PRODUCT-STORY.md) — narasi kanonik brand dan produk: masalah, lima babak pembaca, titik tengah, suara, dan batas klaim.
